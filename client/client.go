@@ -4,27 +4,41 @@ package client
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/canonical/lxd/shared/api"
 
-	"github.com/canonical/microcluster/client"
 	"github.com/canonical/lxd-site-manager/api/types"
+	"github.com/canonical/microcluster/client"
 )
 
-// ExtendedPostCmd is a client function that sets a context timeout and sends a POST to /1.0/extended using the given
-// client. This function is expected to be called from an api endpoint handler, which gives us access to the
-// daemon state, from which we can create a client.
-func ExtendedPostCmd(ctx context.Context, c *client.Client, data *types.ExtendedType) (string, error) {
+// GetSites gets the sites.
+func GetSites(ctx context.Context, c *client.Client) ([]types.Site, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
 
-	var outStr string
-	err := c.Query(queryCtx, "POST", api.NewURL().Path("extended"), data, &outStr)
+	var sites []types.Site
+	err := c.Query(queryCtx, http.MethodGet, api.NewURL().Path("sites"), nil, &sites)
 	if err != nil {
 		clientURL := c.URL()
-		return "", fmt.Errorf("Failed performing action on %q: %w", clientURL.String(), err)
+		return nil, fmt.Errorf("Failed performing action on %q: %w", clientURL.String(), err)
 	}
 
-	return outStr, nil
+	return sites, nil
+}
+
+// GetSite gets a site by name.
+func GetSite(ctx context.Context, c *client.Client, siteName string) (*types.Site, error) {
+	queryCtx, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
+
+	var site types.Site
+	err := c.Query(queryCtx, http.MethodGet, api.NewURL().Path("sites", siteName), nil, &site)
+	if err != nil {
+		clientURL := c.URL()
+		return nil, fmt.Errorf("Failed performing action on %q: %w", clientURL.String(), err)
+	}
+
+	return &site, nil
 }
