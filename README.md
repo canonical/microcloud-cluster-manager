@@ -20,6 +20,15 @@ microd --state-dir /path/to/state/dir3 &
 ```
 
 ## Starting dqlite
+DQLite is called via CGO, so you'll need to install it first:
+```
+sudo add-apt-repository ppa:dqlite/dev -y --no-update
+sudo apt-get update
+
+sudo apt-get install --no-install-recommends -y libdqlite-dev
+```
+
+Then you can run:
 ```bash
 # Wait for the daemon to finish setup.
 microctl --state-dir /path/to/state/dir1 waitready
