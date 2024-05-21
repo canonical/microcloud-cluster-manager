@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "outDir": "./build/ui",
+    "baseUrl": ".",
+    "paths": {
+      "api/*": ["src/api/*"],
+      "context/*": ["src/context/*"],
+      "components/*": ["src/components/*"],
+      "pages/*": ["src/pages/*"],
+      "types/*": ["src/types/*"],
+      "util/*": ["src/util/*"],
+      "*": ["types/*.d.ts"]
+    },
+    "target": "ES2020",
+    "module": "esnext",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": false,
+    "sourceMap": true,
+    "types": ["vitest/globals"]
+  },
+  "include": [
+    "./src",
+    ".eslintrc.cjs",
+    "babel.config.js",
+    "playwright.config.ts",
+    "./tests/**/*.ts",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ],
+}

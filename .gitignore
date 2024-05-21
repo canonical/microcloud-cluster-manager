@@ -1,0 +1,7 @@
+.idea
+state
+ui/build
+ui/.dotrun.json
+ui/node_modules
+ui/playwright-report
+test-results
