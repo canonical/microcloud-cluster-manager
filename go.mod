@@ -3,10 +3,12 @@ module github.com/canonical/lxd-site-manager
 go 1.22.3
 
 require (
-	github.com/canonical/lxd v0.0.0-20240512132740-b2ede506d347
-	github.com/canonical/microcluster v0.0.0-20240513165320-9d2f771ea436
+	github.com/canonical/lxd v0.0.0-20240523141412-274c497621d7
+	github.com/canonical/microcluster v0.0.0-20240515114442-4d1724920be6
+	github.com/gorilla/mux v1.8.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.8.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
@@ -18,7 +20,6 @@ require (
 	github.com/fvbommel/sortorder v1.1.0 // indirect
 	github.com/google/renameio v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/schema v1.3.0 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
@@ -37,13 +38,12 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/zitadel/oidc/v2 v2.12.0 // indirect
-	golang.org/x/crypto v0.22.0 // indirect
-	golang.org/x/net v0.24.0 // indirect
+	golang.org/x/crypto v0.23.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/term v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

@@ -10,4 +10,5 @@ import (
 var Endpoints = []rest.Endpoint{
 	siteCmd,
 	sitesCmd,
+	sitePostCmd,
 }

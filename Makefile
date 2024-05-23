@@ -48,3 +48,20 @@ update-schema:
 	goimports -w ./database/
 	@echo "Code generation completed"
 
+# Dev targets.
+
+# Start the daemon in development mode.
+.PHONY: start-daemon-dev
+start-daemon-dev:
+	go run ./cmd/lxd-site-mgrd --state-dir state_dir_1 &
+	go run ./cmd/lxd-site-mgrd --state-dir state_dir_2 &
+	go run ./cmd/lxd-site-mgrd --state-dir state_dir_3 &
+
+# Initialise cluster in development mode.
+.PHONY: init-cluster-dev
+init-cluster-dev:
+	go run ./cmd/lxd-site-mgr --state-dir state_dir_1 init "member1" 127.0.0.1:9001 --bootstrap
+	token_member2=$(go run ./cmd/lxd-site-mgr --state-dir state_dir_1 tokens add "member2")
+	token_member3=$(go run ./cmd/lxd-site-mgr --state-dir state_dir_1 tokens add "member3")
+	go run ./cmd/lxd-site-mgr --state-dir state_dir_2 init "member2" 127.0.0.1:9002 --token ${token_member2}
+	go run ./cmd/lxd-site-mgr --state-dir state_dir_3 init "member3" 127.0.0.1:9003 --token ${token_member3}
