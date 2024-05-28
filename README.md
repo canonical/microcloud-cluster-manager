@@ -30,19 +30,24 @@ sudo apt-get install --no-install-recommends -y libdqlite-dev
 
 Then you can run:
 ```bash
-# Wait for the daemon to finish setup.
-microctl --state-dir /path/to/state/dir1 waitready
+# Start three site manager members
+go run ./cmd/lxd-site-mgrd --state-dir ./state/dir1
+go run ./cmd/lxd-site-mgrd --state-dir ./state/dir2
+go run ./cmd/lxd-site-mgrd --state-dir ./state/dir3
 
-# Bootstrap the first node to start a new cluster. The new member will be given the name "member1" and will listen on `127.0.0.1:9001`
-microctl --state-dir /path/to/state/dir1 init "member1" 127.0.0.1:9001 --bootstrap
+# Wait for the first member to finish setup.
+go run ./cmd/lxd-site-mgr --state-dir state/state_dir_1 waitready
 
-# Get some join tokens from the new cluster. These are deleted after use.
-token_node2=$(microctl --state-dir /path/to/state/dir1 tokens add "member2")
-token_node3=$(microctl --state-dir /path/to/state/dir1 tokens add "member3")
+# Bootstrap the first member as a cluster
+go run ./cmd/lxd-site-mgr --state-dir ./state/dir1 init "member1" 127.0.0.1:9001 --bootstrap
 
-# Join the dqlite cluster.
-microctl --state-dir /path/to/state/dir2 init "member2" 127.0.0.1:9002 --token ${token_node2}
-microctl --state-dir /path/to/state/dir3 init "member3" 127.0.0.1:9003 --token ${token_node3}
+# Get some join tokens from the cluster
+token_node2=$(go run ./cmd/lxd-site-mgr --state-dir ./state/dir1 tokens add "member2")
+token_node3=$(go run ./cmd/lxd-site-mgr --state-dir ./state/dir1 tokens add "member3")
+
+# Join the cluster with the other two members
+go run ./cmd/lxd-site-mgr --state-dir ./state/dir2 init "member2" 127.0.0.1:9002 --token ${token_node2}
+go run ./cmd/lxd-site-mgr --state-dir ./state/dir3 init "member3" 127.0.0.1:9003 --token ${token_node3}
 
 # The cluster is now up and running!
 ```
@@ -50,7 +55,7 @@ microctl --state-dir /path/to/state/dir3 init "member3" 127.0.0.1:9003 --token $
 ## Interacting with the cluster
 * List info on all cluster members
 ```bash
-microctl --state-dir /path/to/state/dir1 cluster list
+go run ./cmd/lxd-site-mgr --state-dir ./state/dir1 cluster list
 +------+----------------+-------+------------------------------------------------------------------+--------+
 | NAME |    ADDRESS     | ROLE  |                           CERTIFICATE                            | STATUS |
 +------+----------------+-------+------------------------------------------------------------------+--------+
@@ -103,12 +108,12 @@ microctl --state-dir /path/to/state/dir1 cluster list
 * Remove a cluster member
 ```bash
 # This will remove member2 from the cluster.
-microctl --state-dir /path/to/state/dir1 cluster remove member2
+go run ./cmd/lxd-site-mgr --state-dir /path/to/state/dir1 cluster remove member2
 ```
 
 * Perform an SQL query
 ```bash
-microctl --state-dir /path/to/state/dir1 sql "select name,address,schema,heartbeat from cluster_members"
+go run ./cmd/lxd-site-mgr --state-dir /path/to/state/dir1 sql "select name,address,schema,heartbeat from cluster_members"
 # Note that the schema version is 3, because this example has extended the schema with two additional updates.
 Customized schema updates and API endpoints can be added when first starting a cluster.
 +------+----------------+--------+--------------------------------+
@@ -121,15 +126,15 @@ Customized schema updates and API endpoints can be added when first starting a c
 ```
 * Perform an extended API interaction
 ```bash
-microctl --state-dir /path/to/state/dir2 extended 127.0.0.1:9001
+go run ./cmd/lxd-site-mgr --state-dir /path/to/state/dir2 extended 127.0.0.1:9001
 cluster member at address "127.0.0.1:9002" received message "Testing 1 2 3..." from cluster member at address "127.0.0.1:9001"
 cluster member at address "127.0.0.1:9003" received message "Testing 1 2 3..." from cluster member at address "127.0.0.1:9001"
 ```
 * Perform an SQL query on an extended schema table
 ```bash
-microctl --state-dir /path/to/state/dir1 sql "insert into extended_table (key, value) values ('some_key', 'some_value')"
+go run ./cmd/lxd-site-mgr --state-dir /path/to/state/dir1 sql "insert into extended_table (key, value) values ('some_key', 'some_value')"
 Rows affected: 1
-microctl --state-dir /path/to/state/dir1 sql "select * from extended_table"
+go run ./cmd/lxd-site-mgr --state-dir /path/to/state/dir1 sql "select * from extended_table"
 +----+----------+------------+
 | id |   key    |   value    |
 +----+----------+------------+

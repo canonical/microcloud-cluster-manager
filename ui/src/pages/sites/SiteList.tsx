@@ -1,7 +1,36 @@
 import { FC } from "react";
+import { queryKeys } from "util/queryKeys";
+import { fetchSites } from "api/sites";
+import { useQuery } from "@tanstack/react-query";
+import { MainTable } from "@canonical/react-components";
 
 const SiteList: FC = () => {
-  return <div>Here be sites</div>;
+  const { data: sites = [] } = useQuery({
+    queryKey: [queryKeys.sites],
+    queryFn: () => fetchSites(),
+  });
+
+  return (
+    <div>
+      <h1>Sites</h1>
+      <MainTable
+        headers={[
+          { content: "Name" },
+          { content: "Status" },
+          { content: "Addresses" },
+        ]}
+        rows={sites.map((site) => {
+          return {
+            columns: [
+              { content: site.Name },
+              { content: site.Status },
+              { content: site.Addresses.join(" ") },
+            ],
+          };
+        })}
+      />
+    </div>
+  );
 };
 
 export default SiteList;

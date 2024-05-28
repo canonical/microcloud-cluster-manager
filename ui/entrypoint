@@ -1,0 +1,14 @@
+#! /usr/bin/env bash
+
+set -e
+
+HAPROXY_BIND="$1"
+cp haproxy.cfg haproxy-local.cfg
+sed -i "s#BIND_ADDRESS#$HAPROXY_BIND#" haproxy-local.cfg
+
+haproxy -f haproxy-local.cfg
+
+echo "Listening at http://$HAPROXY_BIND"
+
+vite --host 2>&1 | grep -v :3000
+
