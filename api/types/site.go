@@ -3,7 +3,7 @@ package types
 
 // Site is a standalone or clustered LXD site.
 type Site struct {
-	Name      string
-	Addresses []string
-	Status    string
+	Name      string    `json:"name"`
+	Addresses []string  `json:"addresses"`
+	Status    string    `json:"status"`
 }

@@ -2,6 +2,8 @@
 state
 ui/build
 ui/.dotrun.json
+ui/.env.local
 ui/node_modules
 ui/playwright-report
 test-results
+haproxy-local.cfg
