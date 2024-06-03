@@ -21,7 +21,8 @@
     "hooks-remove": "husky uninstall",
     "start": "./entrypoint 0.0.0.0:${PORT}",
     "backend-run": "cd .. && make && go run ./cmd/lxd-site-mgrd --state-dir ./state/dir1/",
-    "backend-init": "cd .. &&  go run ./cmd/lxd-site-mgr --state-dir ./state/dir1/ init \"member1\" 172.19.0.1:9001 --bootstrap",
+    "backend-init": "cd .. &&  go run ./cmd/lxd-site-mgr --state-dir ./state/dir1/ init \"member1\" 127.0.0.1:9001 --bootstrap",
+    "backend-teardown": "rm -rf ../state && ps aux | grep 'lxd-site-mgrd' | awk '{print $2}' | xargs kill -9",
     "test-e2e": "npx playwright test"
   },
   "dependencies": {

@@ -4,8 +4,10 @@ package main
 import (
 	"context"
 	"database/sql"
+	"net/http"
 	"os"
 
+	"github.com/canonical/lxd/lxd/util"
 	"github.com/canonical/lxd/shared/logger"
 	"github.com/canonical/microcluster/config"
 	"github.com/canonical/microcluster/microcluster"
@@ -13,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/canonical/lxd-site-manager/api"
+	"github.com/canonical/lxd-site-manager/auth"
 	"github.com/canonical/lxd-site-manager/database"
 	"github.com/canonical/lxd-site-manager/version"
 )
@@ -85,6 +88,29 @@ INSERT INTO sites_addresses (site_id, address) VALUES (3, 'https://192.168.0.2:8
 `)
 				return err
 			})
+
+		},
+		// TODO: is there a way that we can setup oidc here?
+		// In lxd, a new oidcVerifier attached to the daemon during initialisation
+		// We could create a new oidcVerifier here and attach it to the state? How do we introduce this in a generic way for state?
+		OnStart: func(s *state.State) error {
+			httpClientFunc := func() (*http.Client, error) {
+				// TODO: use ProxyFromEnvironment from lxd shared/util.go
+				return util.HTTPClient("", nil) // currently assume not using proxy
+			}
+			oidcVerifier, err := auth.NewVerifier(auth.OidcIssuer, auth.OidcClientID, auth.OidcAudience, s.ClusterCert, httpClientFunc)
+			if err != nil {
+				return err
+			}
+
+			/*
+				This required the below changes in microcluster/internal/daemon.go to work
+				state := d.State()
+				err = d.hooks.OnStart(state)
+				d.shutdownCtx = state.Context
+			*/
+			s.Context = context.WithValue(s.Context, "oidcVerifier", oidcVerifier)
+			return nil
 		},
 	}
 
