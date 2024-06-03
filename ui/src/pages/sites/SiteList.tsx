@@ -5,10 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 import { MainTable } from "@canonical/react-components";
 
 const SiteList: FC = () => {
-  const { data: sites = [] } = useQuery({
+  const { data: sites = [], error } = useQuery({
     queryKey: [queryKeys.sites],
     queryFn: () => fetchSites(),
   });
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
 
   return (
     <div>
