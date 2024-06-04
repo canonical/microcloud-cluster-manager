@@ -10,4 +10,7 @@ import (
 var Endpoints = []rest.Endpoint{
 	siteCmd,
 	sitesCmd,
+	uiCmd,
+	uiAssetsCmd,
+	uiImgCmd,
 }

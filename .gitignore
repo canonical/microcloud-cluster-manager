@@ -7,3 +7,6 @@ ui/node_modules
 ui/playwright-report
 test-results
 haproxy-local.cfg
+.vscode
+api/static
+*__debug*

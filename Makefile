@@ -4,6 +4,8 @@ default: build
 # Build targets.
 .PHONY: build
 build:
+	cd ui && yarn build
+	cd api && go generate
 	go install -v ./cmd/lxd-site-mgr
 	go install -v ./cmd/lxd-site-mgrd
 
