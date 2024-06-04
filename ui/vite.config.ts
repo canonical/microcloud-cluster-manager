@@ -4,6 +4,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   plugins: [tsconfigPaths(), react()],
+  base: process.env.VITE_BASE_URL || "/",
   server: {
     port: 3000,
     proxy: {
@@ -17,5 +18,10 @@ export default defineConfig({
   build: {
     outDir: "./build/ui",
     minify: "esbuild",
+  },
+  experimental: {
+    renderBuiltUrl(filename: string) {
+      return "/1.0/ui/" + filename;
+    },
   },
 });
