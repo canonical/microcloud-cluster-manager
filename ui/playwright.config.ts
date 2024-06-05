@@ -29,7 +29,8 @@ const config: PlaywrightTestConfig = {
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     actionTimeout: 0,
-    baseURL: "http://localhost:8414/",
+    baseURL: "https://0.0.0.0:9001/1.0/ui",
+    ignoreHTTPSErrors: true,
     video: "retain-on-failure",
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
