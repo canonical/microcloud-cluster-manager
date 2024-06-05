@@ -6,12 +6,11 @@ import (
 	"net/http"
 
 	"github.com/canonical/lxd/lxd/response"
-
 	"github.com/canonical/microcluster/rest"
 	"github.com/canonical/microcluster/state"
 )
 
-// Copy built UI files to the static directory. Then embed the static directory in go binary.
+// UI files are copied to the static directory. Then embed the static directory in go binary.
 //
 //go:generate cp -r ../ui/build/ui ./static
 //go:embed static
@@ -40,7 +39,7 @@ func serveUI(s *state.State, r *http.Request) response.Response {
 
 	fileServer := http.StripPrefix("/1.0/ui", http.FileServer(http.FS(uiFS)))
 
-	serverUiHandler := func(w http.ResponseWriter) error {
+	serverUIHandler := func(w http.ResponseWriter) error {
 		// microcluster sets the Content-Type header to application/json by default. We need to remove it to serve the UI.
 		w.Header().Del("Content-Type")
 		// Disables the FLoC (Federated Learning of Cohorts) feature on the browser,
@@ -61,5 +60,5 @@ func serveUI(s *state.State, r *http.Request) response.Response {
 		return nil
 	}
 
-	return response.ManualResponse(serverUiHandler)
+	return response.ManualResponse(serverUIHandler)
 }
