@@ -49,13 +49,18 @@ jobs:
             shellcheck
           cd ui && yarn install --immutable
 
-      - name: Build project
+      - name: Build LXD Site Manager
         run: make
 
       - name: Run static analysis
         run: |
           set -eux
           make check-static
+
+      - name: Unit tests (all)
+        run: |
+          set -eux
+          make check-unit
 
   ui-lint:
     runs-on: ubuntu-latest
