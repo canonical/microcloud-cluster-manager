@@ -34,6 +34,13 @@ endif
 	golangci-lint run --timeout 5m
 	revive -set_exit_status ./...
 
+# Cleanup temp and build artifacts.
+.PHONY: clean
+clean:
+	rm -rf api/static
+	rm -rf state
+	cd ui && yarn clean
+
 # Update targets.
 .PHONY: update-gomod
 update-gomod:
