@@ -44,9 +44,7 @@ jobs:
           set -eux
           sudo add-apt-repository ppa:dqlite/dev -y --no-update
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y \
-            libdqlite-dev \
-            shellcheck
+          sudo apt-get install --no-install-recommends -y libdqlite-dev
           cd ui && yarn install --immutable
 
       - name: Build LXD Site Manager
@@ -79,3 +77,92 @@ jobs:
 
       - name: Lint JS
         run: cd ui && yarn lint-js
+
+  ui-e2e-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: ["chromium", "firefox"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22.x
+
+      - name: Install Dotrun
+        run: |
+          sudo pip3 install dotrun requests==2.31.0 # requests version is pinned to avoid breaking changes, can be removed once issue is resolved: https://github.com/docker/docker-py/issues/3256
+
+      - name: Install backend dependencies
+        run: |
+          set -eux
+          sudo add-apt-repository ppa:dqlite/dev -y --no-update
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libdqlite-dev
+
+      - name: Install UI dependencies
+        run: |
+          set -eux
+          cd ui && yarn install --immutable
+      
+      - name: Make LXD Site Manager Binaries
+        run: make compile
+
+      - name: Run site manager daemon
+        run: lxd-site-mgrd --state-dir ./state/dir1/ &
+
+      - name: Initialise site manager
+        run: |
+          lxd-site-mgr --state-dir ./state/dir1/ waitready
+          lxd-site-mgr --state-dir ./state/dir1/ init "member1" 0.0.0.0:9001 --bootstrap
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run Playwright tests
+        run: cd ui && npx playwright test --project ${{ matrix.browser }}
+
+      - name: Upload ${{ matrix.browser }} blob reports to be merged
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.browser }}
+          path: ui/blob-report
+          retention-days: 1
+
+  merge-ui-e2e-reports: 
+    if: always()
+    needs: [ui-e2e-tests]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Download blob reports from GitHub Actions Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: blob-reports
+        pattern: blob-report-*
+        merge-multiple: true
+    
+    # NOTE: there is no need to install playwright dependencies since we only need to merge reports here
+    - name: Merge into HTML Report
+      run: npx playwright merge-reports --reporter html ./blob-reports
+    
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 14

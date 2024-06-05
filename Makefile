@@ -2,6 +2,14 @@
 default: build
 
 # Build targets.
+.PHONY: compile
+compile: build compile-binary
+
+.PHONY: compile-binary
+compile-binary:
+	go build -v ./cmd/lxd-site-mgr
+	go build -v ./cmd/lxd-site-mgrd
+
 .PHONY: build
 build:
 	cd ui && yarn build
