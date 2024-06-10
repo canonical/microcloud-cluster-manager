@@ -12,7 +12,7 @@ import (
 
 // UI files are copied to the static directory. Then embed the static directory in go binary.
 //
-//go:generate cp -r ../ui/build/ui ./static
+//go:generate cp -r ../../ui/build/ui ./static
 //go:embed static
 var UI embed.FS
 

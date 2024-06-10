@@ -12,8 +12,8 @@ import (
 	"github.com/canonical/microcluster/state"
 	"github.com/spf13/cobra"
 
-	"github.com/canonical/lxd-site-manager/api"
-	"github.com/canonical/lxd-site-manager/database"
+	"github.com/canonical/lxd-site-manager/internal/api"
+	"github.com/canonical/lxd-site-manager/internal/database"
 	"github.com/canonical/lxd-site-manager/version"
 )
 

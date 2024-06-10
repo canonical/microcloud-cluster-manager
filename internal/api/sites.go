@@ -11,8 +11,8 @@ import (
 	"github.com/canonical/microcluster/state"
 	"github.com/gorilla/mux"
 
-	"github.com/canonical/lxd-site-manager/api/types"
-	"github.com/canonical/lxd-site-manager/database"
+	"github.com/canonical/lxd-site-manager/internal/api/types"
+	"github.com/canonical/lxd-site-manager/internal/database"
 )
 
 // This is an example extended endpoint on the /1.0 endpoint, reachable at /1.0/extended.
