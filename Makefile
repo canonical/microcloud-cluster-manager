@@ -13,7 +13,7 @@ compile-binary:
 .PHONY: build
 build:
 	cd ui && yarn build
-	cd api && go generate
+	cd internal/api && go generate
 	go install -v ./cmd/lxd-site-mgr
 	go install -v ./cmd/lxd-site-mgrd
 
@@ -39,7 +39,7 @@ endif
 # Cleanup temp and build artifacts.
 .PHONY: clean
 clean:
-	rm -rf api/static
+	rm -rf internal/api/static
 	rm -rf state
 	cd ui && yarn clean
 
