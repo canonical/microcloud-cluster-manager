@@ -16,6 +16,11 @@ import (
 //go:embed static
 var UI embed.FS
 
+var uiRootCmd = rest.Endpoint{
+	Path: "",
+	Get:  rest.EndpointAction{Handler: redirectToUI, AllowUntrusted: true},
+}
+
 var uiCmd = rest.Endpoint{
 	Path: "ui",
 	Get:  rest.EndpointAction{Handler: serveUI, AllowUntrusted: true},
@@ -29,6 +34,10 @@ var uiAssetsCmd = rest.Endpoint{
 var uiImgCmd = rest.Endpoint{
 	Path: "ui/assets/img/{image}",
 	Get:  rest.EndpointAction{Handler: serveUI, AllowUntrusted: true},
+}
+
+func redirectToUI(s *state.State, r *http.Request) response.Response {
+	return response.SyncResponseRedirect("/ui")
 }
 
 func serveUI(s *state.State, r *http.Request) response.Response {

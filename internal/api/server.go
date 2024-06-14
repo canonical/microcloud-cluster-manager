@@ -13,6 +13,7 @@ var Servers = []rest.Server{
 			{
 				Path: "",
 				Endpoints: []rest.Endpoint{
+					uiRootCmd,
 					uiCmd,
 					uiAssetsCmd,
 					uiImgCmd,
