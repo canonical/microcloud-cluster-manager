@@ -65,7 +65,14 @@ func (c *cmdDaemon) run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	m, err := microcluster.App(microcluster.Args{StateDir: c.flagStateDir, SocketGroup: c.flagSocketGroup, Verbose: c.global.flagLogVerbose, Debug: c.global.flagLogDebug})
+	m, err := microcluster.App(microcluster.Args{
+		StateDir:         c.flagStateDir,
+		SocketGroup:      c.flagSocketGroup,
+		Verbose:          c.global.flagLogVerbose,
+		Debug:            c.global.flagLogDebug,
+		ExtensionServers: api.Servers,
+	})
+
 	if err != nil {
 		return err
 	}
@@ -88,7 +95,7 @@ INSERT INTO sites_addresses (site_id, address) VALUES (3, 'https://192.168.0.2:8
 		},
 	}
 
-	return m.Start(cmd.Context(), api.Endpoints, database.SchemaExtensions, api.Extensions(), hooks)
+	return m.Start(cmd.Context(), database.SchemaExtensions, api.Extensions(), hooks)
 }
 
 func main() {
