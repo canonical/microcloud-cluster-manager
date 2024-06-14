@@ -13,6 +13,7 @@ compile-binary:
 .PHONY: build
 build:
 	cd ui && yarn install && yarn build
+	rm -rf internal/api/static &>/dev/null
 	cd internal/api && go generate
 	go install -v ./cmd/lxd-site-mgr
 	go install -v ./cmd/lxd-site-mgrd

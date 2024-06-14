@@ -7,8 +7,8 @@ const App: FC = () => {
   return (
     <Suspense fallback={<div>Loading</div>}>
       <Routes>
-        <Route path="/" element={<Navigate to="/1.0/ui" replace={true} />} />
-        <Route path="/1.0/ui" element={<SiteList />} />
+        <Route path="/" element={<Navigate to="/ui" replace={true} />} />
+        <Route path="/ui" element={<SiteList />} />
       </Routes>
     </Suspense>
   );

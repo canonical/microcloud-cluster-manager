@@ -9,7 +9,7 @@
   },
   "scripts": {
     "clean": "rm -rf node_modules yarn-error.log *.log build/ .jekyll-metadata .bundle playwright-report test-results build",
-    "build": "VITE_BASE_URL=/1.0/ui/ npx vite build --emptyOutDir",
+    "build": "VITE_BASE_URL=/ui/ npx vite build --emptyOutDir",
     "format-js-eslint": "eslint 'src/**/*.{json,jsx,tsx,ts}' 'tests/**/*.ts' --fix",
     "format-js-prettier": "prettier 'src/**/*.{json,jsx,tsx,ts}' 'tests/**/*.ts' --write",
     "format-js": "yarn format-js-eslint && yarn format-js-prettier",

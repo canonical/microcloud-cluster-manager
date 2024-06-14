@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
 test("site list", async ({ page }) => {
-  await page.goto("/1.0/ui");
+  await page.goto("/ui");
   expect(await page.title()).toBe("LXD Site Manager");
 });

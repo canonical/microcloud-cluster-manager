@@ -37,7 +37,7 @@ func serveUI(s *state.State, r *http.Request) response.Response {
 		return response.InternalError(err)
 	}
 
-	fileServer := http.StripPrefix("/1.0/ui", http.FileServer(http.FS(uiFS)))
+	fileServer := http.StripPrefix("/ui", http.FileServer(http.FS(uiFS)))
 
 	serverUIHandler := func(w http.ResponseWriter) error {
 		// microcluster sets the Content-Type header to application/json by default. We need to remove it to serve the UI.

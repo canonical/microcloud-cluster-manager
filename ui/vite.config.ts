@@ -7,13 +7,6 @@ export default defineConfig({
   base: process.env.VITE_BASE_URL || "/",
   server: {
     port: 3000,
-    proxy: {
-      "/ui/assets": {
-        target: "https://localhost:8414/",
-        rewrite: (path) => path.replace(/^\/ui/, ""),
-        secure: false,
-      },
-    },
   },
   build: {
     outDir: "./build/ui",
@@ -21,7 +14,7 @@ export default defineConfig({
   },
   experimental: {
     renderBuiltUrl(filename: string) {
-      return "/1.0/ui/" + filename;
+      return "/ui/" + filename;
     },
   },
 });
