@@ -2,9 +2,11 @@ import { FC } from "react";
 import { queryKeys } from "util/queryKeys";
 import { fetchSites } from "api/sites";
 import { useQuery } from "@tanstack/react-query";
-import { MainTable } from "@canonical/react-components";
+import { Button, MainTable } from "@canonical/react-components";
+import { useNavigate } from "react-router-dom";
 
 const SiteList: FC = () => {
+  const navigate = useNavigate();
   const { data: sites = [] } = useQuery({
     queryKey: [queryKeys.sites],
     queryFn: fetchSites,
@@ -29,6 +31,8 @@ const SiteList: FC = () => {
           };
         })}
       />
+
+      <Button onClick={() => navigate("/oidc/logout")}>Logout</Button>
     </div>
   );
 };
