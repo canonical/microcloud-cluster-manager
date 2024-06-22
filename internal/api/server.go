@@ -11,12 +11,12 @@ var siteManagementListener = rest.Server{
 	Resources: []rest.Resources{
 		{
 			PathPrefix: types.NoPrefix,
-			Endpoints: []rest.Endpoint{
-				uiRootCmd,
-				uiCmd,
-				uiAssetsCmd,
-				uiImgCmd,
-			},
+			Endpoints: append(
+				[]rest.Endpoint{
+					uiRootCmd,
+				},
+				generateUIEndpoints()...,
+			),
 		},
 		{
 			PathPrefix: types.APIVersionPrefix,

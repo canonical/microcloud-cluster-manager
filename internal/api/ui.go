@@ -4,6 +4,7 @@ import (
 	"embed"
 	"io/fs"
 	"net/http"
+	"os"
 
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/microcluster/rest"
@@ -21,19 +22,22 @@ var uiRootCmd = rest.Endpoint{
 	Get:  rest.EndpointAction{Handler: redirectToUI, AllowUntrusted: true},
 }
 
-var uiCmd = rest.Endpoint{
-	Path: "ui",
-	Get:  rest.EndpointAction{Handler: serveUI, AllowUntrusted: true},
+var uiServeRoutes = []string{
+	"ui",
+	"ui/assets/{asset}",
+	"ui/assets/img/{image}",
 }
 
-var uiAssetsCmd = rest.Endpoint{
-	Path: "ui/assets/{asset}",
-	Get:  rest.EndpointAction{Handler: serveUI, AllowUntrusted: true},
-}
+func generateUIEndpoints() []rest.Endpoint {
+	var uiEndpoints []rest.Endpoint
+	for _, route := range uiServeRoutes {
+		uiEndpoints = append(uiEndpoints, rest.Endpoint{
+			Path: route,
+			Get:  rest.EndpointAction{Handler: serveUI, AllowUntrusted: true},
+		})
+	}
 
-var uiImgCmd = rest.Endpoint{
-	Path: "ui/assets/img/{image}",
-	Get:  rest.EndpointAction{Handler: serveUI, AllowUntrusted: true},
+	return uiEndpoints
 }
 
 func redirectToUI(s *state.State, r *http.Request) response.Response {
@@ -46,7 +50,13 @@ func serveUI(s *state.State, r *http.Request) response.Response {
 		return response.InternalError(err)
 	}
 
-	fileServer := http.StripPrefix("/ui", http.FileServer(http.FS(uiFS)))
+	// Need to implement the http.FileSystem interface to serve the UI files.
+	// Need custom Open method to serve index.html when the requested file is not found.
+	// e.g. /ui/unknown-file -> /ui/index.html
+	// This will allow react router to handle the routing to the correct component file.
+	uiHTTPDir := uiHTTPDir{http.FS(uiFS)}
+
+	fileServer := http.StripPrefix("/ui", http.FileServer(uiHTTPDir))
 
 	serverUIHandler := func(w http.ResponseWriter) error {
 		// microcluster sets the Content-Type header to application/json by default. We need to remove it to serve the UI.
@@ -70,4 +80,18 @@ func serveUI(s *state.State, r *http.Request) response.Response {
 	}
 
 	return response.ManualResponse(serverUIHandler)
+}
+
+type uiHTTPDir struct {
+	http.FileSystem
+}
+
+// Open opens the HTTP server for the user interface files.
+func (fs uiHTTPDir) Open(name string) (http.File, error) {
+	fsFile, err := fs.FileSystem.Open(name)
+	if err != nil && os.IsNotExist(err) {
+		return fs.FileSystem.Open("index.html")
+	}
+
+	return fsFile, err
 }
