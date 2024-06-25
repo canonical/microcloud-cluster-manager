@@ -126,7 +126,7 @@ jobs:
           lxd-site-mgr --state-dir ./state/dir1/ init "member1" 0.0.0.0:9001 --bootstrap
 
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps ${{ matrix.browser }}
+        run: cd ui && npx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Run Playwright tests
         run: cd ui && npx playwright test --project ${{ matrix.browser }}
