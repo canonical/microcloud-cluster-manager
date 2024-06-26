@@ -17,14 +17,16 @@ const SiteList: FC = () => {
         headers={[
           { content: "Name" },
           { content: "Status" },
-          { content: "Addresses" },
+          { content: "JoinedAt" },
+          { content: "Instance Count" },
         ]}
         rows={sites.map((site) => {
           return {
             columns: [
               { content: site.name },
               { content: site.status },
-              { content: site.addresses.join(" ") },
+              { content: site.joined_at },
+              { content: site.instance_count },
             ],
           };
         })}
