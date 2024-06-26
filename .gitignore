@@ -10,5 +10,3 @@ haproxy-local.cfg
 .vscode
 internal/api/static
 *__debug*
-lxd-site-mgr
-lxd-site-mgrd
