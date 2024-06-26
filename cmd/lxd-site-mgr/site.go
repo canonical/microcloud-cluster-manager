@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"sort"
-	"strings"
 
 	cli "github.com/canonical/lxd/shared/cmd"
 	microClient "github.com/canonical/microcluster/client"
@@ -88,16 +87,18 @@ func (c *cmdSiteList) run(cmd *cobra.Command, args []string) error {
 
 	headers := []string{
 		"NAME",
-		"ADDRESSES",
-		"STATUS",
+		"SITE_CERTIFICATE",
+		"CREATED_AT",
+		"UPDATED_AT",
 	}
 
 	var rows [][]string
 	for _, site := range sites {
 		rows = append(rows, []string{
 			site.Name,
-			strings.Join(site.Addresses, "\n"),
-			site.Status,
+			site.SiteCertificate,
+			site.CreatedAt.String(),
+			site.LastStatusUpdateAt.String(),
 		})
 	}
 
