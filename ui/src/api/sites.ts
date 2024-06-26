@@ -10,3 +10,14 @@ export const fetchSites = (): Promise<Site[]> => {
       .catch(reject);
   });
 };
+
+export const deleteSite = (siteName: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    fetch(`/1.0/sites/${siteName}`, {
+      method: "DELETE",
+    })
+      .then(handleResponse)
+      .then(() => resolve())
+      .catch(reject);
+  });
+};

@@ -23,8 +23,9 @@ var sitesCmd = rest.Endpoint{
 }
 
 var siteCmd = rest.Endpoint{
-	Path: "sites/{siteName}",
-	Get:  rest.EndpointAction{Handler: siteGet, AllowUntrusted: true},
+	Path:   "sites/{siteName}",
+	Get:    rest.EndpointAction{Handler: siteGet, AllowUntrusted: true},
+	Delete: rest.EndpointAction{Handler: siteDelete, AllowUntrusted: true},
 }
 
 func sitesGet(s *state.State, r *http.Request) response.Response {
@@ -65,6 +66,23 @@ func siteGet(s *state.State, r *http.Request) response.Response {
 	}
 
 	return response.SyncResponse(true, toSitesAPI(dbSiteMemberStatuses)[0])
+}
+
+func siteDelete(s *state.State, r *http.Request) response.Response {
+	siteName, err := url.PathUnescape(mux.Vars(r)["siteName"])
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		return database.DeleteCoreSite(ctx, tx, siteName)
+	})
+
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	return response.EmptySyncResponse
 }
 
 func toSitesAPI(dbEntries []database.MemberStatusWithSiteInfo) []types.Site {
