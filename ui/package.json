@@ -21,7 +21,7 @@
     "hooks-remove": "husky uninstall",
     "start": "./entrypoint 0.0.0.0:${PORT}",
     "backend-run": "cd .. && make && go run ./cmd/lxd-site-mgrd --state-dir ./state/dir1/",
-    "backend-init": "cd .. &&  go run ./cmd/lxd-site-mgr --state-dir ./state/dir1/ waitready && go run ./cmd/lxd-site-mgr --state-dir ./state/dir1/ init \"member1\" 0.0.0.0:9001 --bootstrap",
+    "backend-init": "cd .. &&  go run ./cmd/lxd-site-mgr --state-dir ./state/dir1/ waitready && go run ./cmd/lxd-site-mgr --state-dir ./state/dir1/ init \"member1\" 0.0.0.0:9001 --bootstrap && scripts/generate_dummy_data.sh",
     "test-e2e": "npx playwright test"
   },
   "dependencies": {
