@@ -3,8 +3,8 @@ module github.com/canonical/lxd-site-manager
 go 1.22.4
 
 require (
-	github.com/canonical/lxd v0.0.0-20240620053341-f9f88f4e77ae
-	github.com/canonical/microcluster v0.0.0-20240619220640-13fd3afb2506
+	github.com/canonical/lxd v0.0.0-20240627131353-762f7dc5c3dc
+	github.com/canonical/microcluster v0.0.0-20240627164504-db6075a4cf00
 	github.com/gorilla/mux v1.8.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.8.1

@@ -63,16 +63,17 @@ func (c *cmdDaemon) run(cmd *cobra.Command, args []string) error {
 	}
 
 	m, err := microcluster.App(microcluster.Args{
-		StateDir:         c.flagStateDir,
-		SocketGroup:      c.flagSocketGroup,
-		Verbose:          c.global.flagLogVerbose,
-		Debug:            c.global.flagLogDebug,
-		ExtensionServers: api.Servers,
+		StateDir:    c.flagStateDir,
+		SocketGroup: c.flagSocketGroup,
+		Verbose:     c.global.flagLogVerbose,
+		Debug:       c.global.flagLogDebug,
 	})
 
 	if err != nil {
 		return err
 	}
+
+	m.AddServers(api.Servers)
 
 	return m.Start(cmd.Context(), database.SchemaExtensions, api.Extensions(), &config.Hooks{})
 }

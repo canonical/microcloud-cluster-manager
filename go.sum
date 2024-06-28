@@ -54,10 +54,10 @@ github.com/bmatcuk/doublestar/v4 v4.6.1 h1:FH9SifrbvJhnlQpztAx++wlkk70QBf0iBWDwN
 github.com/bmatcuk/doublestar/v4 v4.6.1/go.mod h1:xBQ8jztBU6kakFMg+8WGxn0c6z1fTSPVIjEY1Wr7jzc=
 github.com/canonical/go-dqlite v1.21.0 h1:4gLDdV2GF+vg0yv9Ff+mfZZNQ1JGhnQ3GnS2GeZPHfA=
 github.com/canonical/go-dqlite v1.21.0/go.mod h1:Uvy943N8R4CFUAs59A1NVaziWY9nJ686lScY7ywurfg=
-github.com/canonical/lxd v0.0.0-20240620053341-f9f88f4e77ae h1:hGqmOkL92DGFd0nxz7WaH2cTRyZ5zLtR6fUO2hSII5M=
-github.com/canonical/lxd v0.0.0-20240620053341-f9f88f4e77ae/go.mod h1:no3pt2T1PrTq/FME3rZ5N/JH4GtLClSEThhOtOUb1X8=
-github.com/canonical/microcluster v0.0.0-20240619220640-13fd3afb2506 h1:THNA3lk99FUji5xiwsq0eWoDLlaOplH7YLE6T5YFnqw=
-github.com/canonical/microcluster v0.0.0-20240619220640-13fd3afb2506/go.mod h1:hQyeUVMU2XaiXy5InYE8YkbNtyJdZp8BPXRTNL9G950=
+github.com/canonical/lxd v0.0.0-20240627131353-762f7dc5c3dc h1:nMKzg9LGFTLnR+lW2EhAEz/DhapkzaDJ6FqwLrh7Nzw=
+github.com/canonical/lxd v0.0.0-20240627131353-762f7dc5c3dc/go.mod h1:NwDny7JgwlXTia0vK2Tyk1RFBwp3btGcQIKiSLG2dKw=
+github.com/canonical/microcluster v0.0.0-20240627164504-db6075a4cf00 h1:p7Dy31jSPiaZ0g8FyZFeCHqMPLJiDoHLSKtoJ+TDF98=
+github.com/canonical/microcluster v0.0.0-20240627164504-db6075a4cf00/go.mod h1:hQyeUVMU2XaiXy5InYE8YkbNtyJdZp8BPXRTNL9G950=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
@@ -90,8 +90,8 @@ github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyT
 github.com/fvbommel/sortorder v1.1.0 h1:fUmoe+HLsBTctBDoaBwpQo5N+nrCp8g/BjKb/6ZQmYw=
 github.com/fvbommel/sortorder v1.1.0/go.mod h1:uk88iVf1ovNn1iLfgUVU2F9o5eO30ui720w+kxuqRs0=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
-github.com/go-chi/chi/v5 v5.0.13 h1:JlH2F2M8qnwl0N1+JFFzlX9TlKJYas3aPXdiuTmJL+w=
-github.com/go-chi/chi/v5 v5.0.13/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
+github.com/go-chi/chi/v5 v5.0.14 h1:PyEwo2Vudraa0x/Wl6eDRRW2NXBvekgfxyydcM0WGE0=
+github.com/go-chi/chi/v5 v5.0.14/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
