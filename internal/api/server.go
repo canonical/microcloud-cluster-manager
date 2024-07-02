@@ -7,7 +7,8 @@ import (
 )
 
 var siteManagementListener = rest.Server{
-	CoreAPI: true,
+	CoreAPI:   true,
+	ServeUnix: true,
 	Resources: []rest.Resources{
 		{
 			PathPrefix: types.NoPrefix,
@@ -23,6 +24,7 @@ var siteManagementListener = rest.Server{
 			Endpoints: []rest.Endpoint{
 				siteCmd,
 				sitesCmd,
+				configsCmd,
 			},
 		},
 	},
