@@ -3,26 +3,28 @@ package types
 
 import "time"
 
-// MemberStatus is the status of a member in a site.
-type MemberStatus struct {
-	Address      string  `json:"address"`
-	Architecture string  `json:"architecture"`
-	Role         string  `json:"role"`
-	UsageCPU     float64 `json:"usage_cpu"`
-	UsageMemory  float64 `json:"usage_memory"`
-	UsageDisk    float64 `json:"usage_disk"`
-	Status       string  `json:"status"`
+// Status is a simple struct that contains a status and a count.
+type Status struct {
+	Status string `json:"status"`
+	Count  int    `json:"count"`
 }
 
 // Site is a standalone or clustered LXD site.
 type Site struct {
-	Name               string         `json:"name"`
-	SiteCertificate    string         `json:"site_certificate"`
-	Status             string         `json:"status"`
-	InstanceCount      int            `json:"instance_count"`
-	InstanceStatuses   string         `json:"instance_statuses"`
-	JoinedAt           time.Time      `json:"joined_at"`
-	CreatedAt          time.Time      `json:"created_at"`
-	LastStatusUpdateAt time.Time      `json:"last_status_update_at"`
-	MemberStatuses     []MemberStatus `json:"member_statuses"`
+	Name               string    `json:"name"`
+	SiteCertificate    string    `json:"site_certificate"`
+	Status             string    `json:"status"`
+	CPUTotalCount      float64   `json:"cpu_total_count"`
+	CPUUsage           float64   `json:"cpu_usage"`
+	MemoryTotalAmount  float64   `json:"memory_total_amount"`
+	MemoryUsage        float64   `json:"memory_usage"`
+	DiskTotalSize      float64   `json:"disk_total_size"`
+	DiskUsage          float64   `json:"disk_usage"`
+	MemberCount        int       `json:"member_count"`
+	MemberStatuses     []Status  `json:"member_statuses"`
+	InstanceCount      int       `json:"instance_count"`
+	InstanceStatuses   []Status  `json:"instance_statuses"`
+	JoinedAt           time.Time `json:"joined_at"`
+	CreatedAt          time.Time `json:"created_at"`
+	LastStatusUpdateAt time.Time `json:"last_status_update_at"`
 }
