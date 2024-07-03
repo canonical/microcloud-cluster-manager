@@ -1,0 +1,179 @@
+package api
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+
+	"github.com/canonical/lxd/lxd/response"
+	"github.com/canonical/microcluster/rest"
+	microTypes "github.com/canonical/microcluster/rest/types"
+	"github.com/canonical/microcluster/state"
+	"github.com/gorilla/mux"
+
+	"github.com/canonical/lxd-site-manager/internal/api/types"
+	"github.com/canonical/lxd-site-manager/internal/database"
+)
+
+var memberConfigCmd = rest.Endpoint{
+	Path:  "member/{name}/config",
+	Patch: rest.EndpointAction{Handler: memberConfigPatch, AllowUntrusted: true},
+	Get:   rest.EndpointAction{Handler: memberConfigGet, AllowUntrusted: true},
+}
+
+var memberConfigsCmd = rest.Endpoint{
+	Path: "member/config",
+	Get:  rest.EndpointAction{Handler: memberConfigsGet, AllowUntrusted: true},
+}
+
+// update existing member configs.
+func memberConfigPatch(s *state.State, r *http.Request) response.Response {
+	memberName, err := url.PathUnescape(mux.Vars(r)["name"])
+	if err != nil {
+		return response.BadRequest(err)
+	}
+
+	var payload types.MemberConfigPatch
+	err = json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		return response.BadRequest(err)
+	}
+
+	// validations
+	if payload.HTTPSAddress == "" && payload.ExternalAddress == "" {
+		return response.BadRequest(fmt.Errorf("no fields provided to update"))
+	}
+
+	if payload.HTTPSAddress != "" {
+		_, err = microTypes.ParseAddrPort(payload.HTTPSAddress)
+		if err != nil {
+			return response.BadRequest(fmt.Errorf("invalid https_address for member %q: %w", memberName, err))
+		}
+	}
+
+	if payload.ExternalAddress != "" {
+		_, err = microTypes.ParseAddrPort(payload.ExternalAddress)
+		if err != nil {
+			return response.BadRequest(fmt.Errorf("invalid external_address for member %q: %w", memberName, err))
+		}
+	}
+
+	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		// get existing member config entry and use it as a base
+		filter := database.ManagerMemberConfigFilter{
+			Target: &memberName,
+		}
+
+		dbConfigs, err := database.GetManagerMemberConfig(ctx, tx, filter)
+		if err != nil {
+			return err
+		}
+
+		memberConfigExist := len(dbConfigs) > 0
+
+		// create new member config
+		if !memberConfigExist {
+			if payload.HTTPSAddress == "" {
+				return fmt.Errorf("https_address is required")
+			}
+
+			_, err := database.CreateManagerMemberConfig(ctx, tx, database.ManagerMemberConfig{
+				Target:          memberName,
+				HTTPSAddress:    payload.HTTPSAddress,
+				ExternalAddress: payload.ExternalAddress,
+			})
+
+			return err
+		}
+
+		// update existing member config
+		// if no value is provided, keep the existing one
+		HTTPSAddress := dbConfigs[0].HTTPSAddress
+		externalAddress := dbConfigs[0].ExternalAddress
+
+		if payload.HTTPSAddress != "" {
+			HTTPSAddress = payload.HTTPSAddress
+		}
+
+		if payload.ExternalAddress != "" {
+			externalAddress = payload.ExternalAddress
+		}
+
+		return database.UpdateManagerMemberConfig(ctx, tx, memberName, database.ManagerMemberConfig{
+			Target:          memberName,
+			HTTPSAddress:    HTTPSAddress,
+			ExternalAddress: externalAddress,
+		})
+	})
+
+	if err != nil {
+		if err.Error() == "https_address is required" {
+			return response.BadRequest(err)
+		}
+
+		return response.SmartError(err)
+	}
+
+	return response.EmptySyncResponse
+}
+
+func memberConfigGet(s *state.State, r *http.Request) response.Response {
+	memberName, err := url.PathUnescape(mux.Vars(r)["name"])
+	if err != nil {
+		return response.BadRequest(err)
+	}
+
+	var dbConfigs []database.ManagerMemberConfig
+	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		var err error
+		filter := database.ManagerMemberConfigFilter{
+			Target: &memberName,
+		}
+
+		dbConfigs, err = database.GetManagerMemberConfig(ctx, tx, filter)
+		return err
+	})
+
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	if len(dbConfigs) == 0 {
+		return response.NotFound(fmt.Errorf("Member not found"))
+	}
+
+	return response.SyncResponse(true, toMemberConfigsAPI(dbConfigs)[0])
+}
+
+func memberConfigsGet(s *state.State, r *http.Request) response.Response {
+	var dbConfigs []database.ManagerMemberConfig
+	err := s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		var err error
+		dbConfigs, err = database.GetManagerMemberConfig(ctx, tx)
+		return err
+	})
+
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	return response.SyncResponse(true, toMemberConfigsAPI(dbConfigs))
+}
+
+func toMemberConfigsAPI(dbConfigs []database.ManagerMemberConfig) []types.MemberConfig {
+	var memberConfigs []types.MemberConfig
+	for _, c := range dbConfigs {
+		memberConfigs = append(memberConfigs, types.MemberConfig{
+			Target: c.Target,
+			MemberConfigPatch: types.MemberConfigPatch{
+				HTTPSAddress:    c.HTTPSAddress,
+				ExternalAddress: c.ExternalAddress,
+			},
+		})
+	}
+
+	return memberConfigs
+}
