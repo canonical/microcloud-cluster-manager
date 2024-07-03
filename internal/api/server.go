@@ -25,6 +25,8 @@ var siteManagementListener = rest.Server{
 				siteCmd,
 				sitesCmd,
 				configsCmd,
+				memberConfigCmd,
+				memberConfigsCmd,
 			},
 		},
 	},
