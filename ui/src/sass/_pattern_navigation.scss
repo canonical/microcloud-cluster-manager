@@ -1,0 +1,148 @@
+@import "./breakpoints";
+
+.p-panel__logo {
+  margin-top: 0;
+
+  .p-panel__logo-image {
+    height: 36px;
+    margin-top: -3px;
+    max-width: inherit;
+  }
+
+  .logo-text {
+    color: #fff;
+    left: 47px;
+    position: absolute;
+    top: $spv--x-small;
+  }
+
+  @include mobile {
+    .logo-text {
+      left: 38px;
+    }
+  }
+
+  @include extra-large {
+    .p-panel__logo-image {
+      height: 40px;
+    }
+
+    .logo-text {
+      left: 52px;
+    }
+  }
+}
+
+@include desktop {
+  .l-navigation.is-collapsed .logo-text {
+    display: none;
+  }
+}
+
+@include mobile {
+  .l-navigation {
+    transition-duration: 0s !important;
+  }
+}
+
+.sidenav-toggle-wrapper {
+  background: $colors--dark-theme--background-default;
+  bottom: 0;
+  padding: $spv--small $sph--x-large $spv--large $sph--large;
+  position: absolute;
+  text-align: right;
+  width: 100%;
+
+  .sidenav-toggle {
+    background-color: #444 !important;
+  }
+}
+
+.l-navigation.is-collapsed {
+  .sidenav-toggle-wrapper {
+    text-align: left;
+
+    .sidenav-toggle {
+      rotate: 180deg;
+    }
+  }
+}
+
+.l-navigation.is-collapsed:focus-within {
+  transform: translateX(-100%);
+}
+
+@include desktop {
+  .l-navigation.is-collapsed,
+  .l-navigation.is-collapsed:focus-within,
+  .l-navigation.is-collapsed:hover {
+    transform: translateX(0);
+    width: 4rem;
+  }
+}
+
+.l-navigation .p-panel__content {
+  padding-bottom: 0;
+}
+
+.l-navigation .p-panel__header {
+  z-index: 1001;
+}
+
+.l-navigation {
+  background: $colors--dark-theme--background-default !important;
+  color: $color-mid-light !important;
+}
+
+.sidenav-top-ul::after {
+  display: none;
+}
+
+.sidenav-bottom-ul {
+  bottom: $spv--x-large;
+  position: absolute;
+  width: 15rem;
+}
+
+.p-side-navigation__item--title {
+  white-space: nowrap;
+}
+
+.navigation-hr {
+  margin-left: $sph--x-large;
+  margin-top: $spv--small;
+}
+
+.l-navigation.is-pinned {
+  .secondary {
+    .p-side-navigation__link {
+      padding-left: 5rem;
+    }
+
+    .p-side-navigation__icon {
+      left: 2.5rem;
+    }
+  }
+}
+
+.p-side-logout {
+  rotate: 90deg;
+}
+
+@include mobile {
+  .navigation-hr {
+    margin-left: $sph--large;
+  }
+
+  .l-navigation.is-pinned {
+    .secondary {
+      .p-side-navigation__link {
+        padding-left: 4.5rem;
+      }
+
+      .p-side-navigation__icon {
+        left: 2rem;
+      }
+    }
+  }
+}

@@ -1,1 +1,38 @@
 @import "vanilla-framework/scss/build";
+@import "settings";
+@import "pattern_navigation";
+@import "./breakpoints";
+@import "pattern_icon";
+@include custom-p-icon;
+@include vf-p-icon-units;
+@include vf-p-icon-profile;
+@include vf-p-icon-export;
+
+body {
+  // needed for notification list expanding animation
+  overflow: hidden;
+}
+
+.p-heading--4 {
+  padding: 0;
+}
+
+// smaller padding on top of all pages to have the logo flush on top
+.p-panel__title,
+.p-panel__controls {
+  padding-top: $spv--x-small;
+}
+
+.p-panel__title {
+  padding-bottom: $spv--medium;
+}
+
+@media (width >= 460px) {
+  .l-application .l-aside.is-narrow {
+    width: 25.65rem;
+  }
+}
+
+.l-main .row {
+  max-width: none;
+}

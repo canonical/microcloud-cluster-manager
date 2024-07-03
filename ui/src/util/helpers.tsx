@@ -11,3 +11,6 @@ export const handleResponse = async (response: Response) => {
   }
   return response.json();
 };
+
+export const isWidthBelow = (width: number): boolean =>
+  window.innerWidth < width;
