@@ -23,13 +23,21 @@ import (
 
 // SiteDetail represents all site level data.
 type SiteDetail struct {
-	CoreSiteID       int    `db:"primary=true"`
-	Status           string `db:"primary=true"`
-	ID               int
-	InstanceCount    int
-	InstanceStatuses string
-	JoinedAt         time.Time
-	UpdatedAt        time.Time
+	CoreSiteID        int    `db:"primary=true"`
+	Status            string `db:"primary=true"`
+	ID                int
+	CPUTotalCount     float64
+	CPUUsage          float64
+	MemoryTotalAmount float64
+	MemoryUsage       float64
+	DiskTotalSize     float64
+	DiskUsage         float64
+	InstanceCount     int
+	InstanceStatuses  string
+	MemberCount       int
+	MemberStatuses    string
+	JoinedAt          time.Time
+	UpdatedAt         time.Time
 }
 
 // SiteDetailFilter is a required struct for use with lxd-generate. It is used for filtering fields on database fetches.

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -16,7 +17,6 @@ import (
 	"github.com/canonical/lxd-site-manager/internal/database"
 )
 
-// This is an example extended endpoint on the /1.0 endpoint, reachable at /1.0/extended.
 var sitesCmd = rest.Endpoint{
 	Path: "sites",
 	Get:  rest.EndpointAction{Handler: sitesGet, AllowUntrusted: true},
@@ -29,11 +29,11 @@ var siteCmd = rest.Endpoint{
 }
 
 func sitesGet(s *state.State, r *http.Request) response.Response {
-	var dbMemberStatusesForAllSites []database.MemberStatusWithSiteInfo
+	var dbSiteDetails []database.CoreSiteWithDetails
 
 	err := s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		var err error
-		dbMemberStatusesForAllSites, err = database.GetMemberStatusesWithSiteInfo(ctx, tx)
+		dbSiteDetails, err = database.GetCoreSitesWithDetails(ctx, tx)
 		return err
 	})
 
@@ -41,7 +41,12 @@ func sitesGet(s *state.State, r *http.Request) response.Response {
 		return response.SmartError(err)
 	}
 
-	return response.SyncResponse(true, toSitesAPI(dbMemberStatusesForAllSites))
+	result, err := toSitesAPI(dbSiteDetails)
+	if err != nil {
+		return response.InternalError(err)
+	}
+
+	return response.SyncResponse(true, result)
 }
 
 func siteGet(s *state.State, r *http.Request) response.Response {
@@ -50,10 +55,10 @@ func siteGet(s *state.State, r *http.Request) response.Response {
 		return response.SmartError(err)
 	}
 
-	var dbSiteMemberStatuses []database.MemberStatusWithSiteInfo
+	var dbSiteDetails []database.CoreSiteWithDetails
 	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		var err error
-		dbSiteMemberStatuses, err = database.GetMemberStatusesWithSiteInfoBySiteName(ctx, tx, siteName)
+		dbSiteDetails, err = database.GetCoreSiteWithDetailBySiteName(ctx, tx, siteName)
 		return err
 	})
 
@@ -61,11 +66,16 @@ func siteGet(s *state.State, r *http.Request) response.Response {
 		return response.SmartError(err)
 	}
 
-	if len(dbSiteMemberStatuses) == 0 {
+	if len(dbSiteDetails) == 0 {
 		return response.NotFound(fmt.Errorf("Site not found"))
 	}
 
-	return response.SyncResponse(true, toSitesAPI(dbSiteMemberStatuses)[0])
+	result, err := toSitesAPI(dbSiteDetails)
+	if err != nil {
+		return response.InternalError(err)
+	}
+
+	return response.SyncResponse(true, result[0])
 }
 
 func siteDelete(s *state.State, r *http.Request) response.Response {
@@ -85,42 +95,41 @@ func siteDelete(s *state.State, r *http.Request) response.Response {
 	return response.EmptySyncResponse
 }
 
-func toSitesAPI(dbEntries []database.MemberStatusWithSiteInfo) []types.Site {
+func toSitesAPI(dbEntries []database.CoreSiteWithDetails) ([]types.Site, error) {
 	// generate lookup for site details
-	siteDetails := make(map[int]*types.Site)
+	var sites []types.Site
 	for _, e := range dbEntries {
-		if _, ok := siteDetails[e.ID]; !ok {
-			siteDetails[e.ID] = &types.Site{
-				Name:               e.Name,
-				SiteCertificate:    e.SiteCertificate,
-				Status:             e.Status,
-				InstanceCount:      e.InstanceCount,
-				InstanceStatuses:   e.InstanceStatuses,
-				JoinedAt:           e.SiteJoinedAt,
-				CreatedAt:          e.SiteCreatedAt,
-				LastStatusUpdateAt: e.SiteUpdatedAt,
-				MemberStatuses:     []types.MemberStatus{},
-			}
+		var ms []types.Status
+		err := json.Unmarshal([]byte(e.MemberStatuses), &ms)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to unmarshal member statuses: %w", err)
 		}
 
-		siteDetails[e.ID].MemberStatuses = append(
-			siteDetails[e.ID].MemberStatuses,
-			types.MemberStatus{
-				Address:      e.Address,
-				Architecture: e.Architecture,
-				Role:         e.Role,
-				UsageCPU:     e.UsageCPU,
-				UsageMemory:  e.UsageMemory,
-				UsageDisk:    e.UsageDisk,
-				Status:       e.MemberStatus,
-			},
-		)
+		var is []types.Status
+		err = json.Unmarshal([]byte(e.InstanceStatuses), &is)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to unmarshal instance statuses: %w", err)
+		}
+
+		sites = append(sites, types.Site{
+			Name:               e.Name,
+			SiteCertificate:    e.SiteCertificate,
+			Status:             e.Status,
+			CPUTotalCount:      e.CPUTotalCount,
+			CPUUsage:           e.CPUUsage,
+			MemoryTotalAmount:  e.MemoryTotalAmount,
+			MemoryUsage:        e.MemoryUsage,
+			DiskTotalSize:      e.DiskTotalSize,
+			DiskUsage:          e.DiskUsage,
+			MemberCount:        e.MemberCount,
+			MemberStatuses:     ms,
+			InstanceCount:      e.InstanceCount,
+			InstanceStatuses:   is,
+			JoinedAt:           e.SiteJoinedAt,
+			CreatedAt:          e.SiteCreatedAt,
+			LastStatusUpdateAt: e.SiteUpdatedAt,
+		})
 	}
 
-	var sites []types.Site
-	for _, s := range siteDetails {
-		sites = append(sites, *s)
-	}
-
-	return sites
+	return sites, nil
 }

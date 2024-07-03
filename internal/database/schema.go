@@ -40,26 +40,18 @@ func schemaUpdate1(ctx context.Context, tx *sql.Tx) error {
             core_site_id            INTEGER NOT NULL,
             joined_at               DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             status                  TEXT NOT NULL CHECK(status IN ('PENDING_APPROVAL', 'ACTIVE')),
+            cpu_total_count         FLOAT NOT NULL DEFAULT 0,
+            cpu_usage               FLOAT NOT NULL DEFAULT 0,
+            memory_total_amount     FLOAT NOT NULL DEFAULT 0,
+            memory_usage            FLOAT NOT NULL DEFAULT 0,
+            disk_total_size         FLOAT NOT NULL DEFAULT 0,
+            disk_usage              FLOAT NOT NULL DEFAULT 0,
             instance_count          INTEGER NOT NULL DEFAULT 0,
             instance_statuses       TEXT NOT NULL,
+            member_count            INTEGER NOT NULL DEFAULT 0,
+            member_statuses         TEXT NOT NULL,
             updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (core_site_id) REFERENCES core_sites (id) ON DELETE CASCADE
-        );
-
-        CREATE TABLE site_member_statuses (
-            id                      INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-            core_site_id            INTEGER NOT NULL,
-            member_name             TEXT NOT NULL,
-            address                 TEXT NOT NULL,
-            architecture            TEXT NOT NULL,
-            role                    TEXT NOT NULL,  
-            usage_cpu               FLOAT NOT NULL,
-            usage_memory            FLOAT NOT NULL,
-            usage_disk              FLOAT NOT NULL,
-            status                  TEXT NOT NULL,  
-            updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (core_site_id) REFERENCES core_sites (id) ON DELETE CASCADE,
-            UNIQUE (core_site_id, address)
         );
 
         CREATE TABLE manager_configs (
