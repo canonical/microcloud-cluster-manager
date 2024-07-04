@@ -1,10 +1,12 @@
 .idea
-state
+/state/
 ui/build
 ui/.dotrun.json
 ui/.env.local
 ui/node_modules
 ui/playwright-report
+ui/keys
+ui/tests/.auth
 test-results
 haproxy-local.cfg
 .vscode
