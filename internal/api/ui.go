@@ -27,6 +27,7 @@ var uiServeRoutes = []string{
 	"ui/assets/{asset}",
 	"ui/assets/img/{image}",
 	"ui/sites",
+	"ui/login",
 }
 
 func generateUIEndpoints() []rest.Endpoint {
