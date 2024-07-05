@@ -1,0 +1,5 @@
+domain: lxd-site-manager
+
+image: prod-comms.ps5.docker-registry.canonical.com/lxd-site-manager
+
+useProxy: false

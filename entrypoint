@@ -1,0 +1,5 @@
+#!/bin/bash
+
+haproxy -f ui/haproxy-demo.cfg
+
+./lxd-site-mgrd --state-dir ./state/dir1/
