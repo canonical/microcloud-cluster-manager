@@ -20,6 +20,7 @@ import (
 var externalSiteJoinTokensCmd = rest.Endpoint{
 	Path: "external-site-join-token",
 	Post: rest.EndpointAction{Handler: tokenPost, AllowUntrusted: true},
+	Get:  rest.EndpointAction{Handler: tokenGet, AllowUntrusted: true},
 }
 
 func tokenPost(s *state.State, r *http.Request) response.Response {
@@ -90,6 +91,30 @@ func tokenPost(s *state.State, r *http.Request) response.Response {
 	}
 
 	return response.SyncResponse(true, types.ExternalSiteTokenPostResponse{Token: encodedToken})
+}
+
+func tokenGet(s *state.State, r *http.Request) response.Response {
+	var tokens []database.CoreSiteToken
+	err := s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		var err error
+		tokens, err = database.GetCoreSiteTokens(ctx, tx)
+		return err
+	})
+
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	var responseTokens []types.ExternalSiteToken
+	for _, token := range tokens {
+		responseTokens = append(responseTokens, types.ExternalSiteToken{
+			Expiry:   token.Expiry,
+			SiteName: token.SiteName,
+			CreateAt: token.CreatedAt,
+		})
+	}
+
+	return response.SyncResponse(true, responseTokens)
 }
 
 // getSiteManagerAddresses returns the addresses of the site managers that are online.
