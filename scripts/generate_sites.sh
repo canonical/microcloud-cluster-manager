@@ -40,8 +40,15 @@ done
 # Combine the values into a single insert statement
 SITE_DETAILS_INSERT+=$(IFS=,; echo "${SITE_DETAILS_VALUES[*]}")";"
 
+# if flag --local exists then use go run to run site-mgr
+if [ "$1" == "--local" ]; then
+    COMMAND="go run ./cmd/lxd-site-mgr"
+else
+    COMMAND="./lxd-site-mgr"
+fi
+
 # Execute the combined SQL commands
-go run ./cmd/lxd-site-mgr --state-dir ./state/dir1 sql "
+$COMMAND --state-dir ./state/dir1 sql "
     $CORE_SITES_INSERT
     $SITE_DETAILS_INSERT
 "
