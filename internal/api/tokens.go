@@ -6,12 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/shared"
 	"github.com/canonical/microcluster/rest"
 	"github.com/canonical/microcluster/state"
+	"github.com/gorilla/mux"
 
 	"github.com/canonical/lxd-site-manager/internal/api/types"
 	"github.com/canonical/lxd-site-manager/internal/database"
@@ -21,6 +23,11 @@ var externalSiteJoinTokensCmd = rest.Endpoint{
 	Path: "external-site-join-token",
 	Post: rest.EndpointAction{Handler: tokenPost, AllowUntrusted: true},
 	Get:  rest.EndpointAction{Handler: tokenGet, AllowUntrusted: true},
+}
+
+var externalSiteJoinTokenCmd = rest.Endpoint{
+	Path:   "external-site-join-token/{siteName}",
+	Delete: rest.EndpointAction{Handler: tokenDelete, AllowUntrusted: true},
 }
 
 func tokenPost(s *state.State, r *http.Request) response.Response {
@@ -115,6 +122,27 @@ func tokenGet(s *state.State, r *http.Request) response.Response {
 	}
 
 	return response.SyncResponse(true, responseTokens)
+}
+
+func tokenDelete(s *state.State, r *http.Request) response.Response {
+	siteName, err := url.PathUnescape(mux.Vars(r)["siteName"])
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	if siteName == "" {
+		return response.BadRequest(fmt.Errorf("site name is required"))
+	}
+
+	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		return database.DeleteCoreSiteToken(ctx, tx, siteName)
+	})
+
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	return response.SyncResponse(true, nil)
 }
 
 // getSiteManagerAddresses returns the addresses of the site managers that are online.

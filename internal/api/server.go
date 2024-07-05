@@ -28,6 +28,7 @@ var siteManagementListener = rest.Server{
 				memberConfigCmd,
 				memberConfigsCmd,
 				externalSiteJoinTokensCmd,
+				externalSiteJoinTokenCmd,
 			},
 		},
 	},
