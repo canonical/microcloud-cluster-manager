@@ -62,6 +62,9 @@ func main() {
 	var cmdSite = cmdSite{common: &commonCmd}
 	app.AddCommand(cmdSite.command())
 
+	var cmdConfig = cmdConfig{common: &commonCmd}
+	app.AddCommand(cmdConfig.command())
+
 	app.InitDefaultHelpCmd()
 
 	err := app.Execute()

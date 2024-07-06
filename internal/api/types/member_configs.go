@@ -11,3 +11,11 @@ type MemberConfig struct {
 	Target string `json:"target"`
 	MemberConfigPatch
 }
+
+// ValidMemberConfigKeys returns a map of valid member config keys.
+func ValidMemberConfigKeys() map[string]bool {
+	return map[string]bool{
+		"https_address":    true,
+		"external_address": true,
+	}
+}
