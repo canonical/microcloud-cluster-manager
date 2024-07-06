@@ -24,7 +24,7 @@ var siteManagementListener = rest.Server{
 			Endpoints: []rest.Endpoint{
 				siteCmd,
 				sitesCmd,
-				configsCmd,
+				managerConfigsCmd,
 				memberConfigCmd,
 				memberConfigsCmd,
 			},

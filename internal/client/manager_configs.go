@@ -11,8 +11,8 @@ import (
 	"github.com/canonical/lxd-site-manager/internal/api/types"
 )
 
-// ConfigsPatchCmd notifies other members of the cluster that the manager configs have been updated.
-func ConfigsPatchCmd(ctx context.Context, c *client.Client, configs *types.ManagerConfigs) error {
+// ManagerConfigsPatchCmd sends a PATCH request to /1.0/config.
+func ManagerConfigsPatchCmd(ctx context.Context, c *client.Client, configs *types.ManagerConfigs) error {
 	queryCtx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
 

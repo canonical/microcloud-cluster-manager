@@ -16,14 +16,14 @@ import (
 	"github.com/canonical/lxd-site-manager/internal/database"
 )
 
-var configsCmd = rest.Endpoint{
+var managerConfigsCmd = rest.Endpoint{
 	Path:  "config",
-	Patch: rest.EndpointAction{Handler: configsPatch, AllowUntrusted: true},
-	Get:   rest.EndpointAction{Handler: configsGet, AllowUntrusted: true},
+	Patch: rest.EndpointAction{Handler: managerConfigPatch, AllowUntrusted: true},
+	Get:   rest.EndpointAction{Handler: managerConfigsGet, AllowUntrusted: true},
 }
 
 // partially update manager configs, replace configs only if they exist in payload.
-func configsPatch(s *state.State, r *http.Request) response.Response {
+func managerConfigPatch(s *state.State, r *http.Request) response.Response {
 	var payload types.ManagerConfigs
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
@@ -52,7 +52,7 @@ func configsPatch(s *state.State, r *http.Request) response.Response {
 	return response.EmptySyncResponse
 }
 
-func configsGet(s *state.State, r *http.Request) response.Response {
+func managerConfigsGet(s *state.State, r *http.Request) response.Response {
 	var dbConfigs []database.ManagerConfig
 	err := s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		var err error
@@ -64,10 +64,10 @@ func configsGet(s *state.State, r *http.Request) response.Response {
 		return response.SmartError(err)
 	}
 
-	return response.SyncResponse(true, toConfigsAPI(dbConfigs))
+	return response.SyncResponse(true, toManagerConfigsAPI(dbConfigs))
 }
 
-func toConfigsAPI(dbConfigs []database.ManagerConfig) types.ManagerConfigs {
+func toManagerConfigsAPI(dbConfigs []database.ManagerConfig) types.ManagerConfigs {
 	configs := types.ManagerConfigs{
 		Config: map[string]string{},
 	}

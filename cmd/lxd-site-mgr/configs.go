@@ -87,7 +87,7 @@ func (c *cmdConfigSet) run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return client.ConfigsPatchCmd(cmd.Context(), cli, &configs)
+	return client.ManagerConfigsPatchCmd(cmd.Context(), cli, &configs)
 }
 
 func hasKeyValue(args []string) bool {
@@ -100,7 +100,7 @@ func hasKeyValue(args []string) bool {
 	return false
 }
 
-func parseConfig(arg string) (string, string) {
+func parseConfig(arg string) (key string, val string) {
 	return strings.Split(arg, "=")[0], strings.Split(arg, "=")[1]
 }
 
@@ -122,15 +122,15 @@ func getMemberConfigs(args []string) (types.MemberConfigPatch, error) {
 		}
 
 		key, val := parseConfig(arg)
-		if _, ok := validMemberConfigKeys[key]; ok {
-			switch key {
-			case "https_address":
-				configs.HTTPSAddress = val
-			case "external_address":
-				configs.ExternalAddress = val
-			}
-		} else {
+		if _, ok := validMemberConfigKeys[key]; !ok {
 			return types.MemberConfigPatch{}, fmt.Errorf("Invalid member config key: %s", key)
+		}
+
+		switch key {
+		case "https_address":
+			configs.HTTPSAddress = val
+		case "external_address":
+			configs.ExternalAddress = val
 		}
 	}
 
@@ -149,11 +149,11 @@ func getManagerConfigs(args []string) (types.ManagerConfigs, error) {
 		}
 
 		key, val := parseConfig(arg)
-		if _, ok := validManagerConfigs[key]; ok {
-			configs.Config[key] = val
-		} else {
+		if _, ok := validManagerConfigs[key]; !ok {
 			return types.ManagerConfigs{}, fmt.Errorf("Invalid manager config key: %s", key)
 		}
+
+		configs.Config[key] = val
 	}
 
 	return configs, nil
