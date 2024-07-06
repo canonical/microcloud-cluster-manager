@@ -6,6 +6,7 @@ import (
 
 	"github.com/canonical/microcluster/microcluster"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 
 	"github.com/canonical/lxd-site-manager/internal/api/types"
 	"github.com/canonical/lxd-site-manager/internal/client"
@@ -24,6 +25,9 @@ func (c *cmdConfig) command() *cobra.Command {
 
 	var cmdSet = cmdConfigSet{common: c.common}
 	cmd.AddCommand(cmdSet.command())
+
+	var cmdShow = cmdConfigShow{common: c.common}
+	cmd.AddCommand(cmdShow.command())
 
 	return cmd
 }
@@ -157,4 +161,59 @@ func getManagerConfigs(args []string) (types.ManagerConfigs, error) {
 	}
 
 	return configs, nil
+}
+
+type cmdConfigShow struct {
+	common *CmdControl
+}
+
+func (c *cmdConfigShow) command() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "show [<member>]",
+		Short: "Show member or site manager configurations.",
+		Example: `
+			lxd-site-mgr config show [<member>]
+			Will show member specific configurations.
+
+			lxd-site-mgr config show
+			Will show all LXd site manager configurations.
+		`,
+		RunE: c.run,
+	}
+
+	return cmd
+}
+
+func (c *cmdConfigShow) run(cmd *cobra.Command, args []string) error {
+	m, err := microcluster.App(microcluster.Args{StateDir: c.common.FlagStateDir, Verbose: c.common.FlagLogVerbose, Debug: c.common.FlagLogDebug})
+	if err != nil {
+		return err
+	}
+
+	cli, err := m.LocalClient()
+	if err != nil {
+		return err
+	}
+
+	showMemberConfigs := len(args) > 0
+	var configs any
+
+	if showMemberConfigs {
+		configs, err = client.MemberConfigGetCmd(cmd.Context(), cli, args[0])
+	} else {
+		configs, err = client.ManagerConfigsGetCmd(cmd.Context(), cli)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	data, err := yaml.Marshal(configs)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s", data)
+
+	return nil
 }

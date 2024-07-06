@@ -24,3 +24,18 @@ func ManagerConfigsPatchCmd(ctx context.Context, c *client.Client, configs *type
 
 	return nil
 }
+
+// ManagerConfigsGetCmd sends a GET request to /1.0/config.
+func ManagerConfigsGetCmd(ctx context.Context, c *client.Client) (types.ManagerConfigs, error) {
+	queryCtx, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
+
+	var managerConfigs types.ManagerConfigs
+	err := c.Query(queryCtx, "GET", types.APIVersionPrefix, api.NewURL().Path("config"), nil, &managerConfigs)
+	if err != nil {
+		clientURL := c.URL()
+		return types.ManagerConfigs{}, fmt.Errorf("Failed performing action on %q: %w", clientURL.String(), err)
+	}
+
+	return managerConfigs, nil
+}

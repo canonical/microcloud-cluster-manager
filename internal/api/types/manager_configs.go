@@ -4,7 +4,7 @@ import "fmt"
 
 // ManagerConfigs represents the site manager configs that are cluster wide.
 type ManagerConfigs struct {
-	Config map[string]string `json:"config"`
+	Config map[string]string `json:"config" yaml:"config"`
 }
 
 // ValidManagerConfigKeys returns a map of valid manager config keys.

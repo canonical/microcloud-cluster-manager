@@ -25,3 +25,19 @@ func MemberConfigPatchCmd(ctx context.Context, c *client.Client, member string, 
 
 	return nil
 }
+
+// MemberConfigGetCmd sends a GET request to /1.0/member/{name}/config.
+func MemberConfigGetCmd(ctx context.Context, c *client.Client, member string) (types.MemberConfig, error) {
+	queryCtx, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
+
+	var memberConfig types.MemberConfig
+	url := api.NewURL().Path("member", member, "config")
+	err := c.Query(queryCtx, "GET", types.APIVersionPrefix, url, nil, &memberConfig)
+	if err != nil {
+		clientURL := c.URL()
+		return types.MemberConfig{}, fmt.Errorf("Failed performing action on %q: %w", clientURL.String(), err)
+	}
+
+	return memberConfig, nil
+}
