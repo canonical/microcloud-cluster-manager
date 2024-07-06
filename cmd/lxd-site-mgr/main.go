@@ -1,4 +1,4 @@
-// Package microctl provides the main client tool.
+// Package lxd-site-mgr provides the main client tool.
 package main
 
 import (
@@ -9,7 +9,7 @@ import (
 	"github.com/canonical/lxd-site-manager/version"
 )
 
-// CmdControl has functions that are common to the microctl commands.
+// CmdControl has functions that are common to the lxd-site-mgr commands.
 // command line tools.
 type CmdControl struct {
 	cmd *cobra.Command //nolint:structcheck,unused // FIXME: Remove the nolint flag when this is in use.
@@ -26,8 +26,8 @@ func main() {
 	commonCmd := CmdControl{}
 
 	app := &cobra.Command{
-		Use:               "microctl",
-		Short:             "Command for managing the MicroCluster daemon",
+		Use:               "lxd-site-mgr",
+		Short:             "Command for managing the LXD site manager daemon",
 		Version:           version.Version,
 		SilenceUsage:      true,
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},

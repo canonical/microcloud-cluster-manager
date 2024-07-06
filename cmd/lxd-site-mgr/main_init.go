@@ -23,8 +23,10 @@ func (c *cmdInit) command() *cobra.Command {
 		Use:   "init <name> <address>",
 		Short: "Initialize the network endpoint and create or join a new cluster",
 		RunE:  c.run,
-		Example: `  microctl init member1 127.0.0.1:8443 --bootstrap
-    microctl init member1 127.0.0.1:8443 --token <token>`,
+		Example: `
+			lxd-site-mgr init member1 0.0.0.0:9001 --bootstrap
+    		lxd-site-mgr init member1 0.0.0.0:9001 --token <token>
+		`,
 	}
 
 	cmd.Flags().BoolVar(&c.flagBootstrap, "bootstrap", false, "Configure a new cluster with this daemon")
@@ -42,7 +44,7 @@ func (c *cmdInit) run(cmd *cobra.Command, args []string) error {
 
 	m, err := microcluster.App(microcluster.Args{StateDir: c.common.FlagStateDir, Verbose: c.common.FlagLogVerbose, Debug: c.common.FlagLogDebug})
 	if err != nil {
-		return fmt.Errorf("Unable to configure MicroCluster: %w", err)
+		return fmt.Errorf("Unable to configure LXD site manager cluster: %w", err)
 	}
 
 	conf := make(map[string]string, len(c.flagConfig))
