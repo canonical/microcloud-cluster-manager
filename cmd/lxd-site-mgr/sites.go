@@ -21,7 +21,7 @@ type cmdSite struct {
 func (c *cmdSite) command() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "site",
-		Short: "Manage sites",
+		Short: "Manage LXD sites",
 		RunE:  c.run,
 	}
 
@@ -114,7 +114,7 @@ type cmdSiteShow struct {
 func (c *cmdSiteShow) command() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show <name>",
-		Short: "Show a site",
+		Short: "Show a LXD site",
 		RunE:  c.run,
 	}
 

@@ -16,7 +16,7 @@ type cmdSecrets struct {
 func (c *cmdSecrets) command() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tokens",
-		Short: "Manage join tokens for MicroCluster",
+		Short: "Manage join tokens for LXD site manager cluster",
 		RunE:  c.run,
 	}
 
