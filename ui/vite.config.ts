@@ -9,7 +9,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/ui/assets": {
-        target: "http://0.0.0.0:8414/",
+        target: "https://0.0.0.0:8414/",
         rewrite: (path) => path.replace(/^\/ui/, ""),
         secure: false,
       },
