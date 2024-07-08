@@ -1,12 +1,20 @@
 @import "vanilla-framework/scss/build";
+@import "vanilla-framework";
 @import "settings";
 @import "pattern_navigation";
-@import "./breakpoints";
 @import "pattern_icon";
+@import "cluster_list";
+@import "breakpoints";
+@import "meter";
+@import "clustercpu";
 @include custom-p-icon;
 @include vf-p-icon-units;
 @include vf-p-icon-profile;
 @include vf-p-icon-export;
+@include vf-p-icon-status-failed-small;
+@include vf-p-icon-status-succeeded-small;
+@include vf-p-icon-switcher-environments;
+@include vf-p-icons;
 
 body {
   // needed for notification list expanding animation

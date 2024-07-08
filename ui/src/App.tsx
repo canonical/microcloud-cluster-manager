@@ -2,18 +2,18 @@ import React, { FC, lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "util/queryKeys";
-import { fetchSites } from "api/sites";
+import { fetchClusters } from "api/clusters";
 import NoMatch from "pages/NoMatch";
 
-const SiteList = lazy(() => import("pages/sites/SiteList"));
+const ClusterList = lazy(() => import("pages/clusters/ClusterList"));
 const Login = lazy(() => import("pages/Login"));
 
 const App: FC = () => {
   const { pathname } = useLocation();
 
   const { error, isLoading } = useQuery({
-    queryKey: [queryKeys.sites],
-    queryFn: fetchSites,
+    queryKey: [queryKeys.clusters],
+    queryFn: fetchClusters,
     retry: false,
   });
 
@@ -39,7 +39,7 @@ const App: FC = () => {
           element={<Navigate to="/ui/sites" replace={true} />}
         />
         <Route path="/ui/login" element={<Login />} />
-        <Route path="/ui/sites" element={<SiteList />} />
+        <Route path="/ui/sites" element={<ClusterList />} />
         <Route path="*" element={<NoMatch />} />
       </Routes>
     </Suspense>

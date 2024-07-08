@@ -1,3 +1,3 @@
 export const queryKeys = {
-  sites: "sites",
+  clusters: "clusters",
 };

@@ -84,11 +84,12 @@ const Navigation: FC = () => {
                     title={`Sites List`}
                     onClick={softToggleMenu}
                   >
-                    <Icon
-                      className="is-light p-side-navigation__icon"
-                      name="units"
+                    <img
+                      src="/ui/assets/img/cluster-icon.svg"
+                      alt="cluster-icon"
+                      className="p-side-navigation__icon"
                     />
-                    Sites
+                    Clusters
                   </NavLink>
                 </li>
               )}

@@ -1,24 +1,24 @@
 import { ActionButton } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
-import { deleteSite } from "api/sites";
+import { deleteCluster } from "api/clusters";
 import { FC, useState } from "react";
 import { queryKeys } from "util/queryKeys";
 
 type Props = {
-  siteName: string;
+  clusterName: string;
 };
 
-const DeleteSiteButton: FC<Props> = ({ siteName }) => {
+const DeleteClusterButton: FC<Props> = ({ clusterName }) => {
   const queryClient = useQueryClient();
   const [isLoading, setLoading] = useState(false);
 
-  const handleDeleteSite = async () => {
+  const handleDeleteCluster = async () => {
     setLoading(true);
 
     try {
-      await deleteSite(siteName);
+      await deleteCluster(clusterName);
       await queryClient.invalidateQueries({
-        queryKey: [queryKeys.sites],
+        queryKey: [queryKeys.clusters],
       });
       setLoading(false);
     } catch (error) {
@@ -28,7 +28,7 @@ const DeleteSiteButton: FC<Props> = ({ siteName }) => {
 
   return (
     <ActionButton
-      onClick={() => void handleDeleteSite()}
+      onClick={() => void handleDeleteCluster()}
       appearance="negative"
       loading={isLoading}
     >
@@ -37,4 +37,4 @@ const DeleteSiteButton: FC<Props> = ({ siteName }) => {
   );
 };
 
-export default DeleteSiteButton;
+export default DeleteClusterButton;
