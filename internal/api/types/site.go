@@ -15,7 +15,9 @@ type Site struct {
 	SiteCertificate    string    `json:"site_certificate"`
 	Status             string    `json:"status"`
 	CPUTotalCount      float64   `json:"cpu_total_count"`
-	CPUUsage           float64   `json:"cpu_usage"`
+	CPULoad1           string    `json:"cpu_load_1"`
+	CPULoad5           string    `json:"cpu_load_5"`
+	CPULoad15          string    `json:"cpu_load_15"`
 	MemoryTotalAmount  float64   `json:"memory_total_amount"`
 	MemoryUsage        float64   `json:"memory_usage"`
 	DiskTotalSize      float64   `json:"disk_total_size"`

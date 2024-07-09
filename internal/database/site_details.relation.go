@@ -18,7 +18,9 @@ type CoreSiteWithDetails struct {
 	SiteCreatedAt     time.Time `db:"created_at"`
 	Status            string    `db:"status"`
 	CPUTotalCount     float64   `db:"cpu_total_count"`
-	CPUUsage          float64   `db:"cpu_usage"`
+	CPULoad1          string    `db:"cpu_load_1"`
+	CPULoad5          string    `db:"cpu_load_5"`
+	CPULoad15         string    `db:"cpu_load_15"`
 	MemoryTotalAmount float64   `db:"memory_total_amount"`
 	MemoryUsage       float64   `db:"memory_usage"`
 	DiskTotalSize     float64   `db:"disk_total_size"`
@@ -35,7 +37,7 @@ func mainCoreSiteDetailQuery() string {
 	return `
 		SELECT
 			core_sites.id, core_sites.name, core_sites.site_certificate, core_sites.created_at,
-			site_details.status, site_details.cpu_total_count, site_details.cpu_usage, site_details.memory_total_amount, site_details.memory_usage, 
+			site_details.status, site_details.cpu_total_count, site_details.cpu_load_1, site_details.cpu_load_5, site_details.cpu_load_15, site_details.memory_total_amount, site_details.memory_usage, 
 			site_details.disk_total_size, site_details.disk_usage, site_details.instance_count, site_details.instance_statuses, 
 			site_details.member_count, site_details.member_statuses, site_details.joined_at, site_details.updated_at
 		FROM site_details
@@ -69,7 +71,9 @@ func GetCoreSitesWithDetails(ctx context.Context, tx *sql.Tx) ([]CoreSiteWithDet
 			&c.SiteCreatedAt,
 			&c.Status,
 			&c.CPUTotalCount,
-			&c.CPUUsage,
+			&c.CPULoad1,
+			&c.CPULoad5,
+			&c.CPULoad15,
 			&c.MemoryTotalAmount,
 			&c.MemoryUsage,
 			&c.DiskTotalSize,
@@ -117,7 +121,9 @@ func GetCoreSiteWithDetailBySiteName(ctx context.Context, tx *sql.Tx, siteName s
 			&c.SiteCreatedAt,
 			&c.Status,
 			&c.CPUTotalCount,
-			&c.CPUUsage,
+			&c.CPULoad1,
+			&c.CPULoad5,
+			&c.CPULoad15,
 			&c.MemoryTotalAmount,
 			&c.MemoryUsage,
 			&c.DiskTotalSize,

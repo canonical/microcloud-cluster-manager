@@ -18,20 +18,20 @@ import (
 var _ = api.ServerEnvironment{}
 
 var siteDetailObjects = cluster.RegisterStmt(`
-SELECT site_details.core_site_id, site_details.status, site_details.id, site_details.cpu_total_count, site_details.cpu_usage, site_details.memory_total_amount, site_details.memory_usage, site_details.disk_total_size, site_details.disk_usage, site_details.instance_count, site_details.instance_statuses, site_details.member_count, site_details.member_statuses, site_details.joined_at, site_details.updated_at
+SELECT site_details.core_site_id, site_details.status, site_details.id, site_details.cpu_total_count, site_details.cpu_load_1, site_details.cpu_load_5, site_details.cpu_load_15, site_details.memory_total_amount, site_details.memory_usage, site_details.disk_total_size, site_details.disk_usage, site_details.instance_count, site_details.instance_statuses, site_details.member_count, site_details.member_statuses, site_details.joined_at, site_details.updated_at
   FROM site_details
   ORDER BY site_details.core_site_id, site_details.status
 `)
 
 var siteDetailObjectsByStatus = cluster.RegisterStmt(`
-SELECT site_details.core_site_id, site_details.status, site_details.id, site_details.cpu_total_count, site_details.cpu_usage, site_details.memory_total_amount, site_details.memory_usage, site_details.disk_total_size, site_details.disk_usage, site_details.instance_count, site_details.instance_statuses, site_details.member_count, site_details.member_statuses, site_details.joined_at, site_details.updated_at
+SELECT site_details.core_site_id, site_details.status, site_details.id, site_details.cpu_total_count, site_details.cpu_load_1, site_details.cpu_load_5, site_details.cpu_load_15, site_details.memory_total_amount, site_details.memory_usage, site_details.disk_total_size, site_details.disk_usage, site_details.instance_count, site_details.instance_statuses, site_details.member_count, site_details.member_statuses, site_details.joined_at, site_details.updated_at
   FROM site_details
   WHERE ( site_details.status = ? )
   ORDER BY site_details.core_site_id, site_details.status
 `)
 
 var siteDetailObjectsByCoreSiteID = cluster.RegisterStmt(`
-SELECT site_details.core_site_id, site_details.status, site_details.id, site_details.cpu_total_count, site_details.cpu_usage, site_details.memory_total_amount, site_details.memory_usage, site_details.disk_total_size, site_details.disk_usage, site_details.instance_count, site_details.instance_statuses, site_details.member_count, site_details.member_statuses, site_details.joined_at, site_details.updated_at
+SELECT site_details.core_site_id, site_details.status, site_details.id, site_details.cpu_total_count, site_details.cpu_load_1, site_details.cpu_load_5, site_details.cpu_load_15, site_details.memory_total_amount, site_details.memory_usage, site_details.disk_total_size, site_details.disk_usage, site_details.instance_count, site_details.instance_statuses, site_details.member_count, site_details.member_statuses, site_details.joined_at, site_details.updated_at
   FROM site_details
   WHERE ( site_details.core_site_id = ? )
   ORDER BY site_details.core_site_id, site_details.status
@@ -43,20 +43,20 @@ SELECT site_details.id FROM site_details
 `)
 
 var siteDetailCreate = cluster.RegisterStmt(`
-INSERT INTO site_details (core_site_id, status, cpu_total_count, cpu_usage, memory_total_amount, memory_usage, disk_total_size, disk_usage, instance_count, instance_statuses, member_count, member_statuses, joined_at, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO site_details (core_site_id, status, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, disk_total_size, disk_usage, instance_count, instance_statuses, member_count, member_statuses, joined_at, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `)
 
 var siteDetailUpdate = cluster.RegisterStmt(`
 UPDATE site_details
-  SET core_site_id = ?, status = ?, cpu_total_count = ?, cpu_usage = ?, memory_total_amount = ?, memory_usage = ?, disk_total_size = ?, disk_usage = ?, instance_count = ?, instance_statuses = ?, member_count = ?, member_statuses = ?, joined_at = ?, updated_at = ?
+  SET core_site_id = ?, status = ?, cpu_total_count = ?, cpu_load_1 = ?, cpu_load_5 = ?, cpu_load_15 = ?, memory_total_amount = ?, memory_usage = ?, disk_total_size = ?, disk_usage = ?, instance_count = ?, instance_statuses = ?, member_count = ?, member_statuses = ?, joined_at = ?, updated_at = ?
  WHERE id = ?
 `)
 
 // siteDetailColumns returns a string of column names to be used with a SELECT statement for the entity.
 // Use this function when building statements to retrieve database entries matching the SiteDetail entity.
 func siteDetailColumns() string {
-	return "sites_details.core_site_id, sites_details.status, sites_details.id, sites_details.cpu_total_count, sites_details.cpu_usage, sites_details.memory_total_amount, sites_details.memory_usage, sites_details.disk_total_size, sites_details.disk_usage, sites_details.instance_count, sites_details.instance_statuses, sites_details.member_count, sites_details.member_statuses, sites_details.joined_at, sites_details.updated_at"
+	return "sites_details.core_site_id, sites_details.status, sites_details.id, sites_details.cpu_total_count, site_details.cpu_load_1, site_details.cpu_load_5, site_details.cpu_load_15, sites_details.memory_total_amount, sites_details.memory_usage, sites_details.disk_total_size, sites_details.disk_usage, sites_details.instance_count, sites_details.instance_statuses, sites_details.member_count, sites_details.member_statuses, sites_details.joined_at, sites_details.updated_at"
 }
 
 // getSiteDetails can be used to run handwritten sql.Stmts to return a slice of objects.
@@ -65,7 +65,7 @@ func getSiteDetails(ctx context.Context, stmt *sql.Stmt, args ...any) ([]SiteDet
 
 	dest := func(scan func(dest ...any) error) error {
 		s := SiteDetail{}
-		err := scan(&s.CoreSiteID, &s.Status, &s.ID, &s.CPUTotalCount, &s.CPUUsage, &s.MemoryTotalAmount, &s.MemoryUsage, &s.DiskTotalSize, &s.DiskUsage, &s.InstanceCount, &s.InstanceStatuses, &s.MemberCount, &s.MemberStatuses, &s.JoinedAt, &s.UpdatedAt)
+		err := scan(&s.CoreSiteID, &s.Status, &s.ID, &s.CPUTotalCount, &s.CPULoad1, &s.CPULoad5, &s.CPULoad15, &s.MemoryTotalAmount, &s.MemoryUsage, &s.DiskTotalSize, &s.DiskUsage, &s.InstanceCount, &s.InstanceStatuses, &s.MemberCount, &s.MemberStatuses, &s.JoinedAt, &s.UpdatedAt)
 		if err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func getSiteDetailsRaw(ctx context.Context, tx *sql.Tx, sql string, args ...any)
 
 	dest := func(scan func(dest ...any) error) error {
 		s := SiteDetail{}
-		err := scan(&s.CoreSiteID, &s.Status, &s.ID, &s.CPUTotalCount, &s.CPUUsage, &s.MemoryTotalAmount, &s.MemoryUsage, &s.DiskTotalSize, &s.DiskUsage, &s.InstanceCount, &s.InstanceStatuses, &s.MemberCount, &s.MemberStatuses, &s.JoinedAt, &s.UpdatedAt)
+		err := scan(&s.CoreSiteID, &s.Status, &s.ID, &s.CPUTotalCount, &s.CPULoad1, &s.CPULoad5, &s.CPULoad15, &s.MemoryTotalAmount, &s.MemoryUsage, &s.DiskTotalSize, &s.DiskUsage, &s.InstanceCount, &s.InstanceStatuses, &s.MemberCount, &s.MemberStatuses, &s.JoinedAt, &s.UpdatedAt)
 		if err != nil {
 			return err
 		}
@@ -270,23 +270,25 @@ func CreateSiteDetail(ctx context.Context, tx *sql.Tx, object SiteDetail) (int64
 		return -1, api.StatusErrorf(http.StatusConflict, "This \"sites_details\" entry already exists")
 	}
 
-	args := make([]any, 14)
+	args := make([]any, 16)
 
 	// Populate the statement arguments.
 	args[0] = object.CoreSiteID
 	args[1] = object.Status
 	args[2] = object.CPUTotalCount
-	args[3] = object.CPUUsage
-	args[4] = object.MemoryTotalAmount
-	args[5] = object.MemoryUsage
-	args[6] = object.DiskTotalSize
-	args[7] = object.DiskUsage
-	args[8] = object.InstanceCount
-	args[9] = object.InstanceStatuses
-	args[10] = object.MemberCount
-	args[11] = object.MemberStatuses
-	args[12] = object.JoinedAt
-	args[13] = object.UpdatedAt
+	args[3] = object.CPULoad1
+	args[4] = object.CPULoad5
+	args[5] = object.CPULoad15
+	args[6] = object.MemoryTotalAmount
+	args[7] = object.MemoryUsage
+	args[8] = object.DiskTotalSize
+	args[9] = object.DiskUsage
+	args[10] = object.InstanceCount
+	args[11] = object.InstanceStatuses
+	args[12] = object.MemberCount
+	args[13] = object.MemberStatuses
+	args[14] = object.JoinedAt
+	args[15] = object.UpdatedAt
 
 	// Prepared statement to use.
 	stmt, err := cluster.Stmt(tx, siteDetailCreate)
@@ -321,7 +323,7 @@ func UpdateSiteDetail(ctx context.Context, tx *sql.Tx, coreSiteID int, status st
 		return fmt.Errorf("Failed to get \"siteDetailUpdate\" prepared statement: %w", err)
 	}
 
-	result, err := stmt.Exec(object.CoreSiteID, object.Status, object.CPUTotalCount, object.CPUUsage, object.MemoryTotalAmount, object.MemoryUsage, object.DiskTotalSize, object.DiskUsage, object.InstanceCount, object.InstanceStatuses, object.MemberCount, object.MemberStatuses, object.JoinedAt, object.UpdatedAt, id)
+	result, err := stmt.Exec(object.CoreSiteID, object.Status, object.CPUTotalCount, object.CPULoad1, object.CPULoad5, object.CPULoad15, object.MemoryTotalAmount, object.MemoryUsage, object.DiskTotalSize, object.DiskUsage, object.InstanceCount, object.InstanceStatuses, object.MemberCount, object.MemberStatuses, object.JoinedAt, object.UpdatedAt, id)
 	if err != nil {
 		return fmt.Errorf("Update \"sites_details\" entry failed: %w", err)
 	}
