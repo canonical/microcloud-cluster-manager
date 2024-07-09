@@ -27,7 +27,9 @@ type SiteDetail struct {
 	Status            string `db:"primary=true"`
 	ID                int
 	CPUTotalCount     float64
-	CPUUsage          float64
+	CPULoad1          string `db:"sql=site_details.cpu_load_1"`
+	CPULoad5          string `db:"sql=site_details.cpu_load_5"`
+	CPULoad15         string `db:"sql=site_details.cpu_load_15"`
 	MemoryTotalAmount float64
 	MemoryUsage       float64
 	DiskTotalSize     float64
