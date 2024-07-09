@@ -23,7 +23,7 @@ import (
 
 // SiteDetail represents all site level data.
 type SiteDetail struct {
-	CoreSiteID        int    `db:"primary=true"`
+	CoreSiteID        int64  `db:"primary=true"`
 	Status            string `db:"primary=true"`
 	ID                int
 	CPUTotalCount     float64
@@ -45,5 +45,5 @@ type SiteDetail struct {
 // SiteDetailFilter is a required struct for use with lxd-generate. It is used for filtering fields on database fetches.
 type SiteDetailFilter struct {
 	Status     *string
-	CoreSiteID *int
+	CoreSiteID *int64
 }

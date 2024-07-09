@@ -49,9 +49,9 @@ func schemaUpdate1(ctx context.Context, tx *sql.Tx) error {
             disk_total_size         FLOAT NOT NULL DEFAULT 0,
             disk_usage              FLOAT NOT NULL DEFAULT 0,
             instance_count          INTEGER NOT NULL DEFAULT 0,
-            instance_statuses       TEXT NOT NULL,
+            instance_statuses       TEXT NOT NULL DEFAULT '[]',
             member_count            INTEGER NOT NULL DEFAULT 0,
-            member_statuses         TEXT NOT NULL,
+            member_statuses         TEXT NOT NULL DEFAULT '[]',
             updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (core_site_id) REFERENCES core_sites (id) ON DELETE CASCADE
         );

@@ -200,7 +200,7 @@ func GetSiteDetails(ctx context.Context, tx *sql.Tx, filters ...SiteDetailFilter
 
 // GetSiteDetail returns the site_detail with the given key.
 // generator: site_detail GetOne
-func GetSiteDetail(ctx context.Context, tx *sql.Tx, coreSiteID int, status string) (*SiteDetail, error) {
+func GetSiteDetail(ctx context.Context, tx *sql.Tx, coreSiteID int64, status string) (*SiteDetail, error) {
 	filter := SiteDetailFilter{}
 	filter.CoreSiteID = &coreSiteID
 	filter.Status = &status
@@ -222,7 +222,7 @@ func GetSiteDetail(ctx context.Context, tx *sql.Tx, coreSiteID int, status strin
 
 // GetSiteDetailID return the ID of the site_detail with the given key.
 // generator: site_detail ID
-func GetSiteDetailID(ctx context.Context, tx *sql.Tx, coreSiteID int, status string) (int64, error) {
+func GetSiteDetailID(ctx context.Context, tx *sql.Tx, coreSiteID int64, status string) (int64, error) {
 	stmt, err := cluster.Stmt(tx, siteDetailID)
 	if err != nil {
 		return -1, fmt.Errorf("Failed to get \"siteDetailID\" prepared statement: %w", err)
@@ -244,7 +244,7 @@ func GetSiteDetailID(ctx context.Context, tx *sql.Tx, coreSiteID int, status str
 
 // SiteDetailExists checks if a site_detail with the given key exists.
 // generator: site_detail Exists
-func SiteDetailExists(ctx context.Context, tx *sql.Tx, coreSiteID int, status string) (bool, error) {
+func SiteDetailExists(ctx context.Context, tx *sql.Tx, coreSiteID int64, status string) (bool, error) {
 	_, err := GetSiteDetailID(ctx, tx, coreSiteID, status)
 	if err != nil {
 		if api.StatusErrorCheck(err, http.StatusNotFound) {
@@ -312,7 +312,7 @@ func CreateSiteDetail(ctx context.Context, tx *sql.Tx, object SiteDetail) (int64
 
 // UpdateSiteDetail updates the site_detail matching the given key parameters.
 // generator: site_detail Update
-func UpdateSiteDetail(ctx context.Context, tx *sql.Tx, coreSiteID int, status string, object SiteDetail) error {
+func UpdateSiteDetail(ctx context.Context, tx *sql.Tx, coreSiteID int64, status string, object SiteDetail) error {
 	id, err := GetSiteDetailID(ctx, tx, coreSiteID, status)
 	if err != nil {
 		return err
