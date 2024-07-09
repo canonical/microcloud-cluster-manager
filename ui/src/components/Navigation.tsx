@@ -78,20 +78,35 @@ const Navigation: FC = () => {
           <div className="p-side-navigation--icons is-dark">
             <ul className="p-side-navigation__list sidenav-top-ul">
               {isAuthenticated && (
-                <li>
-                  <NavLink
-                    to={`/ui/sites`}
-                    title={`Sites List`}
-                    onClick={softToggleMenu}
-                  >
-                    <img
-                      src="/ui/assets/img/cluster-icon.svg"
-                      alt="cluster-icon"
-                      className="p-side-navigation__icon"
-                    />
-                    Clusters
-                  </NavLink>
-                </li>
+                <>
+                  <li>
+                    <NavLink
+                      to={`/ui/sites`}
+                      title={`Clusters List`}
+                      onClick={softToggleMenu}
+                    >
+                      <img
+                        src="/ui/assets/img/cluster-icon.svg"
+                        alt="cluster-icon"
+                        className="p-side-navigation__icon"
+                      />
+                      Clusters
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to={`/ui/settings`}
+                      title={`Settings`}
+                      onClick={softToggleMenu}
+                    >
+                      <Icon
+                        className="is-light p-side-navigation__icon"
+                        name="settings"
+                      />
+                      Settings
+                    </NavLink>
+                  </li>
+                </>
               )}
               {!isAuthenticated && (
                 <li>

@@ -7,6 +7,7 @@
 @import "breakpoints";
 @import "meter";
 @import "clustercpu";
+@import "settings_page";
 @include custom-p-icon;
 @include vf-p-icon-units;
 @include vf-p-icon-profile;
@@ -15,6 +16,8 @@
 @include vf-p-icon-status-succeeded-small;
 @include vf-p-icon-switcher-environments;
 @include vf-p-icons;
+@include vf-p-icon-settings;
+@include vf-p-icon-edit;
 
 body {
   // needed for notification list expanding animation
