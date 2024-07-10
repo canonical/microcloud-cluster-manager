@@ -34,7 +34,9 @@ var siteManagementListener = rest.Server{
 	},
 }
 
-// Servers contains all the network listeners for site manager.
-var Servers = []rest.Server{
-	siteManagementListener,
+// GetServers returns all the network listeners for site manager.
+func GetServers() map[string]rest.Server {
+	return map[string]rest.Server{
+		"management-listener": siteManagementListener,
+	}
 }

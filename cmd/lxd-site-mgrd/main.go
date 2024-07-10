@@ -73,7 +73,7 @@ func (c *cmdDaemon) run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	m.AddServers(api.Servers)
+	m.AddServers(api.GetServers())
 
 	return m.Start(cmd.Context(), database.SchemaExtensions, api.Extensions(), &config.Hooks{})
 }
