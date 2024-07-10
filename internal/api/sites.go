@@ -27,7 +27,10 @@ import (
 var sitesCmd = rest.Endpoint{
 	Path: "sites",
 	Get:  rest.EndpointAction{Handler: sitesGet, AllowUntrusted: true},
-	// FIXME: this endpoint will be a resource for the control listener
+}
+
+var sitesControlCmd = rest.Endpoint{
+	Path: "sites",
 	Post: rest.EndpointAction{Handler: sitesPost, AllowUntrusted: true},
 }
 
