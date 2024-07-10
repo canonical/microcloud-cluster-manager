@@ -40,15 +40,9 @@ if [ -n "$GLOBAL_ADDRESS" ]; then
 fi
 
 # populate manager member configs
-# for every member https_address config must be set
 # optionally populate member external_address
 for i in $(seq 1 $NUM_MEMBERS); do
     MEMBER_NAME="member$i"
-    HTTPS_ADDRESS="0.0.0.0:900$i"
-
-    $COMMAND \
-        --state-dir ./state/dir$i \
-        config set $MEMBER_NAME https_address=$HTTPS_ADDRESS
 
     if [ $POPULATE_MEMBER_EXTERNAL_ADDRESSES = true ]; then
         $COMMAND \
