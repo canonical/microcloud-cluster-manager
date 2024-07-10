@@ -20,26 +20,19 @@ var _ = api.ServerEnvironment{}
 var siteDetailObjects = cluster.RegisterStmt(`
 SELECT site_details.core_site_id, site_details.status, site_details.id, site_details.cpu_total_count, site_details.cpu_load_1, site_details.cpu_load_5, site_details.cpu_load_15, site_details.memory_total_amount, site_details.memory_usage, site_details.disk_total_size, site_details.disk_usage, site_details.instance_count, site_details.instance_statuses, site_details.member_count, site_details.member_statuses, site_details.joined_at, site_details.updated_at
   FROM site_details
-  ORDER BY site_details.core_site_id, site_details.status
-`)
-
-var siteDetailObjectsByStatus = cluster.RegisterStmt(`
-SELECT site_details.core_site_id, site_details.status, site_details.id, site_details.cpu_total_count, site_details.cpu_load_1, site_details.cpu_load_5, site_details.cpu_load_15, site_details.memory_total_amount, site_details.memory_usage, site_details.disk_total_size, site_details.disk_usage, site_details.instance_count, site_details.instance_statuses, site_details.member_count, site_details.member_statuses, site_details.joined_at, site_details.updated_at
-  FROM site_details
-  WHERE ( site_details.status = ? )
-  ORDER BY site_details.core_site_id, site_details.status
+  ORDER BY site_details.core_site_id
 `)
 
 var siteDetailObjectsByCoreSiteID = cluster.RegisterStmt(`
 SELECT site_details.core_site_id, site_details.status, site_details.id, site_details.cpu_total_count, site_details.cpu_load_1, site_details.cpu_load_5, site_details.cpu_load_15, site_details.memory_total_amount, site_details.memory_usage, site_details.disk_total_size, site_details.disk_usage, site_details.instance_count, site_details.instance_statuses, site_details.member_count, site_details.member_statuses, site_details.joined_at, site_details.updated_at
   FROM site_details
   WHERE ( site_details.core_site_id = ? )
-  ORDER BY site_details.core_site_id, site_details.status
+  ORDER BY site_details.core_site_id
 `)
 
 var siteDetailID = cluster.RegisterStmt(`
 SELECT site_details.id FROM site_details
-  WHERE site_details.core_site_id = ? AND site_details.status = ?
+  WHERE site_details.core_site_id = ?
 `)
 
 var siteDetailCreate = cluster.RegisterStmt(`
@@ -128,31 +121,7 @@ func GetSiteDetails(ctx context.Context, tx *sql.Tx, filters ...SiteDetailFilter
 	}
 
 	for i, filter := range filters {
-		if filter.Status != nil && filter.CoreSiteID == nil {
-			args = append(args, []any{filter.Status}...)
-			if len(filters) == 1 {
-				sqlStmt, err = cluster.Stmt(tx, siteDetailObjectsByStatus)
-				if err != nil {
-					return nil, fmt.Errorf("Failed to get \"siteDetailObjectsByStatus\" prepared statement: %w", err)
-				}
-
-				break
-			}
-
-			query, err := cluster.StmtString(siteDetailObjectsByStatus)
-			if err != nil {
-				return nil, fmt.Errorf("Failed to get \"siteDetailObjects\" prepared statement: %w", err)
-			}
-
-			parts := strings.SplitN(query, "ORDER BY", 2)
-			if i == 0 {
-				copy(queryParts[:], parts)
-				continue
-			}
-
-			_, where, _ := strings.Cut(parts[0], "WHERE")
-			queryParts[0] += "OR" + where
-		} else if filter.CoreSiteID != nil && filter.Status == nil {
+		if filter.CoreSiteID != nil {
 			args = append(args, []any{filter.CoreSiteID}...)
 			if len(filters) == 1 {
 				sqlStmt, err = cluster.Stmt(tx, siteDetailObjectsByCoreSiteID)
@@ -176,7 +145,7 @@ func GetSiteDetails(ctx context.Context, tx *sql.Tx, filters ...SiteDetailFilter
 
 			_, where, _ := strings.Cut(parts[0], "WHERE")
 			queryParts[0] += "OR" + where
-		} else if filter.Status == nil && filter.CoreSiteID == nil {
+		} else if filter.CoreSiteID == nil {
 			return nil, fmt.Errorf("Cannot filter on empty SiteDetailFilter")
 		} else {
 			return nil, fmt.Errorf("No statement exists for the given Filter")
@@ -200,10 +169,9 @@ func GetSiteDetails(ctx context.Context, tx *sql.Tx, filters ...SiteDetailFilter
 
 // GetSiteDetail returns the site_detail with the given key.
 // generator: site_detail GetOne
-func GetSiteDetail(ctx context.Context, tx *sql.Tx, coreSiteID int64, status string) (*SiteDetail, error) {
+func GetSiteDetail(ctx context.Context, tx *sql.Tx, coreSiteID int64) (*SiteDetail, error) {
 	filter := SiteDetailFilter{}
 	filter.CoreSiteID = &coreSiteID
-	filter.Status = &status
 
 	objects, err := GetSiteDetails(ctx, tx, filter)
 	if err != nil {
@@ -222,13 +190,13 @@ func GetSiteDetail(ctx context.Context, tx *sql.Tx, coreSiteID int64, status str
 
 // GetSiteDetailID return the ID of the site_detail with the given key.
 // generator: site_detail ID
-func GetSiteDetailID(ctx context.Context, tx *sql.Tx, coreSiteID int64, status string) (int64, error) {
+func GetSiteDetailID(ctx context.Context, tx *sql.Tx, coreSiteID int64) (int64, error) {
 	stmt, err := cluster.Stmt(tx, siteDetailID)
 	if err != nil {
 		return -1, fmt.Errorf("Failed to get \"siteDetailID\" prepared statement: %w", err)
 	}
 
-	row := stmt.QueryRowContext(ctx, coreSiteID, status)
+	row := stmt.QueryRowContext(ctx, coreSiteID)
 	var id int64
 	err = row.Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -244,8 +212,8 @@ func GetSiteDetailID(ctx context.Context, tx *sql.Tx, coreSiteID int64, status s
 
 // SiteDetailExists checks if a site_detail with the given key exists.
 // generator: site_detail Exists
-func SiteDetailExists(ctx context.Context, tx *sql.Tx, coreSiteID int64, status string) (bool, error) {
-	_, err := GetSiteDetailID(ctx, tx, coreSiteID, status)
+func SiteDetailExists(ctx context.Context, tx *sql.Tx, coreSiteID int64) (bool, error) {
+	_, err := GetSiteDetailID(ctx, tx, coreSiteID)
 	if err != nil {
 		if api.StatusErrorCheck(err, http.StatusNotFound) {
 			return false, nil
@@ -261,7 +229,7 @@ func SiteDetailExists(ctx context.Context, tx *sql.Tx, coreSiteID int64, status 
 // generator: site_detail Create
 func CreateSiteDetail(ctx context.Context, tx *sql.Tx, object SiteDetail) (int64, error) {
 	// Check if a site_detail with the same key exists.
-	exists, err := SiteDetailExists(ctx, tx, object.CoreSiteID, object.Status)
+	exists, err := SiteDetailExists(ctx, tx, object.CoreSiteID)
 	if err != nil {
 		return -1, fmt.Errorf("Failed to check for duplicates: %w", err)
 	}
@@ -312,8 +280,8 @@ func CreateSiteDetail(ctx context.Context, tx *sql.Tx, object SiteDetail) (int64
 
 // UpdateSiteDetail updates the site_detail matching the given key parameters.
 // generator: site_detail Update
-func UpdateSiteDetail(ctx context.Context, tx *sql.Tx, coreSiteID int64, status string, object SiteDetail) error {
-	id, err := GetSiteDetailID(ctx, tx, coreSiteID, status)
+func UpdateSiteDetail(ctx context.Context, tx *sql.Tx, coreSiteID int64, object SiteDetail) error {
+	id, err := GetSiteDetailID(ctx, tx, coreSiteID)
 	if err != nil {
 		return err
 	}
