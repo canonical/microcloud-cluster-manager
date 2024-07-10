@@ -8,7 +8,6 @@ import (
 //go:generate mapper reset
 //
 //go:generate mapper stmt -d github.com/canonical/microcluster/cluster -e site_detail objects table=site_details
-//go:generate mapper stmt -d github.com/canonical/microcluster/cluster -e site_detail objects-by-Status table=site_details
 //go:generate mapper stmt -d github.com/canonical/microcluster/cluster -e site_detail objects-by-CoreSiteID table=site_details
 //go:generate mapper stmt -d github.com/canonical/microcluster/cluster -e site_detail id table=site_details
 //go:generate mapper stmt -d github.com/canonical/microcluster/cluster -e site_detail create table=site_details
@@ -23,20 +22,20 @@ import (
 
 // SiteDetail represents all site level data.
 type SiteDetail struct {
-	CoreSiteID        int64  `db:"primary=true"`
-	Status            string `db:"primary=true"`
+	CoreSiteID        int64 `db:"primary=true"`
+	Status            string
 	ID                int
-	CPUTotalCount     float64
+	CPUTotalCount     int64
 	CPULoad1          string `db:"sql=site_details.cpu_load_1"`
 	CPULoad5          string `db:"sql=site_details.cpu_load_5"`
 	CPULoad15         string `db:"sql=site_details.cpu_load_15"`
-	MemoryTotalAmount float64
-	MemoryUsage       float64
-	DiskTotalSize     float64
-	DiskUsage         float64
-	InstanceCount     int
+	MemoryTotalAmount int64
+	MemoryUsage       int64
+	DiskTotalSize     int64
+	DiskUsage         int64
+	InstanceCount     int64
 	InstanceStatuses  string
-	MemberCount       int
+	MemberCount       int64
 	MemberStatuses    string
 	JoinedAt          time.Time
 	UpdatedAt         time.Time
@@ -44,6 +43,5 @@ type SiteDetail struct {
 
 // SiteDetailFilter is a required struct for use with lxd-generate. It is used for filtering fields on database fetches.
 type SiteDetailFilter struct {
-	Status     *string
 	CoreSiteID *int64
 }

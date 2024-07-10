@@ -12,22 +12,22 @@ import (
 
 // CoreSiteWithDetails is a struct that contains all the information about a site directly queried from the database.
 type CoreSiteWithDetails struct {
-	ID                int       `db:"id"`
+	ID                int64     `db:"id"`
 	Name              string    `db:"name"`
 	SiteCertificate   string    `db:"site_certificate"`
 	SiteCreatedAt     time.Time `db:"created_at"`
 	Status            string    `db:"status"`
-	CPUTotalCount     float64   `db:"cpu_total_count"`
+	CPUTotalCount     int64     `db:"cpu_total_count"`
 	CPULoad1          string    `db:"cpu_load_1"`
 	CPULoad5          string    `db:"cpu_load_5"`
 	CPULoad15         string    `db:"cpu_load_15"`
-	MemoryTotalAmount float64   `db:"memory_total_amount"`
-	MemoryUsage       float64   `db:"memory_usage"`
-	DiskTotalSize     float64   `db:"disk_total_size"`
-	DiskUsage         float64   `db:"disk_usage"`
-	InstanceCount     int       `db:"instance_count"`
+	MemoryTotalAmount int64     `db:"memory_total_amount"`
+	MemoryUsage       int64     `db:"memory_usage"`
+	DiskTotalSize     int64     `db:"disk_total_size"`
+	DiskUsage         int64     `db:"disk_usage"`
+	InstanceCount     int64     `db:"instance_count"`
 	InstanceStatuses  string    `db:"instance_statuses"`
-	MemberCount       int       `db:"member_count"`
+	MemberCount       int64     `db:"member_count"`
 	MemberStatuses    string    `db:"member_statuses"`
 	SiteJoinedAt      time.Time `db:"joined_at"`
 	SiteUpdatedAt     time.Time `db:"updated_at"`

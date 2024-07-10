@@ -27,7 +27,7 @@ import (
 type CoreSite struct {
 	Name            string `db:"primary=yes"`
 	SiteCertificate string `db:"primary=yes"`
-	ID              int
+	ID              int64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
