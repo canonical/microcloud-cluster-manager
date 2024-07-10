@@ -8,14 +8,17 @@ import (
 
 	"github.com/canonical/microcluster/microcluster"
 	"github.com/spf13/cobra"
+
+	"github.com/canonical/lxd-site-manager/internal/api"
 )
 
 type cmdInit struct {
 	common *CmdControl
 
-	flagBootstrap bool
-	flagToken     string
-	flagConfig    []string
+	flagBootstrap      bool
+	flagToken          string
+	flagConfig         []string
+	flagControlAddress string
 }
 
 func (c *cmdInit) command() *cobra.Command {
@@ -31,6 +34,7 @@ func (c *cmdInit) command() *cobra.Command {
 
 	cmd.Flags().BoolVar(&c.flagBootstrap, "bootstrap", false, "Configure a new cluster with this daemon")
 	cmd.Flags().StringVar(&c.flagToken, "token", "", "Join a cluster with a join token")
+	cmd.Flags().StringVar(&c.flagControlAddress, "control-address", "", "Specify the address of the control network listener")
 	cmd.Flags().StringSliceVar(&c.flagConfig, "config", nil, "Extra configuration to be applied during bootstrap")
 	cmd.MarkFlagsMutuallyExclusive("bootstrap", "token")
 
@@ -59,6 +63,12 @@ func (c *cmdInit) run(cmd *cobra.Command, args []string) error {
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 	defer cancel()
+
+	if c.flagControlAddress == "" {
+		return fmt.Errorf("Control address must be specified")
+	}
+
+	conf[string(api.ControlListener)] = c.flagControlAddress
 
 	if c.flagBootstrap {
 		return m.NewCluster(ctx, args[0], args[1], conf)
