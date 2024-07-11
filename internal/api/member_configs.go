@@ -9,12 +9,15 @@ import (
 	"net/url"
 
 	"github.com/canonical/lxd/lxd/response"
+	"github.com/canonical/lxd/shared/logger"
+	"github.com/canonical/lxd/shared/revert"
 	"github.com/canonical/microcluster/rest"
 	microTypes "github.com/canonical/microcluster/rest/types"
 	clusterState "github.com/canonical/microcluster/state"
 	"github.com/gorilla/mux"
 
 	"github.com/canonical/lxd-site-manager/internal/api/types"
+	"github.com/canonical/lxd-site-manager/internal/client"
 	"github.com/canonical/lxd-site-manager/internal/database"
 	"github.com/canonical/lxd-site-manager/internal/state"
 )
@@ -46,16 +49,8 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 			return response.BadRequest(err)
 		}
 
-		// validations
 		if payload.HTTPSAddress == "" && payload.ExternalAddress == "" {
 			return response.BadRequest(fmt.Errorf("no fields provided to update"))
-		}
-
-		if payload.HTTPSAddress != "" {
-			_, err = microTypes.ParseAddrPort(payload.HTTPSAddress)
-			if err != nil {
-				return response.BadRequest(fmt.Errorf("invalid https_address for member %q: %w", memberName, err))
-			}
 		}
 
 		if payload.ExternalAddress != "" {
@@ -63,6 +58,65 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 			if err != nil {
 				return response.BadRequest(fmt.Errorf("invalid external_address for member %q: %w", memberName, err))
 			}
+		}
+
+		reverter := revert.New()
+		defer reverter.Fail()
+
+		if payload.HTTPSAddress != "" {
+			newAddress, err := microTypes.ParseAddrPort(payload.HTTPSAddress)
+			if err != nil {
+				return response.BadRequest(fmt.Errorf("invalid https_address for member %q: %w", memberName, err))
+			}
+
+			// the control listener address is stored in a member's local state directory
+			// we need to update the control listener address, we need to forward the request to the relevant member and let the update happen there
+			if memberName != clusterState.Name() {
+				remotes := clusterState.Remotes().RemotesByName()
+				targetRemote, ok := remotes[memberName]
+				if !ok {
+					return response.NotFound(fmt.Errorf("member %q not found", memberName))
+				}
+
+				targetClient, err := siteManagerState.MicroCluster.RemoteClient(targetRemote.Address.String())
+				if err != nil {
+					return response.InternalError(fmt.Errorf("failed to get remote client for member %q: %w", memberName, err))
+				}
+
+				err = client.MemberConfigPatchCmd(clusterState.Context, targetClient, memberName, &payload)
+				if err != nil {
+					return response.InternalError(fmt.Errorf("failed to update member %q config: %w", memberName, err))
+				}
+
+				return response.EmptySyncResponse
+			}
+
+			// update the control listener address for local member configs
+			newServerConfig := make(map[string]microTypes.ServerConfig)
+			existingServerConfig := clusterState.LocalConfig().GetServers()
+			for name, config := range existingServerConfig {
+				if name == string(ControlListener) {
+					config.Address = newAddress
+				}
+
+				newServerConfig[name] = config
+			}
+
+			err = siteManagerState.MicroCluster.UpdateServers(clusterState.Context, newServerConfig)
+			if err != nil {
+				return response.InternalError(fmt.Errorf("failed to update local member %q config: %w", memberName, err))
+			}
+
+			// in case if the dqlite transaction fails to update the member config, we need to revert the control listener address update
+			// this will keep daemon local configs in sync with what's stored in dqlite
+			reverter.Add(func() {
+				err := siteManagerState.MicroCluster.UpdateServers(clusterState.Context, existingServerConfig)
+				if err != nil {
+					logger.Warn("Failed to revert control listener address update, data may be inconsistent")
+				}
+
+				logger.Warn("Reverted control listener address update")
+			})
 		}
 
 		err = clusterState.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
@@ -76,50 +130,28 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 				return err
 			}
 
-			memberConfigExist := len(dbConfigs) > 0
-
-			// create new member config
-			if !memberConfigExist {
-				if payload.HTTPSAddress == "" {
-					return fmt.Errorf("https_address is required")
-				}
-
-				_, err := database.CreateManagerMemberConfig(ctx, tx, database.ManagerMemberConfig{
-					Target:          memberName,
-					HTTPSAddress:    payload.HTTPSAddress,
-					ExternalAddress: payload.ExternalAddress,
-				})
-
-				return err
-			}
-
-			// update existing member config
-			// if no value is provided, keep the existing one
-			HTTPSAddress := dbConfigs[0].HTTPSAddress
+			// if no external address is provided, keep the existing one
 			externalAddress := dbConfigs[0].ExternalAddress
-
-			if payload.HTTPSAddress != "" {
-				HTTPSAddress = payload.HTTPSAddress
-			}
-
 			if payload.ExternalAddress != "" {
 				externalAddress = payload.ExternalAddress
 			}
 
+			controlListenerConfig := clusterState.LocalConfig().GetServers()[string(ControlListener)]
+			httpsAddress := controlListenerConfig.Address.String()
+
+			// It is expected a member config entry was created for every member during initialisation
 			return database.UpdateManagerMemberConfig(ctx, tx, memberName, database.ManagerMemberConfig{
 				Target:          memberName,
-				HTTPSAddress:    HTTPSAddress,
+				HTTPSAddress:    httpsAddress,
 				ExternalAddress: externalAddress,
 			})
 		})
 
 		if err != nil {
-			if err.Error() == "https_address is required" {
-				return response.BadRequest(err)
-			}
-
 			return response.SmartError(err)
 		}
+
+		reverter.Success()
 
 		return response.EmptySyncResponse
 	}
