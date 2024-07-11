@@ -17,6 +17,8 @@ func MemberConfigPatchCmd(ctx context.Context, c *client.Client, member string, 
 	defer cancel()
 
 	url := api.NewURL().Path("member", member, "config")
+	c.SetClusterNotification()
+
 	err := c.Query(queryCtx, "PATCH", types.APIVersionPrefix, url, configs, nil)
 	if err != nil {
 		clientURL := c.URL()

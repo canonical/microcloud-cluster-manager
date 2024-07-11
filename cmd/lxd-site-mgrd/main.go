@@ -7,11 +7,12 @@ import (
 	"github.com/canonical/lxd/shared/logger"
 	"github.com/canonical/microcluster/config"
 	"github.com/canonical/microcluster/microcluster"
-	"github.com/canonical/microcluster/state"
+	clusterState "github.com/canonical/microcluster/state"
 	"github.com/spf13/cobra"
 
 	"github.com/canonical/lxd-site-manager/internal/api"
 	"github.com/canonical/lxd-site-manager/internal/database"
+	"github.com/canonical/lxd-site-manager/internal/state"
 	"github.com/canonical/lxd-site-manager/version"
 )
 
@@ -74,14 +75,15 @@ func (c *cmdDaemon) run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	m.AddServers(api.GetServers())
+	siteManagerState := state.New(m)
+	m.AddServers(api.GetServers(siteManagerState))
 
 	hooks := &config.Hooks{
-		PostBootstrap: func(s *state.State, initConfig map[string]string) error {
+		PostBootstrap: func(s *clusterState.State, initConfig map[string]string) error {
 			return InitialiseControlListener(s, m, initConfig)
 		},
 
-		PostJoin: func(s *state.State, initConfig map[string]string) error {
+		PostJoin: func(s *clusterState.State, initConfig map[string]string) error {
 			return InitialiseControlListener(s, m, initConfig)
 		},
 	}
