@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -13,7 +14,9 @@ import (
 	"time"
 
 	"github.com/canonical/lxd/lxd/response"
+	"github.com/canonical/lxd/shared/logger"
 	"github.com/canonical/microcluster/rest"
+	microTypes "github.com/canonical/microcluster/rest/types"
 	"github.com/canonical/microcluster/state"
 	"github.com/gorilla/mux"
 
@@ -32,6 +35,131 @@ var siteCmd = rest.Endpoint{
 	Path:   "sites/{siteName}",
 	Get:    rest.EndpointAction{Handler: siteGet, AllowUntrusted: true},
 	Delete: rest.EndpointAction{Handler: siteDelete, AllowUntrusted: true},
+	// FIXME: this endpoint will be a resource for the control listener
+	Post: rest.EndpointAction{Handler: sitesStatusPost, AllowUntrusted: true},
+}
+
+func sitesStatusPost(s *state.State, r *http.Request) response.Response {
+	siteName, err := url.PathUnescape(mux.Vars(r)["siteName"])
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	if siteName != "status" {
+		logger.Warn("Invalid endpoint")
+		return response.BadRequest(fmt.Errorf("invalid endpoint"))
+	}
+
+	if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
+		logger.Warn("tls is required")
+		return response.BadRequest(fmt.Errorf("tls is required"))
+	}
+
+	if len(r.TLS.PeerCertificates) != 1 {
+		logger.Warn("Expected exactly one peer certificate")
+		return response.BadRequest(fmt.Errorf("expected exactly one peer certificate"))
+	}
+	peerCert := r.TLS.PeerCertificates[0]
+
+	var siteID int64
+	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		dbSites, err := database.GetCoreSitesWithDetails(ctx, tx)
+		if err != nil {
+			return err
+		}
+
+		for _, dbSite := range dbSites {
+			if dbSite.Status == string(types.PENDING_APPROVAL) {
+				continue
+			}
+
+			dbSiteCert, err := microTypes.ParseX509Certificate(dbSite.SiteCertificate)
+			if err != nil {
+				logger.Warn("Failed to parse site certificate", logger.Ctx{"site": dbSite.Name, "err": err})
+				continue
+			}
+
+			if dbSiteCert.Certificate.NotAfter.Before(time.Now()) {
+				logger.Warn("Site certificate is expired", logger.Ctx{"site": dbSite.Name})
+				continue
+			}
+
+			// check if public key of dbSite matches the peer certificate from the request
+			if bytes.Equal(dbSiteCert.Raw, peerCert.Raw) {
+				siteID = dbSite.ID
+				break
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		logger.Warn("Failed to get site ID", logger.Ctx{"err": err})
+		return response.SmartError(err)
+	}
+
+	if siteID == 0 {
+		logger.Warn("Site not found", logger.Ctx{"site": siteName})
+		return response.NotFound(fmt.Errorf("site not found"))
+	}
+
+	payload := types.SiteStatusPost{}
+	err = json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		return response.BadRequest(err)
+	}
+
+	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		dbSite, err := database.GetSiteDetail(ctx, tx, siteID)
+		if err != nil {
+			return err
+		}
+
+		dbSite.CPULoad1 = payload.CPULoad1
+		dbSite.CPULoad5 = payload.CPULoad5
+		dbSite.CPULoad15 = payload.CPULoad15
+		dbSite.CPUTotalCount = payload.CPUTotalCount
+		dbSite.DiskTotalSize = payload.DiskTotalSize
+		dbSite.DiskUsage = payload.DiskUsage
+		dbSite.InstanceCount, dbSite.InstanceStatuses = parseStatusDistribution(payload.InstanceStatuses)
+		dbSite.MemberCount, dbSite.MemberStatuses = parseStatusDistribution(payload.MemberStatuses)
+		dbSite.MemoryTotalAmount = payload.MemoryTotalAmount
+		dbSite.MemoryUsage = payload.MemoryUsage
+		dbSite.UpdatedAt = time.Now()
+
+		err = database.UpdateSiteDetail(ctx, tx, siteID, *dbSite)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		logger.Warn("Failed to update site status", logger.Ctx{"site": siteID, "err": err})
+		return response.SmartError(err)
+	}
+
+	return response.EmptySyncResponse
+}
+
+func parseStatusDistribution(statuses []types.StatusDistribution) (int64, string) {
+	if len(statuses) == 0 {
+		return 0, "[]"
+	}
+
+	parsedStatuses, err := json.Marshal(statuses)
+	if err != nil {
+		return 0, "[]"
+	}
+
+	var total int64
+	for _, s := range statuses {
+		total += s.Count
+	}
+
+	return total, string(parsedStatuses)
 }
 
 func sitesGet(s *state.State, r *http.Request) response.Response {
@@ -158,8 +286,11 @@ func sitesPost(s *state.State, r *http.Request) response.Response {
 
 		// create relevant site details
 		_, err = database.CreateSiteDetail(ctx, tx, database.SiteDetail{
-			Status:     string(types.PENDING_APPROVAL),
-			CoreSiteID: siteID,
+			Status:           string(types.PENDING_APPROVAL),
+			CoreSiteID:       siteID,
+			JoinedAt:         time.Now(),
+			MemberStatuses:   "[]",
+			InstanceStatuses: "[]",
 		})
 
 		if err != nil {
@@ -181,13 +312,13 @@ func toSitesAPI(dbEntries []database.CoreSiteWithDetails) ([]types.Site, error) 
 	// generate lookup for site details
 	var sites []types.Site
 	for _, e := range dbEntries {
-		var ms []types.Status
+		var ms []types.StatusDistribution
 		err := json.Unmarshal([]byte(e.MemberStatuses), &ms)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to unmarshal member statuses: %w", err)
 		}
 
-		var is []types.Status
+		var is []types.StatusDistribution
 		err = json.Unmarshal([]byte(e.InstanceStatuses), &is)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to unmarshal instance statuses: %w", err)

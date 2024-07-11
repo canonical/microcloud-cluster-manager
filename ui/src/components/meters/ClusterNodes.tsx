@@ -8,7 +8,7 @@ interface Props {
 
 export const ClusterNodes: FC<Props> = ({ cluster }: Props) => {
   const runningMembers = cluster.member_statuses.find(
-    (status) => status.status === "active",
+    (status) => status.status === "Online",
   );
   const activeCount = runningMembers ? runningMembers.count : 0;
 

@@ -4,8 +4,8 @@ set -e
 ENTRIES=200
 
 # Instance and member statuses templates
-INSTANCE_STATUSES_TEMPLATE='[{"status": "running", "count": %d}]'
-MEMBER_STATUSES_TEMPLATE='[{"status": "active", "count": %d}]'
+INSTANCE_STATUSES_TEMPLATE='[{"status": "Running", "count": %d}]'
+MEMBER_STATUSES_TEMPLATE='[{"status": "Online", "count": %d}]'
 
 # Prepare bulk insert statements for core_sites
 CORE_SITES_INSERT="INSERT INTO core_sites (name, site_certificate) VALUES "

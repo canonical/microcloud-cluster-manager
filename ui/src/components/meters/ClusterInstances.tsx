@@ -8,7 +8,7 @@ interface Props {
 
 export const ClusterInstances: FC<Props> = ({ cluster }: Props) => {
   const runningInstances = cluster.instance_statuses.find(
-    (status) => status.status === "running",
+    (status) => status.status === "Running",
   );
   const runningCount = runningInstances ? runningInstances.count : 0;
 
