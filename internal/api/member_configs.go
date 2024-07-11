@@ -11,17 +11,20 @@ import (
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/microcluster/rest"
 	microTypes "github.com/canonical/microcluster/rest/types"
-	"github.com/canonical/microcluster/state"
+	clusterState "github.com/canonical/microcluster/state"
 	"github.com/gorilla/mux"
 
 	"github.com/canonical/lxd-site-manager/internal/api/types"
 	"github.com/canonical/lxd-site-manager/internal/database"
+	"github.com/canonical/lxd-site-manager/internal/state"
 )
 
-var memberConfigCmd = rest.Endpoint{
-	Path:  "member/{name}/config",
-	Patch: rest.EndpointAction{Handler: memberConfigPatch, AllowUntrusted: true},
-	Get:   rest.EndpointAction{Handler: memberConfigGet, AllowUntrusted: true},
+func memberConfigCmd(s *state.SiteManagerState) rest.Endpoint {
+	return rest.Endpoint{
+		Path:  "member/{name}/config",
+		Patch: rest.EndpointAction{Handler: memberConfigPatch(s), AllowUntrusted: true},
+		Get:   rest.EndpointAction{Handler: memberConfigGet, AllowUntrusted: true},
+	}
 }
 
 var memberConfigsCmd = rest.Endpoint{
@@ -30,97 +33,99 @@ var memberConfigsCmd = rest.Endpoint{
 }
 
 // update existing member configs.
-func memberConfigPatch(s *state.State, r *http.Request) response.Response {
-	memberName, err := url.PathUnescape(mux.Vars(r)["name"])
-	if err != nil {
-		return response.BadRequest(err)
-	}
-
-	var payload types.MemberConfigPatch
-	err = json.NewDecoder(r.Body).Decode(&payload)
-	if err != nil {
-		return response.BadRequest(err)
-	}
-
-	// validations
-	if payload.HTTPSAddress == "" && payload.ExternalAddress == "" {
-		return response.BadRequest(fmt.Errorf("no fields provided to update"))
-	}
-
-	if payload.HTTPSAddress != "" {
-		_, err = microTypes.ParseAddrPort(payload.HTTPSAddress)
+func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointHandler {
+	return func(clusterState *clusterState.State, r *http.Request) response.Response {
+		memberName, err := url.PathUnescape(mux.Vars(r)["name"])
 		if err != nil {
-			return response.BadRequest(fmt.Errorf("invalid https_address for member %q: %w", memberName, err))
-		}
-	}
-
-	if payload.ExternalAddress != "" {
-		_, err = microTypes.ParseAddrPort(payload.ExternalAddress)
-		if err != nil {
-			return response.BadRequest(fmt.Errorf("invalid external_address for member %q: %w", memberName, err))
-		}
-	}
-
-	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
-		// get existing member config entry and use it as a base
-		filter := database.ManagerMemberConfigFilter{
-			Target: &memberName,
-		}
-
-		dbConfigs, err := database.GetManagerMemberConfig(ctx, tx, filter)
-		if err != nil {
-			return err
-		}
-
-		memberConfigExist := len(dbConfigs) > 0
-
-		// create new member config
-		if !memberConfigExist {
-			if payload.HTTPSAddress == "" {
-				return fmt.Errorf("https_address is required")
-			}
-
-			_, err := database.CreateManagerMemberConfig(ctx, tx, database.ManagerMemberConfig{
-				Target:          memberName,
-				HTTPSAddress:    payload.HTTPSAddress,
-				ExternalAddress: payload.ExternalAddress,
-			})
-
-			return err
-		}
-
-		// update existing member config
-		// if no value is provided, keep the existing one
-		HTTPSAddress := dbConfigs[0].HTTPSAddress
-		externalAddress := dbConfigs[0].ExternalAddress
-
-		if payload.HTTPSAddress != "" {
-			HTTPSAddress = payload.HTTPSAddress
-		}
-
-		if payload.ExternalAddress != "" {
-			externalAddress = payload.ExternalAddress
-		}
-
-		return database.UpdateManagerMemberConfig(ctx, tx, memberName, database.ManagerMemberConfig{
-			Target:          memberName,
-			HTTPSAddress:    HTTPSAddress,
-			ExternalAddress: externalAddress,
-		})
-	})
-
-	if err != nil {
-		if err.Error() == "https_address is required" {
 			return response.BadRequest(err)
 		}
 
-		return response.SmartError(err)
-	}
+		var payload types.MemberConfigPatch
+		err = json.NewDecoder(r.Body).Decode(&payload)
+		if err != nil {
+			return response.BadRequest(err)
+		}
 
-	return response.EmptySyncResponse
+		// validations
+		if payload.HTTPSAddress == "" && payload.ExternalAddress == "" {
+			return response.BadRequest(fmt.Errorf("no fields provided to update"))
+		}
+
+		if payload.HTTPSAddress != "" {
+			_, err = microTypes.ParseAddrPort(payload.HTTPSAddress)
+			if err != nil {
+				return response.BadRequest(fmt.Errorf("invalid https_address for member %q: %w", memberName, err))
+			}
+		}
+
+		if payload.ExternalAddress != "" {
+			_, err = microTypes.ParseAddrPort(payload.ExternalAddress)
+			if err != nil {
+				return response.BadRequest(fmt.Errorf("invalid external_address for member %q: %w", memberName, err))
+			}
+		}
+
+		err = clusterState.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+			// get existing member config entry and use it as a base
+			filter := database.ManagerMemberConfigFilter{
+				Target: &memberName,
+			}
+
+			dbConfigs, err := database.GetManagerMemberConfig(ctx, tx, filter)
+			if err != nil {
+				return err
+			}
+
+			memberConfigExist := len(dbConfigs) > 0
+
+			// create new member config
+			if !memberConfigExist {
+				if payload.HTTPSAddress == "" {
+					return fmt.Errorf("https_address is required")
+				}
+
+				_, err := database.CreateManagerMemberConfig(ctx, tx, database.ManagerMemberConfig{
+					Target:          memberName,
+					HTTPSAddress:    payload.HTTPSAddress,
+					ExternalAddress: payload.ExternalAddress,
+				})
+
+				return err
+			}
+
+			// update existing member config
+			// if no value is provided, keep the existing one
+			HTTPSAddress := dbConfigs[0].HTTPSAddress
+			externalAddress := dbConfigs[0].ExternalAddress
+
+			if payload.HTTPSAddress != "" {
+				HTTPSAddress = payload.HTTPSAddress
+			}
+
+			if payload.ExternalAddress != "" {
+				externalAddress = payload.ExternalAddress
+			}
+
+			return database.UpdateManagerMemberConfig(ctx, tx, memberName, database.ManagerMemberConfig{
+				Target:          memberName,
+				HTTPSAddress:    HTTPSAddress,
+				ExternalAddress: externalAddress,
+			})
+		})
+
+		if err != nil {
+			if err.Error() == "https_address is required" {
+				return response.BadRequest(err)
+			}
+
+			return response.SmartError(err)
+		}
+
+		return response.EmptySyncResponse
+	}
 }
 
-func memberConfigGet(s *state.State, r *http.Request) response.Response {
+func memberConfigGet(s *clusterState.State, r *http.Request) response.Response {
 	memberName, err := url.PathUnescape(mux.Vars(r)["name"])
 	if err != nil {
 		return response.BadRequest(err)
@@ -148,7 +153,7 @@ func memberConfigGet(s *state.State, r *http.Request) response.Response {
 	return response.SyncResponse(true, toMemberConfigsAPI(dbConfigs)[0])
 }
 
-func memberConfigsGet(s *state.State, r *http.Request) response.Response {
+func memberConfigsGet(s *clusterState.State, r *http.Request) response.Response {
 	var dbConfigs []database.ManagerMemberConfig
 	err := s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		var err error

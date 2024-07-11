@@ -4,6 +4,7 @@ import (
 	"github.com/canonical/microcluster/rest"
 
 	"github.com/canonical/lxd-site-manager/internal/api/types"
+	"github.com/canonical/lxd-site-manager/internal/state"
 )
 
 // ListenerName represents the name of any network listener relevant in site manager.
@@ -16,52 +17,56 @@ const (
 	ControlListener ListenerName = "control-listener"
 )
 
-var siteManagementListener = rest.Server{
-	CoreAPI:   true,
-	ServeUnix: true,
-	Resources: []rest.Resources{
-		{
-			PathPrefix: types.NoPrefix,
-			Endpoints: append(
-				[]rest.Endpoint{
-					uiRootCmd,
+func siteManagementListener(s *state.SiteManagerState) rest.Server {
+	return rest.Server{
+		CoreAPI:   true,
+		ServeUnix: true,
+		Resources: []rest.Resources{
+			{
+				PathPrefix: types.NoPrefix,
+				Endpoints: append(
+					[]rest.Endpoint{
+						uiRootCmd,
+					},
+					generateUIEndpoints()...,
+				),
+			},
+			{
+				PathPrefix: types.APIVersionPrefix,
+				Endpoints: []rest.Endpoint{
+					siteCmd,
+					sitesCmd,
+					managerConfigsCmd,
+					memberConfigCmd(s),
+					memberConfigsCmd,
+					externalSiteJoinTokensCmd,
+					externalSiteJoinTokenCmd,
 				},
-				generateUIEndpoints()...,
-			),
-		},
-		{
-			PathPrefix: types.APIVersionPrefix,
-			Endpoints: []rest.Endpoint{
-				siteCmd,
-				sitesCmd,
-				managerConfigsCmd,
-				memberConfigCmd,
-				memberConfigsCmd,
-				externalSiteJoinTokensCmd,
-				externalSiteJoinTokenCmd,
 			},
 		},
-	},
+	}
 }
 
-var siteControlListener = rest.Server{
-	CoreAPI:   false,
-	PreInit:   false,
-	ServeUnix: false,
-	Resources: []rest.Resources{
-		{
-			PathPrefix: types.APIVersionPrefix,
-			Endpoints: []rest.Endpoint{
-				sitesControlCmd,
+func siteControlListener(s *state.SiteManagerState) rest.Server {
+	return rest.Server{
+		CoreAPI:   false,
+		PreInit:   false,
+		ServeUnix: false,
+		Resources: []rest.Resources{
+			{
+				PathPrefix: types.APIVersionPrefix,
+				Endpoints: []rest.Endpoint{
+					sitesControlCmd,
+				},
 			},
 		},
-	},
+	}
 }
 
 // GetServers returns all the network listeners for site manager.
-func GetServers() map[string]rest.Server {
+func GetServers(s *state.SiteManagerState) map[string]rest.Server {
 	return map[string]rest.Server{
-		string(ManagementListener): siteManagementListener,
-		string(ControlListener):    siteControlListener,
+		string(ManagementListener): siteManagementListener(s),
+		string(ControlListener):    siteControlListener(s),
 	}
 }
