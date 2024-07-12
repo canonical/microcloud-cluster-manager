@@ -47,26 +47,25 @@ func siteManagementListener(s *state.SiteManagerState) rest.Server {
 	}
 }
 
-func siteControlListener(s *state.SiteManagerState) rest.Server {
-	return rest.Server{
-		CoreAPI:   false,
-		PreInit:   false,
-		ServeUnix: false,
-		Resources: []rest.Resources{
-			{
-				PathPrefix: types.APIVersionPrefix,
-				Endpoints: []rest.Endpoint{
-					sitesControlCmd,
-				},
+var siteControlListener = rest.Server{
+	CoreAPI:   false,
+	PreInit:   false,
+	ServeUnix: false,
+	Resources: []rest.Resources{
+		{
+			PathPrefix: types.APIVersionPrefix,
+			Endpoints: []rest.Endpoint{
+				sitesControlCmd,
+				sitesStatusCmd,
 			},
 		},
-	}
+	},
 }
 
 // GetServers returns all the network listeners for site manager.
 func GetServers(s *state.SiteManagerState) map[string]rest.Server {
 	return map[string]rest.Server{
 		string(ManagementListener): siteManagementListener(s),
-		string(ControlListener):    siteControlListener(s),
+		string(ControlListener):    siteControlListener,
 	}
 }

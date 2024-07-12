@@ -34,25 +34,18 @@ var sitesControlCmd = rest.Endpoint{
 	Post: rest.EndpointAction{Handler: sitesPost, AllowUntrusted: true},
 }
 
+var sitesStatusCmd = rest.Endpoint{
+	Path: "sites/status",
+	Post: rest.EndpointAction{Handler: sitesStatusPost, AllowUntrusted: true},
+}
+
 var siteCmd = rest.Endpoint{
 	Path:   "sites/{siteName}",
 	Get:    rest.EndpointAction{Handler: siteGet, AllowUntrusted: true},
 	Delete: rest.EndpointAction{Handler: siteDelete, AllowUntrusted: true},
-	// FIXME: this endpoint will be a resource for the control listener
-	Post: rest.EndpointAction{Handler: sitesStatusPost, AllowUntrusted: true},
 }
 
 func sitesStatusPost(s *state.State, r *http.Request) response.Response {
-	siteName, err := url.PathUnescape(mux.Vars(r)["siteName"])
-	if err != nil {
-		return response.SmartError(err)
-	}
-
-	if siteName != "status" {
-		logger.Warn("Invalid endpoint")
-		return response.BadRequest(fmt.Errorf("invalid endpoint"))
-	}
-
 	if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
 		logger.Warn("tls is required")
 		return response.BadRequest(fmt.Errorf("tls is required"))
@@ -65,7 +58,7 @@ func sitesStatusPost(s *state.State, r *http.Request) response.Response {
 	peerCert := r.TLS.PeerCertificates[0]
 
 	var siteID int64
-	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+	err := s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		dbSites, err := database.GetCoreSitesWithDetails(ctx, tx)
 		if err != nil {
 			return err
@@ -103,7 +96,7 @@ func sitesStatusPost(s *state.State, r *http.Request) response.Response {
 	}
 
 	if siteID == 0 {
-		logger.Warn("Site not found", logger.Ctx{"site": siteName})
+		logger.Warn("Site not found")
 		return response.NotFound(fmt.Errorf("site not found"))
 	}
 
