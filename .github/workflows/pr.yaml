@@ -123,7 +123,7 @@ jobs:
       - name: Initialise site manager
         run: |
           lxd-site-mgr --state-dir ./state/dir1/ waitready
-          lxd-site-mgr --state-dir ./state/dir1/ init "member1" 0.0.0.0:9001 --bootstrap
+          lxd-site-mgr --state-dir ./state/dir1/ init "member1" 0.0.0.0:9001 --bootstrap --control-address 0.0.0.0:9010
 
       - name: Add dummy data to site manager
         run: |
