@@ -23,7 +23,7 @@ var managerConfigsCmd = rest.Endpoint{
 }
 
 // partially update manager configs, replace configs only if they exist in payload.
-func managerConfigPatch(s *state.State, r *http.Request) response.Response {
+func managerConfigPatch(s state.State, r *http.Request) response.Response {
 	var payload types.ManagerConfigs
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
@@ -40,7 +40,7 @@ func managerConfigPatch(s *state.State, r *http.Request) response.Response {
 		return response.BadRequest(err)
 	}
 
-	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+	err = s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		err := query.UpdateConfig(tx, "manager_configs", payload.Config)
 		return err
 	})
@@ -52,9 +52,9 @@ func managerConfigPatch(s *state.State, r *http.Request) response.Response {
 	return response.EmptySyncResponse
 }
 
-func managerConfigsGet(s *state.State, r *http.Request) response.Response {
+func managerConfigsGet(s state.State, r *http.Request) response.Response {
 	var dbConfigs []database.ManagerConfig
-	err := s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+	err := s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		var err error
 		dbConfigs, err = database.GetManagerConfig(ctx, tx)
 		return err

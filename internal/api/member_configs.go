@@ -37,7 +37,7 @@ var memberConfigsCmd = rest.Endpoint{
 
 // update existing member configs.
 func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointHandler {
-	return func(clusterState *clusterState.State, r *http.Request) response.Response {
+	return func(clusterState clusterState.State, r *http.Request) response.Response {
 		memberName, err := url.PathUnescape(mux.Vars(r)["name"])
 		if err != nil {
 			return response.BadRequest(err)
@@ -63,6 +63,11 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 		reverter := revert.New()
 		defer reverter.Fail()
 
+		localClient, err := siteManagerState.MicroCluster.LocalClient()
+		if err != nil {
+			return response.InternalError(fmt.Errorf("failed to get local client: %w", err))
+		}
+
 		if payload.HTTPSAddress != "" {
 			newAddress, err := microTypes.ParseAddrPort(payload.HTTPSAddress)
 			if err != nil {
@@ -83,7 +88,7 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 					return response.InternalError(fmt.Errorf("failed to get remote client for member %q: %w", memberName, err))
 				}
 
-				err = client.MemberConfigPatchCmd(clusterState.Context, targetClient, memberName, &payload)
+				err = client.MemberConfigPatchCmd(r.Context(), targetClient, memberName, &payload)
 				if err != nil {
 					return response.InternalError(fmt.Errorf("failed to update member %q config: %w", memberName, err))
 				}
@@ -93,7 +98,11 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 
 			// update the control listener address for local member configs
 			newServerConfig := make(map[string]microTypes.ServerConfig)
-			existingServerConfig := clusterState.LocalConfig().GetServers()
+			existingServerConfig, err := client.GetDaemonServerConfigs(r.Context(), localClient)
+			if err != nil {
+				return response.InternalError(fmt.Errorf("failed to get local member %q config: %w", memberName, err))
+			}
+
 			for name, config := range existingServerConfig {
 				if name == string(ControlListener) {
 					config.Address = newAddress
@@ -102,7 +111,7 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 				newServerConfig[name] = config
 			}
 
-			err = siteManagerState.MicroCluster.UpdateServers(clusterState.Context, newServerConfig)
+			err = siteManagerState.MicroCluster.UpdateServers(r.Context(), newServerConfig)
 			if err != nil {
 				return response.InternalError(fmt.Errorf("failed to update local member %q config: %w", memberName, err))
 			}
@@ -110,7 +119,7 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 			// in case if the dqlite transaction fails to update the member config, we need to revert the control listener address update
 			// this will keep daemon local configs in sync with what's stored in dqlite
 			reverter.Add(func() {
-				err := siteManagerState.MicroCluster.UpdateServers(clusterState.Context, existingServerConfig)
+				err := siteManagerState.MicroCluster.UpdateServers(r.Context(), existingServerConfig)
 				if err != nil {
 					logger.Warn("Failed to revert control listener address update, data may be inconsistent")
 				}
@@ -119,7 +128,7 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 			})
 		}
 
-		err = clusterState.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		err = clusterState.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 			// get existing member config entry and use it as a base
 			filter := database.ManagerMemberConfigFilter{
 				Target: &memberName,
@@ -136,7 +145,16 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 				externalAddress = payload.ExternalAddress
 			}
 
-			controlListenerConfig := clusterState.LocalConfig().GetServers()[string(ControlListener)]
+			serverConfigs, err := client.GetDaemonServerConfigs(r.Context(), localClient)
+			if err != nil {
+				return fmt.Errorf("failed to get local member %q config: %w", memberName, err)
+			}
+
+			controlListenerConfig, ok := serverConfigs[string(ControlListener)]
+			if !ok {
+				return fmt.Errorf("control listener config not found")
+			}
+
 			httpsAddress := controlListenerConfig.Address.String()
 
 			// It is expected a member config entry was created for every member during initialisation
@@ -157,14 +175,14 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 	}
 }
 
-func memberConfigGet(s *clusterState.State, r *http.Request) response.Response {
+func memberConfigGet(s clusterState.State, r *http.Request) response.Response {
 	memberName, err := url.PathUnescape(mux.Vars(r)["name"])
 	if err != nil {
 		return response.BadRequest(err)
 	}
 
 	var dbConfigs []database.ManagerMemberConfig
-	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+	err = s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		var err error
 		filter := database.ManagerMemberConfigFilter{
 			Target: &memberName,
@@ -185,9 +203,9 @@ func memberConfigGet(s *clusterState.State, r *http.Request) response.Response {
 	return response.SyncResponse(true, toMemberConfigsAPI(dbConfigs)[0])
 }
 
-func memberConfigsGet(s *clusterState.State, r *http.Request) response.Response {
+func memberConfigsGet(s clusterState.State, r *http.Request) response.Response {
 	var dbConfigs []database.ManagerMemberConfig
-	err := s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+	err := s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		var err error
 		dbConfigs, err = database.GetManagerMemberConfig(ctx, tx)
 		return err

@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/canonical/lxd/shared/logger"
-	"github.com/canonical/microcluster/config"
 	"github.com/canonical/microcluster/microcluster"
 	clusterState "github.com/canonical/microcluster/state"
 	"github.com/spf13/cobra"
@@ -78,13 +77,13 @@ func (c *cmdDaemon) run(cmd *cobra.Command, args []string) error {
 	siteManagerState := state.New(m)
 	m.AddServers(api.GetServers(siteManagerState))
 
-	hooks := &config.Hooks{
-		PostBootstrap: func(s *clusterState.State, initConfig map[string]string) error {
-			return InitialiseControlListener(s, m, initConfig)
+	hooks := &clusterState.Hooks{
+		PostBootstrap: func(s clusterState.State, initConfig map[string]string) error {
+			return InitialiseControlListener(cmd.Context(), s, m, initConfig)
 		},
 
-		PostJoin: func(s *clusterState.State, initConfig map[string]string) error {
-			return InitialiseControlListener(s, m, initConfig)
+		PostJoin: func(s clusterState.State, initConfig map[string]string) error {
+			return InitialiseControlListener(cmd.Context(), s, m, initConfig)
 		},
 	}
 

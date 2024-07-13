@@ -54,10 +54,10 @@ github.com/bmatcuk/doublestar/v4 v4.6.1 h1:FH9SifrbvJhnlQpztAx++wlkk70QBf0iBWDwN
 github.com/bmatcuk/doublestar/v4 v4.6.1/go.mod h1:xBQ8jztBU6kakFMg+8WGxn0c6z1fTSPVIjEY1Wr7jzc=
 github.com/canonical/go-dqlite v1.21.0 h1:4gLDdV2GF+vg0yv9Ff+mfZZNQ1JGhnQ3GnS2GeZPHfA=
 github.com/canonical/go-dqlite v1.21.0/go.mod h1:Uvy943N8R4CFUAs59A1NVaziWY9nJ686lScY7ywurfg=
-github.com/canonical/lxd v0.0.0-20240711152529-65869a442d53 h1:3rCKsCXBLiwQKZXRIr56mI7hoyjWrs//T8uFm5n1A50=
-github.com/canonical/lxd v0.0.0-20240711152529-65869a442d53/go.mod h1:z+cTDgUmEJeLJ8zrIrjogIWhiTb6IZ0D05Hbf7Vjr+Q=
-github.com/canonical/microcluster v0.0.0-20240711192705-6c9d5fadf881 h1:Noi2WTU/7UEdNpqcwuEnxxMh4IyCJmbwYn87zX3xYvM=
-github.com/canonical/microcluster v0.0.0-20240711192705-6c9d5fadf881/go.mod h1:ldDJ32PQhoc7sTSkQnUs2CQPnjUOkkXrzlbUaq9EIPI=
+github.com/canonical/lxd v0.0.0-20240712084543-ca61deece574 h1:qDsVQgX+1+GO/cEH78LaXAlju0B1t6iYJ3ZuRg2Bf7g=
+github.com/canonical/lxd v0.0.0-20240712084543-ca61deece574/go.mod h1:z+cTDgUmEJeLJ8zrIrjogIWhiTb6IZ0D05Hbf7Vjr+Q=
+github.com/canonical/microcluster v0.0.0-20240713000501-acbd73987aba h1:blk2XlzV8c2PvOxZPe/yO5vB3gE5Atn3NTNJ+8IOch0=
+github.com/canonical/microcluster v0.0.0-20240713000501-acbd73987aba/go.mod h1:ldDJ32PQhoc7sTSkQnUs2CQPnjUOkkXrzlbUaq9EIPI=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=

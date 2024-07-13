@@ -8,7 +8,7 @@ import (
 )
 
 // AccessHandler represents a function that handles an API endpoint with access control.
-type AccessHandler func(state *state.State, r *http.Request) (bool, response.Response)
+type AccessHandler func(state state.State, r *http.Request) (bool, response.Response)
 
 // EndpointHandler represents a function that handles an API endpoint.
-type EndpointHandler func(*state.State, *http.Request) response.Response
+type EndpointHandler func(state.State, *http.Request) response.Response

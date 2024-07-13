@@ -43,11 +43,11 @@ func generateUIEndpoints() []rest.Endpoint {
 	return uiEndpoints
 }
 
-func redirectToUI(s *state.State, r *http.Request) response.Response {
+func redirectToUI(s state.State, r *http.Request) response.Response {
 	return response.SyncResponseRedirect("/ui")
 }
 
-func serveUI(s *state.State, r *http.Request) response.Response {
+func serveUI(s state.State, r *http.Request) response.Response {
 	uiFS, err := fs.Sub(UI, "static")
 	if err != nil {
 		return response.InternalError(err)

@@ -45,7 +45,7 @@ var siteCmd = rest.Endpoint{
 	Delete: rest.EndpointAction{Handler: siteDelete, AllowUntrusted: true},
 }
 
-func sitesStatusPost(s *state.State, r *http.Request) response.Response {
+func sitesStatusPost(s state.State, r *http.Request) response.Response {
 	if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
 		logger.Warn("tls is required")
 		return response.BadRequest(fmt.Errorf("tls is required"))
@@ -58,7 +58,7 @@ func sitesStatusPost(s *state.State, r *http.Request) response.Response {
 	peerCert := r.TLS.PeerCertificates[0]
 
 	var siteID int64
-	err := s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+	err := s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		dbSites, err := database.GetCoreSitesWithDetails(ctx, tx)
 		if err != nil {
 			return err
@@ -106,7 +106,7 @@ func sitesStatusPost(s *state.State, r *http.Request) response.Response {
 		return response.BadRequest(err)
 	}
 
-	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+	err = s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		dbSite, err := database.GetSiteDetail(ctx, tx, siteID)
 		if err != nil {
 			return err
@@ -158,10 +158,10 @@ func parseStatusDistribution(statuses []types.StatusDistribution) (int64, string
 	return total, string(parsedStatuses)
 }
 
-func sitesGet(s *state.State, r *http.Request) response.Response {
+func sitesGet(s state.State, r *http.Request) response.Response {
 	var dbSiteDetails []database.CoreSiteWithDetails
 
-	err := s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+	err := s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		var err error
 		dbSiteDetails, err = database.GetCoreSitesWithDetails(ctx, tx)
 		return err
@@ -179,14 +179,14 @@ func sitesGet(s *state.State, r *http.Request) response.Response {
 	return response.SyncResponse(true, result)
 }
 
-func siteGet(s *state.State, r *http.Request) response.Response {
+func siteGet(s state.State, r *http.Request) response.Response {
 	siteName, err := url.PathUnescape(mux.Vars(r)["siteName"])
 	if err != nil {
 		return response.SmartError(err)
 	}
 
 	var dbSiteDetails []database.CoreSiteWithDetails
-	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+	err = s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		var err error
 		dbSiteDetails, err = database.GetCoreSiteWithDetailBySiteName(ctx, tx, siteName)
 		return err
@@ -208,13 +208,13 @@ func siteGet(s *state.State, r *http.Request) response.Response {
 	return response.SyncResponse(true, result[0])
 }
 
-func siteDelete(s *state.State, r *http.Request) response.Response {
+func siteDelete(s state.State, r *http.Request) response.Response {
 	siteName, err := url.PathUnescape(mux.Vars(r)["siteName"])
 	if err != nil {
 		return response.SmartError(err)
 	}
 
-	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+	err = s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		return database.DeleteCoreSite(ctx, tx, siteName)
 	})
 
@@ -225,7 +225,7 @@ func siteDelete(s *state.State, r *http.Request) response.Response {
 	return response.EmptySyncResponse
 }
 
-func sitesPost(s *state.State, r *http.Request) response.Response {
+func sitesPost(s state.State, r *http.Request) response.Response {
 	payload := types.SitePost{}
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
@@ -243,7 +243,7 @@ func sitesPost(s *state.State, r *http.Request) response.Response {
 
 	// get token secret for HMAC verification
 	var token *database.CoreSiteToken
-	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+	err = s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		var err error
 		token, err = database.GetCoreSiteToken(ctx, tx, payload.SiteName)
 		if err != nil {
@@ -269,7 +269,7 @@ func sitesPost(s *state.State, r *http.Request) response.Response {
 	}
 
 	// Create site entry and delete token in a single db transaction
-	err = s.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+	err = s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		// create site entry
 		siteID, err := database.CreateCoreSite(ctx, tx, database.CoreSite{
 			Name:            payload.SiteName,
