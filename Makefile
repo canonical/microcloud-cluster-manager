@@ -1,3 +1,6 @@
+VERSION=$(shell git describe --always --dirty --abbrev=10)
+LDFLAGS="-X github.com/canonical/lxd-site-manager/version.version=$(VERSION)"
+
 .PHONY: default
 default: build
 
@@ -15,8 +18,12 @@ build:
 	cd ui && yarn install && yarn build
 	rm -rf internal/api/static &>/dev/null
 	cd internal/api && go generate
-	go install -v ./cmd/lxd-site-mgr
-	go install -v ./cmd/lxd-site-mgrd
+	go install -v \
+		-ldflags $(LDFLAGS) \
+		./cmd/lxd-site-mgr
+	go install -v \
+		-ldflags $(LDFLAGS) \
+		./cmd/lxd-site-mgrd
 
 # Testing targets.
 .PHONY: check

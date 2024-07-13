@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/canonical/lxd-site-manager/internal/client"
+	"github.com/canonical/lxd-site-manager/version"
 )
 
 type cmdSite struct {
@@ -62,7 +63,13 @@ func (c *cmdSiteList) command() *cobra.Command {
 }
 
 func (c *cmdSiteList) run(cmd *cobra.Command, args []string) error {
-	m, err := microcluster.App(microcluster.Args{StateDir: c.common.FlagStateDir, Verbose: c.common.FlagLogVerbose, Debug: c.common.FlagLogDebug})
+	m, err := microcluster.App(microcluster.Args{
+		StateDir: c.common.FlagStateDir,
+		Verbose:  c.common.FlagLogVerbose,
+		Debug:    c.common.FlagLogDebug,
+		Version:  version.Version(),
+	})
+
 	if err != nil {
 		return err
 	}
@@ -122,7 +129,13 @@ func (c *cmdSiteShow) command() *cobra.Command {
 }
 
 func (c *cmdSiteShow) run(cmd *cobra.Command, args []string) error {
-	m, err := microcluster.App(microcluster.Args{StateDir: c.common.FlagStateDir, Verbose: c.common.FlagLogVerbose, Debug: c.common.FlagLogDebug})
+	m, err := microcluster.App(microcluster.Args{
+		StateDir: c.common.FlagStateDir,
+		Verbose:  c.common.FlagLogVerbose,
+		Debug:    c.common.FlagLogDebug,
+		Version:  version.Version(),
+	})
+
 	if err != nil {
 		return err
 	}

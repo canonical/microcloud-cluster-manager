@@ -28,7 +28,7 @@ func main() {
 	app := &cobra.Command{
 		Use:               "lxd-site-mgr",
 		Short:             "Command for managing the LXD site manager daemon",
-		Version:           version.Version,
+		Version:           version.Version(),
 		SilenceUsage:      true,
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}

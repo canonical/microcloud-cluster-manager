@@ -10,6 +10,7 @@ import (
 
 	"github.com/canonical/lxd-site-manager/internal/api/types"
 	"github.com/canonical/lxd-site-manager/internal/client"
+	"github.com/canonical/lxd-site-manager/version"
 )
 
 type cmdConfig struct {
@@ -58,7 +59,13 @@ func (c *cmdConfigSet) command() *cobra.Command {
 }
 
 func (c *cmdConfigSet) run(cmd *cobra.Command, args []string) error {
-	m, err := microcluster.App(microcluster.Args{StateDir: c.common.FlagStateDir, Verbose: c.common.FlagLogVerbose, Debug: c.common.FlagLogDebug})
+	m, err := microcluster.App(microcluster.Args{
+		StateDir: c.common.FlagStateDir,
+		Verbose:  c.common.FlagLogVerbose,
+		Debug:    c.common.FlagLogDebug,
+		Version:  version.Version(),
+	})
+
 	if err != nil {
 		return err
 	}
@@ -185,7 +192,13 @@ func (c *cmdConfigShow) command() *cobra.Command {
 }
 
 func (c *cmdConfigShow) run(cmd *cobra.Command, args []string) error {
-	m, err := microcluster.App(microcluster.Args{StateDir: c.common.FlagStateDir, Verbose: c.common.FlagLogVerbose, Debug: c.common.FlagLogDebug})
+	m, err := microcluster.App(microcluster.Args{
+		StateDir: c.common.FlagStateDir,
+		Verbose:  c.common.FlagLogVerbose,
+		Debug:    c.common.FlagLogDebug,
+		Version:  version.Version(),
+	})
+
 	if err != nil {
 		return err
 	}

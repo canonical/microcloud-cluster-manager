@@ -7,6 +7,8 @@ import (
 	"github.com/canonical/microcluster/microcluster"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+
+	"github.com/canonical/lxd-site-manager/version"
 )
 
 type cmdSQL struct {
@@ -35,7 +37,13 @@ func (c *cmdSQL) run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	m, err := microcluster.App(microcluster.Args{StateDir: c.common.FlagStateDir, Verbose: c.common.FlagLogVerbose, Debug: c.common.FlagLogDebug})
+	m, err := microcluster.App(microcluster.Args{
+		StateDir: c.common.FlagStateDir,
+		Verbose:  c.common.FlagLogVerbose,
+		Debug:    c.common.FlagLogDebug,
+		Version:  version.Version(),
+	})
+
 	if err != nil {
 		return err
 	}
