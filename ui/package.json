@@ -23,7 +23,7 @@
     "backend-run": "cd .. && make && go run ./cmd/lxd-site-mgrd --state-dir ./state/dir1/",
     "backend-init": "cd .. &&  go run ./cmd/lxd-site-mgr --state-dir ./state/dir1/ waitready && go run ./cmd/lxd-site-mgr --state-dir ./state/dir1/ init \"member1\" 0.0.0.0:9001 --bootstrap && scripts/generate_sites.sh --local && scripts/generate_configs.sh --local",
     "test-e2e": "npx playwright test",
-    "test-e2e-screenshots": "npx playwright test --update-snapshots"
+    "test-e2e-update": "npx playwright test --update-snapshots"
   },
   "dependencies": {
     "@canonical/react-components": "0.59.0",

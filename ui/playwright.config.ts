@@ -38,6 +38,8 @@ const config: PlaywrightTestConfig = {
   },
   // Limit the number of failures on CI to save resources
   maxFailures: process.env.CI ? 3 : undefined,
+  // path template for saving snapshots for visual regression tests
+  snapshotPathTemplate: "{testDir}/screenshot/assets/{projectName}/{arg}{ext}",
 
   /* Configure projects for major browsers */
   projects: [

@@ -125,6 +125,12 @@ jobs:
           lxd-site-mgr --state-dir ./state/dir1/ waitready
           lxd-site-mgr --state-dir ./state/dir1/ init "member1" 0.0.0.0:9001 --bootstrap
 
+      - name: Add dummy data to site manager
+        run: |
+          set -eux
+          sudo chmod 0777 ../lxd-site-manager
+          scripts/generate_sites.sh
+
       - name: Install Playwright Browsers
         run: cd ui && npx playwright install --with-deps ${{ matrix.browser }}
 
