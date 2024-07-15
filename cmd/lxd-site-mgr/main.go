@@ -65,6 +65,9 @@ func main() {
 	var cmdConfig = cmdConfig{common: &commonCmd}
 	app.AddCommand(cmdConfig.command())
 
+	var cmdExternalSiteJoinToken = cmdExternalSiteJoinToken{common: &commonCmd}
+	app.AddCommand(cmdExternalSiteJoinToken.command())
+
 	app.InitDefaultHelpCmd()
 
 	err := app.Execute()
