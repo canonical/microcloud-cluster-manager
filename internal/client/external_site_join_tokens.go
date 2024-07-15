@@ -26,3 +26,19 @@ func ExternalSiteJoinTokenPostCmd(ctx context.Context, c *client.Client, payload
 
 	return tokenResponse.Token, nil
 }
+
+// ExternalSiteJoinTokenGetCmd sends a GET request to /1.0/external-site-join-token.
+func ExternalSiteJoinTokenGetCmd(ctx context.Context, c *client.Client) ([]types.ExternalSiteToken, error) {
+	queryCtx, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
+
+	tokens := []types.ExternalSiteToken{}
+	url := api.NewURL().Path("external-site-join-token")
+	err := c.Query(queryCtx, "GET", types.APIVersionPrefix, url, nil, &tokens)
+	if err != nil {
+		clientURL := c.URL()
+		return nil, fmt.Errorf("Failed performing action on %q: %w", clientURL.String(), err)
+	}
+
+	return tokens, nil
+}

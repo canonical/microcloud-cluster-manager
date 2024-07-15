@@ -1,8 +1,10 @@
 package main
 
 import (
+	"sort"
 	"time"
 
+	lxdCmd "github.com/canonical/lxd/shared/cmd"
 	"github.com/canonical/microcluster/microcluster"
 	"github.com/spf13/cobra"
 
@@ -24,6 +26,9 @@ func (c *cmdExternalSiteJoinToken) command() *cobra.Command {
 
 	var cmdAdd = cmdExternalSiteJoinTokenAdd{common: c.common}
 	cmd.AddCommand(cmdAdd.command())
+
+	var cmdShow = cmdExternalSiteJoinTokenShow{common: c.common}
+	cmd.AddCommand(cmdShow.command())
 
 	return cmd
 }
@@ -95,4 +100,67 @@ func (c *cmdExternalSiteJoinTokenAdd) run(cmd *cobra.Command, args []string) err
 	cmd.Println("The token can not be retrieved at a later stage, please save it now.")
 	cmd.Println(token)
 	return nil
+}
+
+type cmdExternalSiteJoinTokenShow struct {
+	common *CmdControl
+}
+
+func (c *cmdExternalSiteJoinTokenShow) command() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "show",
+		Short: "List all external join tokens for LXD sites.",
+		Example: `
+			lxd-site-mgr external-site-join-token show
+			Will list all external join tokens.
+		`,
+		RunE: c.run,
+	}
+
+	return cmd
+}
+
+func (c *cmdExternalSiteJoinTokenShow) run(cmd *cobra.Command, args []string) error {
+	m, err := microcluster.App(microcluster.Args{
+		StateDir: c.common.FlagStateDir,
+		Verbose:  c.common.FlagLogVerbose,
+		Debug:    c.common.FlagLogDebug,
+		Version:  version.Version(),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	cli, err := m.LocalClient()
+	if err != nil {
+		return err
+	}
+
+	if len(args) > 0 {
+		return cmd.Help()
+	}
+
+	tokens, err := client.ExternalSiteJoinTokenGetCmd(cmd.Context(), cli)
+	if err != nil {
+		return err
+	}
+
+	headers := []string{
+		"SITE_NAME",
+		"EXPIRY",
+		"CREATED_AT",
+	}
+
+	var rows [][]string
+	for _, token := range tokens {
+		rows = append(rows, []string{
+			token.SiteName,
+			token.Expiry.String(),
+			token.CreateAt.String(),
+		})
+	}
+
+	sort.Sort(lxdCmd.SortColumnsNaturally(rows))
+	return lxdCmd.RenderTable(lxdCmd.TableFormatTable, headers, rows, tokens)
 }
