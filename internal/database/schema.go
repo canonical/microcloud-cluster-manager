@@ -68,7 +68,7 @@ func schemaUpdate1(ctx context.Context, tx *sql.Tx) error {
             target                  TEXT NOT NULL,
             https_address           TEXT NOT NULL,
             external_address        TEXT NOT NULL default '',
-            FOREIGN KEY (target) REFERENCES internal_cluster_members (name) ON DELETE CASCADE,
+            FOREIGN KEY (target) REFERENCES core_cluster_members (name) ON DELETE CASCADE,
             UNIQUE (target)
         );
     `
