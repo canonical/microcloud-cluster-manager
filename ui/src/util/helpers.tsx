@@ -17,17 +17,9 @@ export const handleResponse = async (response: Response) => {
 export const isWidthBelow = (width: number): boolean =>
   window.innerWidth < width;
 
-export function getHeartbeatStatus(cluster: Cluster): string {
+export function getMinutesSinceLastHeartbeat(cluster: Cluster): number {
   const lastSeenTime = Date.parse(cluster.last_status_update_at);
-  const lastHeartbeat = Math.floor((Date.now() - lastSeenTime) / 60000); //Value in Minutes
-
-  if (lastHeartbeat <= 1) {
-    return `< 1 minute ago`;
-  } else if (lastHeartbeat < 5) {
-    return `${lastHeartbeat} minutes ago`;
-  }
-
-  return "Unresponsive";
+  return Math.floor((Date.now() - lastSeenTime) / 60000);
 }
 
 export const humanFileSize = (bytes: number): string => {
