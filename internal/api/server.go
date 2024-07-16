@@ -27,6 +27,9 @@ func siteManagementListener(s *state.SiteManagerState) rest.Server {
 				Endpoints: append(
 					[]rest.Endpoint{
 						uiRootCmd,
+						oidcLoginCmd(s),
+						oidcCallbackCmd(s),
+						oidcLogoutCmd(s),
 					},
 					generateUIEndpoints()...,
 				),
@@ -34,9 +37,9 @@ func siteManagementListener(s *state.SiteManagerState) rest.Server {
 			{
 				PathPrefix: types.APIVersionPrefix,
 				Endpoints: []rest.Endpoint{
-					siteCmd,
-					sitesCmd,
-					managerConfigsCmd,
+					siteCmd(s),
+					sitesCmd(s),
+					managerConfigsCmd(s),
 					memberConfigCmd(s),
 					memberConfigsCmd,
 					externalSiteJoinTokensCmd,

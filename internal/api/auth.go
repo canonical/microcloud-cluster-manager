@@ -1,0 +1,67 @@
+package api
+
+import (
+	"net/http"
+
+	"github.com/canonical/lxd/lxd/response"
+	"github.com/canonical/microcluster/rest"
+	microState "github.com/canonical/microcluster/state"
+	"github.com/google/uuid"
+
+	"github.com/canonical/lxd-site-manager/internal/api/types"
+	"github.com/canonical/lxd-site-manager/internal/state"
+)
+
+var oidcLoginCmd = func(s *state.SiteManagerState) rest.Endpoint {
+	return rest.Endpoint{
+		Path: "oidc/login",
+		Get:  rest.EndpointAction{Handler: oidcLogin(s), AllowUntrusted: true},
+	}
+}
+
+var oidcCallbackCmd = func(s *state.SiteManagerState) rest.Endpoint {
+	return rest.Endpoint{
+		Path: "oidc/callback",
+		Get:  rest.EndpointAction{Handler: oidcCallback(s), AllowUntrusted: true},
+	}
+}
+
+var oidcLogoutCmd = func(s *state.SiteManagerState) rest.Endpoint {
+	return rest.Endpoint{
+		Path: "oidc/logout",
+		Get:  rest.EndpointAction{Handler: oidcLogout(s), AllowUntrusted: true},
+	}
+}
+
+func oidcLogin(s *state.SiteManagerState) types.EndpointHandler {
+	return func(innerState microState.State, r *http.Request) response.Response {
+		loginHandler := func(w http.ResponseWriter) error {
+			s.OIDCVerifier.Login(w, r, uuid.New().String())
+			return nil
+		}
+
+		return response.ManualResponse(loginHandler)
+	}
+}
+
+func oidcCallback(s *state.SiteManagerState) types.EndpointHandler {
+	return func(innerState microState.State, r *http.Request) response.Response {
+		callbackHandler := func(w http.ResponseWriter) error {
+			s.OIDCVerifier.Callback(w, r)
+			return nil
+		}
+
+		return response.ManualResponse(callbackHandler)
+	}
+}
+
+func oidcLogout(s *state.SiteManagerState) types.EndpointHandler {
+	return func(innerState microState.State, r *http.Request) response.Response {
+		logoutHandler := func(w http.ResponseWriter) error {
+			s.OIDCVerifier.Logout(w, r)
+			return nil
+		}
+
+		return response.ManualResponse(logoutHandler)
+	}
+}
