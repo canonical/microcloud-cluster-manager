@@ -39,6 +39,8 @@ COPY --from=build /usr/lib/x86_64-linux-gnu/libuv.so.1 /usr/lib/x86_64-linux-gnu
 COPY --from=build /usr/lib/x86_64-linux-gnu/libraft.so.3 /usr/lib/x86_64-linux-gnu/libraft.so.3
 COPY --from=build /usr/lib/x86_64-linux-gnu/libsqlite3.so.0 /usr/lib/x86_64-linux-gnu/libsqlite3.so.0
 
-RUN apt-get update && apt-get install haproxy -y
+RUN apt-get update && \
+    apt-get install haproxy -y && \
+    apt-get install ca-certificates -y && update-ca-certificates
 
 ENTRYPOINT ["./entrypoint"]

@@ -2,4 +2,18 @@ domain: lxd-site-manager
 
 image: prod-comms.ps5.docker-registry.canonical.com/lxd-site-manager
 
-useProxy: false
+env:
+  - name: SSL_CERT_DIR
+    value: /etc/ssl/certs
+  - name: OIDC_ISSUER
+    secretKeyRef:
+      key: oidc-issuer
+      name: lxd-oidc-config
+  - name: OIDC_CLIENT_ID
+    secretKeyRef:
+      key: oidc-client-id
+      name: lxd-oidc-config
+  - name: OIDC_AUDIENCE
+    secretKeyRef:
+      key: oidc-audience
+      name: lxd-oidc-config
