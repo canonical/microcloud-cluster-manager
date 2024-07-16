@@ -1,6 +1,6 @@
+import Meter from "components/Meter";
 import { FC } from "react";
 import { Cluster } from "types/cluster";
-import Meter from "../Meter";
 
 interface Props {
   cluster: Cluster;

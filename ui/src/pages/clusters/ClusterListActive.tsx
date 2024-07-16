@@ -4,12 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { MainTable, TablePagination } from "@canonical/react-components";
 import Loader from "components/Loader";
 import { Link } from "react-router-dom";
-import { ClusterInstances } from "components/meters/ClusterInstances";
-import { ClusterCpu } from "components/meters/ClusterCpu";
-import { ClusterMemory } from "components/meters/ClusterMemory";
-import { ClusterDisk } from "components/meters/ClusterDisk";
-import { ClusterNodes } from "components/meters/ClusterNodes";
-import ClusterHeartbeat from "components/ClusterHeartbeat";
+import { ClusterInstances } from "./metrics/ClusterInstances";
+import { ClusterCpu } from "./metrics/ClusterCpu";
+import { ClusterMemory } from "./metrics/ClusterMemory";
+import { ClusterDisk } from "./metrics/ClusterDisk";
+import { ClusterNodes } from "./metrics/ClusterNodes";
+import ClusterHeartbeat from "./metrics/ClusterHeartbeat";
 import { queryKeys } from "util/queryKeys";
 
 const ClusterListActive: FC = () => {
