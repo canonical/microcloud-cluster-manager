@@ -22,7 +22,7 @@
     "start": "./entrypoint 0.0.0.0:${PORT}",
     "backend-run": "cd .. && make && go run ./cmd/lxd-site-mgrd --state-dir ./state/dir1/",
     "backend-init": "cd .. &&  go run ./cmd/lxd-site-mgr --state-dir ./state/dir1/ waitready && go run ./cmd/lxd-site-mgr --state-dir ./state/dir1/ init \"member1\" 0.0.0.0:9001 --bootstrap --control-address 0.0.0.0:9010 && scripts/generate_sites.sh --local && scripts/generate_configs.sh --local && scripts/generate_site_join_token.sh --local",
-    "test-e2e": "npx playwright test",
+    "test-e2e": "cd .. && scripts/generate_configs.sh --local && cd ui && npx playwright test",
     "test-e2e-update": "npx playwright test --update-snapshots"
   },
   "dependencies": {
@@ -44,6 +44,7 @@
     "@babel/preset-react": "7.24.6",
     "@babel/preset-typescript": "7.24.6",
     "@playwright/test": "1.44.1",
+    "@types/dotenv": "^8.2.0",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@types/react-router-dom": "5.3.3",
@@ -54,6 +55,7 @@
     "autoprefixer": "10.4.19",
     "babel-plugin-istanbul": "6.1.1",
     "concurrently": "8.2.2",
+    "dotenv": "^16.4.5",
     "eslint": "8.56.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-prettier": "5.1.3",

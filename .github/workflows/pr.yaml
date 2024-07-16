@@ -79,6 +79,7 @@ jobs:
         run: cd ui && yarn lint-js
 
   ui-e2e-tests:
+    environment: ci-end-to-end
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -133,6 +134,22 @@ jobs:
 
       - name: Install Playwright Browsers
         run: cd ui && npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Setup for tests
+        shell: bash
+        env:
+          OIDC_USER: ${{ secrets.OIDC_USER }}
+          OIDC_PASSWORD: ${{ secrets.OIDC_PASSWORD }}
+          OIDC_ISSUER: ${{ secrets.OIDC_ISSUER }}
+          OIDC_CLIENT_ID: ${{ secrets.OIDC_CLIENT_ID }}
+          OIDC_AUDIENCE: ${{ secrets.OIDC_AUDIENCE }}
+        run: |
+          echo "OIDC_USER=$OIDC_USER" >> ui/.env.local
+          echo "OIDC_PASSWORD=$OIDC_PASSWORD" >> ui/.env.local
+          echo "OIDC_ISSUER=$OIDC_ISSUER" >> ui/.env.local
+          echo "OIDC_CLIENT_ID=$OIDC_CLIENT_ID" >> ui/.env.local
+          echo "OIDC_AUDIENCE=$OIDC_AUDIENCE" >> ui/.env.local
+          scripts/generate_configs.sh
 
       - name: Run Playwright tests
         run: cd ui && npx playwright test --project ${{ matrix.browser }}

@@ -1,5 +1,13 @@
 import type { PlaywrightTestConfig } from "@playwright/test";
 import { devices } from "@playwright/test";
+import dotenv from "dotenv";
+import path from "path";
+import { authFile } from "./tests/fixtures/constants";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// provide environment variables from .env.local to all tests
+dotenv.config({ path: path.resolve(__dirname, ".env.local") });
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -29,7 +37,10 @@ const config: PlaywrightTestConfig = {
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     actionTimeout: 0,
-    baseURL: "https://0.0.0.0:9001/ui",
+    // For local testing, it's better to use the vite dev server so we don't need to rebuild assets
+    baseURL: process.env.CI
+      ? "https://0.0.0.0:9001/ui"
+      : "https://0.0.0.0:8414/ui",
     ignoreHTTPSErrors: true,
     video: "retain-on-failure",
 
@@ -43,17 +54,32 @@ const config: PlaywrightTestConfig = {
 
   /* Configure projects for major browsers */
   projects: [
+    // Setup project
+    {
+      name: "setup-chromium",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /.*\.setup\.ts/,
+    },
+    {
+      name: "setup-firefox",
+      use: { ...devices["Desktop Firefox"] },
+      testMatch: /.*\.setup\.ts/,
+    },
     {
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
+        storageState: authFile,
       },
+      dependencies: ["setup-chromium"],
     },
     {
       name: "firefox",
       use: {
         ...devices["Desktop Firefox"],
+        storageState: authFile,
       },
+      dependencies: ["setup-firefox"],
     },
   ],
 };
