@@ -3,6 +3,8 @@ package oidc
 import (
 	"context"
 	"crypto/sha512"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -76,6 +78,40 @@ func (e AuthError) Error() string {
 // Unwrap implements the xerrors.Wrapper interface for AuthError.
 func (e AuthError) Unwrap() error {
 	return e.Err
+}
+
+// StateToken is used to encode the state of the OIDC client in a URL which is used to prevent CSRF attacks (https://datatracker.ietf.org/doc/html/rfc6749#section-10.12).
+// RedirectURL is the URL to which the client will be redirected after authentication.
+// ID is a unique identifier for the state token and therefore the current login session.
+type StateToken struct {
+	RedirectURL string
+	ID          string
+}
+
+// String encodes the StateToken as a base64 encoded string.
+func (st StateToken) String() (string, error) {
+	tokenData, err := json.Marshal(st)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString(tokenData), nil
+}
+
+// DecodeStateToken decodes a base64 encoded string into a StateToken.
+func DecodeStateToken(token string) (StateToken, error) {
+	tokenData, err := base64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return StateToken{}, err
+	}
+
+	var stateToken StateToken
+	err = json.Unmarshal(tokenData, &stateToken)
+	if err != nil {
+		return StateToken{}, err
+	}
+
+	return stateToken, nil
 }
 
 // Auth extracts OIDC tokens from the request, verifies them, and returns the subject.
@@ -179,18 +215,18 @@ func (o *Verifier) Login(w http.ResponseWriter, r *http.Request, stateTokenStr s
 }
 
 // Logout deletes the ID and refresh token cookies and redirects the user to the login page.
-func (o *Verifier) Logout(w http.ResponseWriter, r *http.Request) {
+func (o *Verifier) Logout(w http.ResponseWriter, r *http.Request, redirectURL string) {
 	err := o.setCookies(w, nil, uuid.UUID{}, "", "", true)
 	if err != nil {
 		_ = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to delete login information: %w", err).Error()).Render(w)
 		return
 	}
 
-	http.Redirect(w, r, "/ui/login", http.StatusFound)
+	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
 // Callback is a http.HandlerFunc which implements the code exchange required on the /oidc/callback endpoint.
-func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request) {
+func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL string) {
 	err := o.ensureConfig(r.Context(), r)
 	if err != nil {
 		_ = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("OIDC callback failed: %w", err).Error()).Render(w)
@@ -206,7 +242,7 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request) {
 
 		// Send to the UI.
 		// NOTE: Once the UI does the redirection on its own, we may be able to use the referer here instead.
-		http.Redirect(w, r, "/ui", http.StatusMovedPermanently)
+		http.Redirect(w, r, redirectURL, http.StatusMovedPermanently)
 	}, o.relyingParty)
 
 	handler(w, r)

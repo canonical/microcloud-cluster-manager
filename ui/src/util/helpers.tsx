@@ -56,9 +56,12 @@ export const isoTimeToString = (isoTime: string): string => {
   });
 };
 
-export const logout = (): void =>
-  void fetch("/oidc/logout").then(() => {
+export const logout = (): void => {
+  const postLogoutPath = "/ui/login";
+
+  void fetch(`/oidc/logout?next=${postLogoutPath}`).then(() => {
     if (!window.location.href.includes("/ui/login")) {
       window.location.href = "/ui/login";
     }
   });
+};

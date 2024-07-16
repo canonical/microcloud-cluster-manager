@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/canonical/lxd-site-manager/internal/api/types"
+	"github.com/canonical/lxd-site-manager/internal/oidc"
 	"github.com/canonical/lxd-site-manager/internal/state"
 )
 
@@ -35,8 +36,20 @@ var oidcLogoutCmd = func(s *state.SiteManagerState) rest.Endpoint {
 
 func oidcLogin(s *state.SiteManagerState) types.EndpointHandler {
 	return func(innerState microState.State, r *http.Request) response.Response {
+		redirectURL := r.URL.Query().Get("next")
+
+		stateToken := oidc.StateToken{
+			RedirectURL: redirectURL,
+			ID:          uuid.New().String(),
+		}
+
+		state, err := stateToken.String()
+		if err != nil {
+			return response.InternalError(err)
+		}
+
 		loginHandler := func(w http.ResponseWriter) error {
-			s.OIDCVerifier.Login(w, r, uuid.New().String())
+			s.OIDCVerifier.Login(w, r, state)
 			return nil
 		}
 
@@ -46,8 +59,14 @@ func oidcLogin(s *state.SiteManagerState) types.EndpointHandler {
 
 func oidcCallback(s *state.SiteManagerState) types.EndpointHandler {
 	return func(innerState microState.State, r *http.Request) response.Response {
+		state := r.URL.Query().Get("state")
+		stateToken, err := oidc.DecodeStateToken(state)
+		if err != nil {
+			return response.InternalError(err)
+		}
+
 		callbackHandler := func(w http.ResponseWriter) error {
-			s.OIDCVerifier.Callback(w, r)
+			s.OIDCVerifier.Callback(w, r, stateToken.RedirectURL)
 			return nil
 		}
 
@@ -57,8 +76,10 @@ func oidcCallback(s *state.SiteManagerState) types.EndpointHandler {
 
 func oidcLogout(s *state.SiteManagerState) types.EndpointHandler {
 	return func(innerState microState.State, r *http.Request) response.Response {
+		redirectURL := r.URL.Query().Get("next")
+
 		logoutHandler := func(w http.ResponseWriter) error {
-			s.OIDCVerifier.Logout(w, r)
+			s.OIDCVerifier.Logout(w, r, redirectURL)
 			return nil
 		}
 
