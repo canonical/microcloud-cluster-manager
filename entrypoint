@@ -2,4 +2,15 @@
 
 haproxy -f ui/haproxy-demo.cfg
 
-./lxd-site-mgrd --state-dir ./state/dir1/
+# startup the daemon in the background
+NO_PROXY="0.0.0.0,$NO_PROXY" ./lxd-site-mgrd --state-dir ./state/dir1 &
+
+# initialise the site manager cluster
+./lxd-site-mgr --state-dir ./state/dir1 waitready
+./lxd-site-mgr --state-dir ./state/dir1 init "member" 0.0.0.0:443 --bootstrap --control-address 0.0.0.0:9010
+
+# initialise data for site manager
+./scripts/generate_sites.sh
+
+# keep container running
+tail -f /dev/null
