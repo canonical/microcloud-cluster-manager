@@ -3,11 +3,15 @@ module github.com/canonical/lxd-site-manager
 go 1.22.4
 
 require (
-	github.com/canonical/lxd v0.0.0-20240715144914-34e5728f79ff
+	github.com/canonical/lxd v0.0.0-20240716125348-d5501d7d3877
 	github.com/canonical/microcluster v0.0.0-20240716041521-0ce3eea4a4a7
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/securecookie v1.1.2
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.8.1
+	github.com/zitadel/oidc/v3 v3.26.0
+	golang.org/x/crypto v0.25.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -22,8 +26,6 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/renameio v1.0.1 // indirect
-	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/gosexy/gettext v0.0.0-20160830220431-74466a0a0c4a // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -40,12 +42,10 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/zitadel/logging v0.6.0 // indirect
-	github.com/zitadel/oidc/v3 v3.26.0 // indirect
 	github.com/zitadel/schema v1.3.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
-	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
