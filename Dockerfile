@@ -8,7 +8,7 @@ FROM ubuntu:jammy AS build
 RUN apt-get update
 RUN apt-get install -y software-properties-common python3-launchpadlib
 RUN https_proxy="" http_proxy="" add-apt-repository ppa:dqlite/dev -y
-RUN apt-get install --no-install-recommends -y libdqlite-dev build-essential make curl
+RUN apt-get install --no-install-recommends -y libdqlite-dev build-essential make curl git
 
 # install nodejs
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
@@ -38,12 +38,6 @@ COPY --from=build /usr/lib/x86_64-linux-gnu/libdqlite.so.0 /usr/lib/x86_64-linux
 COPY --from=build /usr/lib/x86_64-linux-gnu/libuv.so.1 /usr/lib/x86_64-linux-gnu/libuv.so.1
 COPY --from=build /usr/lib/x86_64-linux-gnu/libraft.so.3 /usr/lib/x86_64-linux-gnu/libraft.so.3
 COPY --from=build /usr/lib/x86_64-linux-gnu/libsqlite3.so.0 /usr/lib/x86_64-linux-gnu/libsqlite3.so.0
-
-# initialize and generate data
-RUN nohup bash -c "./lxd-site-mgrd --state-dir ./state/dir1 &" && \
-    ./lxd-site-mgr --state-dir ./state/dir1 waitready && \
-    ./lxd-site-mgr --state-dir ./state/dir1 init "member" 0.0.0.0:443 --bootstrap && \
-    ./scripts/generate_sites.sh
 
 RUN apt-get update && apt-get install haproxy -y
 
