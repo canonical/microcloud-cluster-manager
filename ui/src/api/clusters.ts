@@ -21,3 +21,13 @@ export const deleteCluster = (siteName: string): Promise<void> => {
       .catch(reject);
   });
 };
+export const approveCluster = (siteName: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    fetch(`/1.0/sites/${siteName}/approve`, {
+      method: "POST",
+    })
+      .then(handleResponse)
+      .then(resolve)
+      .catch(reject);
+  });
+};

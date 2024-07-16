@@ -48,3 +48,18 @@ export const humanFileSize = (bytes: number): string => {
 
   return `${bytes.toFixed(1)} ${units[u]}`;
 };
+
+export const isoTimeToString = (isoTime: string): string => {
+  const date = new Date(isoTime);
+  if (date.getTime() === 0) {
+    return "Never";
+  }
+
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};

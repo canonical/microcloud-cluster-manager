@@ -41,6 +41,7 @@ const App: FC = () => {
         />
         <Route path="/ui/login" element={<Login />} />
         <Route path="/ui/sites" element={<ClusterList />} />
+        <Route path="/ui/sites/:activeTab" element={<ClusterList />} />
         <Route path="/ui/settings" element={<Settings />} />
         <Route path="*" element={<NoMatch />} />
       </Routes>

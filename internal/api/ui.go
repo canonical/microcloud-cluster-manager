@@ -26,8 +26,10 @@ var uiServeRoutes = []string{
 	"ui",
 	"ui/assets/{asset}",
 	"ui/assets/img/{image}",
-	"ui/sites",
 	"ui/login",
+	"ui/sites",
+	"ui/sites/pending",
+	"ui/sites/tokens",
 	"ui/settings",
 }
 
