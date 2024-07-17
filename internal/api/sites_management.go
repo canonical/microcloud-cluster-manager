@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/microcluster/rest"
@@ -39,6 +40,11 @@ func siteCmd(s *state.SiteManagerState) rest.Endpoint {
 		},
 		Delete: rest.EndpointAction{
 			Handler:        siteDelete,
+			AllowUntrusted: true,
+			AccessHandler:  authHandler(s),
+		},
+		Patch: rest.EndpointAction{
+			Handler:        sitePatch,
 			AllowUntrusted: true,
 			AccessHandler:  authHandler(s),
 		},
@@ -103,6 +109,55 @@ func siteDelete(s microState.State, r *http.Request) response.Response {
 
 	err = s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		return database.DeleteCoreSite(ctx, tx, siteName)
+	})
+
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	return response.EmptySyncResponse
+}
+
+func sitePatch(s microState.State, r *http.Request) response.Response {
+	siteName, err := url.PathUnescape(mux.Vars(r)["siteName"])
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	var payload types.SitePatch
+	err = json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		return response.BadRequest(err)
+	}
+
+	if payload.Status != "" {
+		if payload.Status != types.PENDING_APPROVAL && payload.Status != types.ACTIVE {
+			return response.BadRequest(fmt.Errorf("Invalid status"))
+		}
+	}
+
+	err = s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		siteID, err := database.GetCoreSiteID(ctx, tx, siteName)
+		if err != nil {
+			return err
+		}
+
+		existingSiteDetail, err := database.GetSiteDetail(ctx, tx, siteID)
+		if err != nil {
+			return err
+		}
+
+		newSiteDetail := existingSiteDetail
+		if payload.Status != "" {
+			if existingSiteDetail.Status == string(types.PENDING_APPROVAL) && payload.Status == types.ACTIVE {
+				newSiteDetail.JoinedAt = time.Now()
+			}
+			newSiteDetail.Status = string(payload.Status)
+		}
+
+		newSiteDetail.UpdatedAt = time.Now()
+
+		return database.UpdateSiteDetail(ctx, tx, siteID, *newSiteDetail)
 	})
 
 	if err != nil {
