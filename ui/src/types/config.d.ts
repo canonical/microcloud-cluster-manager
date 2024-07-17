@@ -7,7 +7,7 @@ interface ManagerOptions {
 }
 
 interface MemberOptions {
-  target: string;
+  target?: string;
   https_address: string;
   external_address?: string;
 }

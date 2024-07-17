@@ -9,7 +9,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import SettingForm from "./settings/SettingForm";
 import { MainTableRow } from "@canonical/react-components/dist/components/MainTable/MainTable";
-import { MemberOptions } from "types/config";
+import { ManagerOptions, MemberOptions } from "types/config";
 
 const Settings: FC = () => {
   const { data: managerConfigOptions } = useQuery({
@@ -22,14 +22,14 @@ const Settings: FC = () => {
     queryFn: fetchMemberConfigOptions,
   });
 
-  const defaultManagerConfigs = {
+  const defaultManagerConfigs: ManagerOptions["config"] = {
     "oidc.issuer": "",
     "oidc.client.id": "",
     "oidc.audience": "",
     "global.address": "",
   };
 
-  const defaultMemberConfigs = {
+  const defaultMemberConfigs: MemberOptions = {
     https_address: "",
     external_address: "",
   };
@@ -42,6 +42,7 @@ const Settings: FC = () => {
 
   const generateManagerConfigRows = () => {
     const configKeys = Object.keys(defaultManagerConfigs);
+
     const rows = configKeys.map((key, index) => {
       return {
         columns: [
@@ -65,9 +66,7 @@ const Settings: FC = () => {
                 configField={key}
                 value={
                   managerConfigOptions?.config[key] ||
-                  defaultManagerConfigs[
-                    key as keyof typeof defaultManagerConfigs
-                  ]
+                  defaultManagerConfigs[key]
                 }
                 isLast={index === length - 1}
               />
@@ -87,14 +86,24 @@ const Settings: FC = () => {
     const allMemberConfigRows: MainTableRow[] = [];
 
     for (const memberConfig of memberConfigOptions) {
-      const configKeys = Object.keys(defaultMemberConfigs);
+      const configKeys = Object.keys(defaultMemberConfigs) as Array<
+        keyof MemberOptions
+      >;
+
       const currentMemberConfigRows = configKeys.map((key, index) => {
+        const memberConfigScope =
+          index === 0 ? `Member (${memberConfig.target})` : "";
+        const memberConfigKey = `${memberConfig.target}.${key}`;
+
         return {
           columns: [
             {
               content: (
-                <h2 className="p-heading--5">
-                  {index === 0 ? memberConfig.target : ""}
+                <h2
+                  className="p-heading--5 u-truncate"
+                  title={memberConfigScope}
+                >
+                  {memberConfigScope}
                 </h2>
               ),
               role: "cell",
@@ -103,7 +112,9 @@ const Settings: FC = () => {
             },
             {
               content: (
-                <div className="key-cell">{`${memberConfig.target}.${key}`}</div>
+                <div className="key-cell u-truncate" title={memberConfigKey}>
+                  {memberConfigKey}
+                </div>
               ),
               role: "cell",
               className: "key",
@@ -113,12 +124,7 @@ const Settings: FC = () => {
               content: (
                 <SettingForm
                   configField={key}
-                  value={
-                    memberConfig[key as keyof MemberOptions] ||
-                    defaultMemberConfigs[
-                      key as keyof typeof defaultMemberConfigs
-                    ]
-                  }
+                  value={memberConfig[key] || defaultMemberConfigs[key]}
                   isLast={index === length - 1}
                   member={memberConfig.target}
                 />
