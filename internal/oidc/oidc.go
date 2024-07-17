@@ -81,11 +81,13 @@ func (e AuthError) Unwrap() error {
 }
 
 // StateToken is used to encode the state of the OIDC client in a URL which is used to prevent CSRF attacks (https://datatracker.ietf.org/doc/html/rfc6749#section-10.12).
+// MemberAddress is the address of the member that initiated the login flow. In a distributed system, we can use this address to ensure that the login flow is completed on the same member.
 // RedirectURL is the URL to which the client will be redirected after authentication.
 // ID is a unique identifier for the state token and therefore the current login session.
 type StateToken struct {
-	RedirectURL string
-	ID          string
+	MemberAddress string
+	RedirectURL   string
+	ID            string
 }
 
 // String encodes the StateToken as a base64 encoded string.
@@ -112,6 +114,13 @@ func DecodeStateToken(token string) (StateToken, error) {
 	}
 
 	return stateToken, nil
+}
+
+// OidcTokens represents the ID and refresh tokens.
+// These tokens will only be returned to a client from within the cluster.
+type OidcTokens struct {
+	IDToken      string `json:"id_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 // Auth extracts OIDC tokens from the request, verifies them, and returns the subject.
@@ -240,9 +249,14 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 			_ = response.ErrorResponse(http.StatusInternalServerError, err.Error()).Render(w)
 		}
 
-		// Send to the UI.
-		// NOTE: Once the UI does the redirection on its own, we may be able to use the referer here instead.
-		http.Redirect(w, r, redirectURL, http.StatusMovedPermanently)
+		if redirectURL != "" {
+			// Send to the UI.
+			// NOTE: Once the UI does the redirection on its own, we may be able to use the referer here instead.
+			http.Redirect(w, r, redirectURL, http.StatusMovedPermanently)
+			return
+		}
+
+		_ = response.SyncResponse(true, OidcTokens{IDToken: tokens.IDToken, RefreshToken: tokens.RefreshToken}).Render(w)
 	}, o.relyingParty)
 
 	handler(w, r)
