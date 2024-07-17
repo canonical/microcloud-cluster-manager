@@ -37,6 +37,7 @@ func siteManagementListener(s *state.SiteManagerState) rest.Server {
 			{
 				PathPrefix: types.APIVersionPrefix,
 				Endpoints: []rest.Endpoint{
+					apiRootCmd(s),
 					siteCmd(s),
 					sitesCmd(s),
 					managerConfigsCmd(s),

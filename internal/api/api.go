@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/canonical/lxd/lxd/response"
@@ -9,6 +10,7 @@ import (
 	microState "github.com/canonical/microcluster/state"
 
 	"github.com/canonical/lxd-site-manager/internal/api/types"
+	"github.com/canonical/lxd-site-manager/internal/oidc"
 	"github.com/canonical/lxd-site-manager/internal/state"
 )
 
@@ -27,7 +29,7 @@ func authHandler(siteManagerState *state.SiteManagerState) types.AccessHandler {
 			return false, response.Forbidden(nil)
 		}
 
-		_, resp, err := siteManagerState.OIDCVerifier.Auth(r.Context(), r)
+		result, resp, err := siteManagerState.OIDCVerifier.Auth(r.Context(), r)
 		if err != nil {
 			// check if the request is a cluster notification with valid cert
 			if client.IsNotification(r) && r.TLS != nil {
@@ -39,9 +41,27 @@ func authHandler(siteManagerState *state.SiteManagerState) types.AccessHandler {
 				}
 			}
 
+			if r.URL.Path == "/1.0" {
+				return false, response.SyncResponse(false, types.APIRoot{
+					Trusted: false,
+				})
+			}
+
 			return false, resp
 		}
 
+		setUserInfoInRequest(result, r)
+
 		return true, resp
 	}
+}
+
+func setUserInfoInRequest(authResult *oidc.AuthenticationResult, r *http.Request) {
+	userInfo := &types.UserInfo{
+		Email: authResult.Email,
+		Name:  authResult.Name,
+	}
+
+	userInfoCtx := context.WithValue(r.Context(), types.UserInfoKey, userInfo)
+	*r = *r.WithContext(userInfoCtx)
 }
