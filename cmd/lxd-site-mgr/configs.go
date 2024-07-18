@@ -125,7 +125,9 @@ func isConfig(arg string) bool {
 
 func getMemberConfigs(args []string) (types.MemberConfigPatch, error) {
 	validMemberConfigKeys := types.ValidMemberConfigKeys()
-	configs := types.MemberConfigPatch{}
+	configs := types.MemberConfigPatch{
+		Config: make(map[types.MemberConfigKey]string),
+	}
 
 	for _, arg := range args {
 		if !isConfig(arg) {
@@ -133,15 +135,17 @@ func getMemberConfigs(args []string) (types.MemberConfigPatch, error) {
 		}
 
 		key, val := parseConfig(arg)
-		if _, ok := validMemberConfigKeys[key]; !ok {
+		memberConfigKey := types.MemberConfigKey(key)
+
+		if _, ok := validMemberConfigKeys[memberConfigKey]; !ok {
 			return types.MemberConfigPatch{}, fmt.Errorf("Invalid member config key: %s", key)
 		}
 
-		switch key {
-		case "https_address":
-			configs.HTTPSAddress = val
-		case "external_address":
-			configs.ExternalAddress = val
+		switch memberConfigKey {
+		case types.HTTPSAddress:
+			configs.Config[types.HTTPSAddress] = val
+		case types.ExternalAddress:
+			configs.Config[types.ExternalAddress] = val
 		}
 	}
 

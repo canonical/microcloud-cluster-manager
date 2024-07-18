@@ -17,8 +17,8 @@ func ValidManagerConfigKeys() map[string]bool {
 	}
 }
 
-// ValidateConfigKeys validates the given config keys that they exist in the map of valid config keys for site manager.
-func ValidateConfigKeys(config map[string]string) error {
+// ValidateManagerConfigKeys validates the given manager config keys that they exist in the map of valid config keys for site manager.
+func ValidateManagerConfigKeys(config map[string]string) error {
 	for k := range config {
 		_, ok := ValidManagerConfigKeys()[k]
 		if !ok {

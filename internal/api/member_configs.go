@@ -11,6 +11,7 @@ import (
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/shared/logger"
 	"github.com/canonical/lxd/shared/revert"
+	microClient "github.com/canonical/microcluster/client"
 	"github.com/canonical/microcluster/rest"
 	microTypes "github.com/canonical/microcluster/rest/types"
 	clusterState "github.com/canonical/microcluster/state"
@@ -63,12 +64,15 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 			return response.BadRequest(err)
 		}
 
-		if payload.HTTPSAddress == "" && payload.ExternalAddress == "" {
+		HTTPSAddress, hasHTTPSAddress := payload.Config[types.HTTPSAddress]
+		externalAddress, hasExternalAddress := payload.Config[types.ExternalAddress]
+
+		if !hasHTTPSAddress && !hasExternalAddress {
 			return response.BadRequest(fmt.Errorf("no fields provided to update"))
 		}
 
-		if payload.ExternalAddress != "" {
-			_, err = microTypes.ParseAddrPort(payload.ExternalAddress)
+		if hasExternalAddress && externalAddress != "" {
+			_, err = microTypes.ParseAddrPort(externalAddress)
 			if err != nil {
 				return response.BadRequest(fmt.Errorf("invalid external_address for member %q: %w", memberName, err))
 			}
@@ -77,13 +81,13 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 		reverter := revert.New()
 		defer reverter.Fail()
 
-		localClient, err := siteManagerState.MicroCluster.LocalClient()
+		queryClient, err := getClientByName(clusterState, siteManagerState, memberName)
 		if err != nil {
-			return response.InternalError(fmt.Errorf("failed to get local client: %w", err))
+			return response.InternalError(fmt.Errorf("failed to get client for member %q: %w", memberName, err))
 		}
 
-		if payload.HTTPSAddress != "" {
-			newAddress, err := microTypes.ParseAddrPort(payload.HTTPSAddress)
+		if hasHTTPSAddress {
+			newAddress, err := microTypes.ParseAddrPort(HTTPSAddress)
 			if err != nil {
 				return response.BadRequest(fmt.Errorf("invalid https_address for member %q: %w", memberName, err))
 			}
@@ -91,18 +95,8 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 			// the control listener address is stored in a member's local state directory
 			// we need to update the control listener address, we need to forward the request to the relevant member and let the update happen there
 			if memberName != clusterState.Name() {
-				remotes := clusterState.Remotes().RemotesByName()
-				targetRemote, ok := remotes[memberName]
-				if !ok {
-					return response.NotFound(fmt.Errorf("member %q not found", memberName))
-				}
-
-				targetClient, err := siteManagerState.MicroCluster.RemoteClient(targetRemote.Address.String())
-				if err != nil {
-					return response.InternalError(fmt.Errorf("failed to get remote client for member %q: %w", memberName, err))
-				}
-
-				err = client.MemberConfigPatchCmd(r.Context(), targetClient, memberName, &payload)
+				queryClient.SetClusterNotification()
+				err = client.MemberConfigPatchCmd(r.Context(), queryClient, memberName, &payload)
 				if err != nil {
 					return response.InternalError(fmt.Errorf("failed to update member %q config: %w", memberName, err))
 				}
@@ -112,7 +106,7 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 
 			// update the control listener address for local member configs
 			newServerConfig := make(map[string]microTypes.ServerConfig)
-			existingServerConfig, err := client.GetDaemonServerConfigs(r.Context(), localClient)
+			existingServerConfig, err := client.GetDaemonServerConfigs(r.Context(), queryClient)
 			if err != nil {
 				return response.InternalError(fmt.Errorf("failed to get local member %q config: %w", memberName, err))
 			}
@@ -154,12 +148,11 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 			}
 
 			// if no external address is provided, keep the existing one
-			externalAddress := dbConfigs[0].ExternalAddress
-			if payload.ExternalAddress != "" {
-				externalAddress = payload.ExternalAddress
+			if !hasExternalAddress {
+				externalAddress = dbConfigs[0].ExternalAddress
 			}
 
-			serverConfigs, err := client.GetDaemonServerConfigs(r.Context(), localClient)
+			serverConfigs, err := client.GetDaemonServerConfigs(r.Context(), queryClient)
 			if err != nil {
 				return fmt.Errorf("failed to get local member %q config: %w", memberName, err)
 			}
@@ -238,11 +231,37 @@ func toMemberConfigsAPI(dbConfigs []database.ManagerMemberConfig) []types.Member
 		memberConfigs = append(memberConfigs, types.MemberConfig{
 			Target: c.Target,
 			MemberConfigPatch: types.MemberConfigPatch{
-				HTTPSAddress:    c.HTTPSAddress,
-				ExternalAddress: c.ExternalAddress,
+				Config: map[types.MemberConfigKey]string{
+					types.HTTPSAddress:    c.HTTPSAddress,
+					types.ExternalAddress: c.ExternalAddress,
+				},
 			},
 		})
 	}
 
 	return memberConfigs
+}
+
+func getClientByName(clusterState clusterState.State, siteManagerState *state.SiteManagerState, name string) (*microClient.Client, error) {
+	if clusterState.Name() == name {
+		localClient, err := siteManagerState.MicroCluster.LocalClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get local client: %w", err)
+		}
+
+		return localClient, nil
+	}
+
+	remotes := clusterState.Remotes().RemotesByName()
+	targetRemote, ok := remotes[name]
+	if !ok {
+		return nil, fmt.Errorf("member %q not found", name)
+	}
+
+	client, err := siteManagerState.MicroCluster.RemoteClient(targetRemote.Address.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get remote client for member: %s", name)
+	}
+
+	return client, nil
 }

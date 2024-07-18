@@ -51,7 +51,7 @@ func managerConfigPatch(siteManagerState *state.SiteManagerState) types.Endpoint
 			return response.BadRequest(fmt.Errorf("missing config key"))
 		}
 
-		err = types.ValidateConfigKeys(payload.Config)
+		err = types.ValidateManagerConfigKeys(payload.Config)
 		if err != nil {
 			return response.BadRequest(err)
 		}

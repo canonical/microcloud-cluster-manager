@@ -1,5 +1,6 @@
 export const queryKeys = {
   clusters: "clusters",
-  configOptions: "configOptions",
+  managerConfigOptions: "managerConfigOptions",
+  memberConfigOptions: "memberConfigOptions",
   tokens: "tokens",
 };

@@ -1,6 +1,6 @@
 import { FC, useEffect, useRef, useState } from "react";
 import { Button, Icon, useNotify } from "@canonical/react-components";
-import { updateSettings } from "api/settings";
+import { updateManagerConfigs, updateMemberConfigs } from "api/settings";
 import { queryKeys } from "util/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import SettingFormInput from "./SettingFormInput";
@@ -9,9 +9,10 @@ interface Props {
   configField: string;
   value?: string;
   isLast?: boolean;
+  member?: string;
 }
 
-const SettingForm: FC<Props> = ({ configField, value, isLast }) => {
+const SettingForm: FC<Props> = ({ configField, value, isLast, member }) => {
   const [isEditMode, setEditMode] = useState(false);
   const notify = useNotify();
   const queryClient = useQueryClient();
@@ -22,7 +23,11 @@ const SettingForm: FC<Props> = ({ configField, value, isLast }) => {
     const config = {
       [configField]: String(newValue),
     };
-    updateSettings(config)
+
+    (member
+      ? updateMemberConfigs(member, config)
+      : updateManagerConfigs(config)
+    )
       .then(() => {
         setEditMode(false);
       })
@@ -31,7 +36,11 @@ const SettingForm: FC<Props> = ({ configField, value, isLast }) => {
       })
       .finally(() => {
         void queryClient.invalidateQueries({
-          queryKey: [queryKeys.configOptions],
+          queryKey: [
+            member
+              ? queryKeys.memberConfigOptions
+              : queryKeys.managerConfigOptions,
+          ],
         });
       });
   };
