@@ -53,12 +53,12 @@ jobs:
       - name: Run static analysis
         run: |
           set -eux
-          make check-static
+          make test-static
 
-      - name: Unit tests (all)
+      - name: Run backend e2e tests
         run: |
           set -eux
-          make check-unit
+          make test-e2e
 
   ui-lint:
     runs-on: ubuntu-latest

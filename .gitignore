@@ -1,5 +1,7 @@
 .idea
 /state/
+/test/e2e/state/
+/test/e2e/certs/
 ui/build
 ui/.dotrun.json
 ui/.env.local

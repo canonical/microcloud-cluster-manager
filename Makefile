@@ -26,19 +26,15 @@ build:
 		./cmd/lxd-site-mgrd
 
 # Testing targets.
-.PHONY: check
-check: check-static check-unit check-system
+.PHONY: test
+test: test-static test-e2e
 
-.PHONY: check-unit
-check-unit:
-	go test ./...
+.PHONY: test-e2e
+test-e2e:
+	go test -count=1 -v ./test/e2e
 
-.PHONY: check-system
-check-system: build
-	./test/main.sh
-
-.PHONY: check-static
-check-static:
+.PHONY: test-static
+test-static:
 ifeq ($(shell command -v golangci-lint 2> /dev/null),)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin
 endif
