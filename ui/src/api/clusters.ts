@@ -23,8 +23,9 @@ export const deleteCluster = (siteName: string): Promise<void> => {
 };
 export const approveCluster = (siteName: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    fetch(`/1.0/sites/${siteName}/approve`, {
-      method: "POST",
+    fetch(`/1.0/sites/${siteName}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "ACTIVE" }),
     })
       .then(handleResponse)
       .then(resolve)
