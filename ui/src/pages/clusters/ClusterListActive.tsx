@@ -11,6 +11,7 @@ import { ClusterDisk } from "./metrics/ClusterDisk";
 import { ClusterNodes } from "./metrics/ClusterNodes";
 import ClusterHeartbeat from "./metrics/ClusterHeartbeat";
 import { queryKeys } from "util/queryKeys";
+import ClusterStatus from "./metrics/ClusterStatus";
 
 const ClusterListActive: FC = () => {
   const { data: clusters = [], isLoading } = useQuery({
@@ -25,6 +26,9 @@ const ClusterListActive: FC = () => {
   const tableHeaders = [
     {
       content: "Cluster Name",
+    },
+    {
+      content: "Status",
     },
     {
       content: "Last Heartbeat",
@@ -54,6 +58,7 @@ const ClusterListActive: FC = () => {
             <Link to={`/ui/cluster/${cluster.name}`}>{cluster.name}</Link>
           ),
         },
+        { content: <ClusterStatus cluster={cluster} /> },
         { content: <ClusterHeartbeat cluster={cluster} /> },
         {
           content: <ClusterNodes cluster={cluster} />,
