@@ -15,7 +15,7 @@ const ClusterListTokens: FC = () => {
 
   const tableHeaders = [
     {
-      content: "Site name",
+      content: "Cluster name",
     },
     {
       content: "Expiry",
