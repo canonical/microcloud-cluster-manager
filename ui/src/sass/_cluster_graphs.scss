@@ -1,15 +1,21 @@
 $donut-size: 6.5rem;
 
-.cluster-status {
+.cluster-graphs {
   display: flex;
-  flex-direction: row;
-  overflow: auto;
+  gap: $sph--large;
 
-  .cluster-status__chart {
-    width: $donut-size;
-  }
-
-  .cluster-status-legend {
-    margin-left: $sph--x-large;
+  .cluster-status {
+    display: flex;
+    flex-direction: row;
+    overflow: auto;
+    width: fit-content;
+  
+    .cluster-status__chart {
+      width: $donut-size;
+    }
+  
+    .cluster-status-legend {
+      margin-left: $sph--x-large;
+    }
   }
 }

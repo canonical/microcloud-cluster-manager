@@ -9,6 +9,8 @@ import ClusterListPending from "./ClusterListPending";
 import AddClusterButton from "./AddClusterButton";
 import ClusterStatusGraph from "./metrics/ClusterStatusGraph";
 import NotificationRow from "components/NotificationRow";
+import ClusterDiskGraph from "./metrics/ClusterDiskGraph";
+import ClusterMemoryGraph from "./metrics/ClusterMemoryGraph";
 
 const ClusterList: FC = () => {
   const { activeTab } = useParams<{
@@ -21,8 +23,13 @@ const ClusterList: FC = () => {
     <BaseLayout title={"Clusters"} controls={<AddClusterButton />}>
       <Row>
         <List
-          inline={true}
-          items={[<ClusterStatusGraph key="clusterstatusgraph" />]}
+          className="cluster-graphs"
+          inline
+          items={[
+            <ClusterStatusGraph key="cluster-status-graph" />,
+            <ClusterDiskGraph key="cluster-disk-graph" />,
+            <ClusterMemoryGraph key="cluster-memory-graph" />,
+          ]}
         />
         <TabLinks tabs={tabs} activeTab={activeTab} tabUrl="/ui/sites" />
         <NotificationRow />

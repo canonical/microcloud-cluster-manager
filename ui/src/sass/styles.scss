@@ -1,18 +1,7 @@
 @import "vanilla-framework/scss/build";
-@import "vanilla-framework";
 @import "settings";
-@import "pattern_navigation";
 @import "pattern_icon";
-@import "cluster_list";
-@import "forms";
-@import "breakpoints";
-@import "meter";
-@import "clustercpu";
-@import "settings_page";
-@import "doughnut_chart";
-@import "cluster_graphs";
-@import "scrollable_container";
-@import "status_bar";
+@import "./breakpoints";
 @include custom-p-icon;
 @include vf-p-icon-units;
 @include vf-p-icon-profile;
@@ -24,6 +13,18 @@
 @include vf-p-icons;
 @include vf-p-icon-settings;
 @include vf-p-icon-edit;
+
+@import "status_bar";
+@import "settings_page";
+@import "scrollable_container";
+@import "pattern_navigation";
+@import "meter";
+@import "horizontal_dist_graph";
+@import "forms";
+@import "doughnut_chart";
+@import "clustercpu";
+@import "cluster_list";
+@import "cluster_graphs";
 
 body {
   // needed for notification list expanding animation
