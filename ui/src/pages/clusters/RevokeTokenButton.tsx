@@ -1,6 +1,6 @@
 import { FC } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ActionButton } from "@canonical/react-components";
+import { ActionButton, useNotify } from "@canonical/react-components";
 import { deleteToken } from "api/tokens";
 import { Token } from "types/token";
 import { queryKeys } from "util/queryKeys";
@@ -11,6 +11,7 @@ interface Props {
 
 const RevokeTokenButton: FC<Props> = ({ token }) => {
   const queryClient = useQueryClient();
+  const notify = useNotify();
 
   const handleDeleteToken = async () => {
     await deleteToken(token.site_name)
@@ -18,11 +19,12 @@ const RevokeTokenButton: FC<Props> = ({ token }) => {
         void queryClient.invalidateQueries({
           queryKey: [queryKeys.tokens],
         });
+        notify.success(
+          `Successfully deleted token for cluster ${token.site_name}.`,
+        );
       })
       .catch((e: Error) => {
-        if (e.message === "Unable to delete Token") {
-          return;
-        }
+        notify.failure(`Unable to delete token ${token.site_name}.`, e);
       });
   };
 

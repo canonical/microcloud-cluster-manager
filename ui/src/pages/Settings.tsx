@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import SettingForm from "./settings/SettingForm";
 import { MainTableRow } from "@canonical/react-components/dist/components/MainTable/MainTable";
 import { ManagerOptions, MemberOptions } from "types/config";
+import NotificationRow from "components/NotificationRow";
 
 const Settings: FC = () => {
   const { data: managerConfigOptions } = useQuery({
@@ -148,6 +149,7 @@ const Settings: FC = () => {
   return (
     <BaseLayout title="Settings">
       <Row>
+        <NotificationRow />
         <div className="settings">
           <MainTable
             id="settings-table"

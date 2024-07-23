@@ -30,6 +30,7 @@ const SettingForm: FC<Props> = ({ configField, value, isLast, member }) => {
     )
       .then(() => {
         setEditMode(false);
+        notify.success(`Setting ${configField} updated.`);
       })
       .catch((e) => {
         notify.failure("Setting update failed", e);

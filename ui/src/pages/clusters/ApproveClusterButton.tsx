@@ -1,4 +1,4 @@
-import { ActionButton } from "@canonical/react-components";
+import { ActionButton, useNotify } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
 import { approveCluster } from "api/clusters";
 import { FC, useState } from "react";
@@ -10,6 +10,7 @@ type Props = {
 
 const ApproveClusterButton: FC<Props> = ({ clusterName }) => {
   const queryClient = useQueryClient();
+  const notify = useNotify();
   const [isLoading, setLoading] = useState(false);
 
   const handleApproveCluster = async () => {
@@ -21,8 +22,10 @@ const ApproveClusterButton: FC<Props> = ({ clusterName }) => {
         queryKey: [queryKeys.clusters],
       });
       setLoading(false);
+      notify.success(`Successfully approved cluster ${clusterName}.`);
     } catch (error) {
       setLoading(false);
+      notify.failure(`Unable to approve cluster ${clusterName}.`, error);
     }
   };
 

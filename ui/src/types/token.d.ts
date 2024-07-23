@@ -3,3 +3,7 @@ export interface Token {
   expiry: string;
   site_name: string;
 }
+
+export interface TokenPostResponse {
+  token: string;
+}

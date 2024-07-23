@@ -5,6 +5,7 @@ import {
   Col,
   Form,
   Row,
+  useNotify,
 } from "@canonical/react-components";
 import BaseLayout from "components/BaseLayout";
 import { useNavigate } from "react-router-dom";
@@ -19,10 +20,12 @@ import * as Yup from "yup";
 import { queryKeys } from "util/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { getDefaultExpiryDate } from "util/createCluster";
+import NotificationRow from "components/NotificationRow";
 
 const CreateCluster: FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const notify = useNotify();
 
   const ClusterSchema = Yup.object().shape({
     site_name: Yup.string().required("Site name is required"),
@@ -35,13 +38,19 @@ const CreateCluster: FC = () => {
     const tokenPayload = newTokenPayload(values);
 
     createToken(JSON.stringify(tokenPayload))
-      .then(() => {
-        navigate(`/ui/sites/tokens`);
+      .then((response) => {
+        navigate(
+          "/ui/sites/tokens",
+          notify.queue(
+            notify.success(
+              response.token,
+              "The token has been created and will be displayed only once. Please save it now:",
+            ),
+          ),
+        );
       })
       .catch((e: Error) => {
-        if (e.message === "Unable to create new Token") {
-          return;
-        }
+        notify.failure("Unable to create token.", e);
       })
       .finally(() => {
         void queryClient.invalidateQueries({
@@ -67,6 +76,7 @@ const CreateCluster: FC = () => {
       <Form onSubmit={formik.handleSubmit} className="form">
         <Row className="form-contents">
           <Col size={12}>
+            <NotificationRow />
             <ClusterCreateDetailsForm formik={formik} />
           </Col>
         </Row>

@@ -1,5 +1,5 @@
 import { LxdApiResponse } from "types/apiResponse";
-import { Token } from "types/token";
+import { Token, TokenPostResponse } from "types/token";
 import { handleResponse } from "util/helpers";
 
 export const fetchTokens = (): Promise<Token[]> => {
@@ -11,14 +11,14 @@ export const fetchTokens = (): Promise<Token[]> => {
   });
 };
 
-export const createToken = (body: string): Promise<void> => {
+export const createToken = (body: string): Promise<TokenPostResponse> => {
   return new Promise((resolve, reject) => {
     fetch("/1.0/external-site-join-token", {
       method: "POST",
       body: body,
     })
       .then(handleResponse)
-      .then(resolve)
+      .then((data: LxdApiResponse<TokenPostResponse>) => resolve(data.metadata))
       .catch(reject);
   });
 };
