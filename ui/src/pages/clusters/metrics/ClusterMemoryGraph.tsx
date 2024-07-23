@@ -1,10 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchClusters } from "api/clusters";
-import HorizontalDistGraph from "components/HorizontalDistGraph";
+import PercentileChart from "components/PercentileChart";
 import { FC } from "react";
 import { queryKeys } from "util/queryKeys";
-
-const GRAPH_COLOR = "#B04000";
 
 const ClusterMemoryGraph: FC = () => {
   const { data: clusters = [] } = useQuery({
@@ -19,9 +17,9 @@ const ClusterMemoryGraph: FC = () => {
   memoryUsagePercentages.sort((a, b) => b - a);
 
   return (
-    <HorizontalDistGraph
+    <PercentileChart
       title="Memory usage"
-      color={GRAPH_COLOR}
+      barClassName="cluster-memory-bar"
       data={memoryUsagePercentages}
       width={200}
       height={90}

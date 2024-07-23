@@ -1,3 +1,5 @@
+@import "./colors";
+
 .p-meter {
   background-color: #d3e4ed;
   border-radius: 0.75rem;
@@ -12,18 +14,18 @@
   }
 
   .instances {
-    background-color: #0e8420;
+    background-color: $instance-color;
   }
 
   .cpu {
-    background-color: #8146ba;
+    background-color: $cpu-color;
   }
 
   .memory {
-    background-color: #b04000;
+    background-color: $memory-color;
   }
 
   .disk {
-    background-color: #06c;
+    background-color: $disk-color;
   }
 }

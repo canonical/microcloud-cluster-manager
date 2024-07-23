@@ -48,7 +48,9 @@ const ClusterStatusGraph: FC = () => {
         size={150}
       />
       <div className="cluster-status-legend">
-        <div className="u-no-margin p-heading--5">{totalClusters} clusters</div>
+        <div className="u-no-margin p-heading--5 u-no-padding">
+          {totalClusters} clusters
+        </div>
         <div>
           <Icon name="status-succeeded-small" />
           {getPercentageString(activeClusters)} Online

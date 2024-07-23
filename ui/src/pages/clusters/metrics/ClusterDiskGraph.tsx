@@ -1,10 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchClusters } from "api/clusters";
-import HorizontalDistGraph from "components/HorizontalDistGraph";
+import PercentileChart from "components/PercentileChart";
 import { FC } from "react";
 import { queryKeys } from "util/queryKeys";
-
-const GRAPH_COLOR = "#0066CC";
 
 const ClusterDiskGraph: FC = () => {
   const { data: clusters = [] } = useQuery({
@@ -19,9 +17,9 @@ const ClusterDiskGraph: FC = () => {
   diskUsagePercentages.sort((a, b) => b - a);
 
   return (
-    <HorizontalDistGraph
+    <PercentileChart
       title="Disk usage"
-      color={GRAPH_COLOR}
+      barClassName="cluster-disk-bar"
       data={diskUsagePercentages}
       width={200}
       height={90}

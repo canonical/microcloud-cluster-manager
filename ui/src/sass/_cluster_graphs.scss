@@ -1,21 +1,31 @@
+@import "./breakpoints";
+@import "./colors";
+
 $donut-size: 6.5rem;
 
 .cluster-graphs {
+  align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: $sph--large;
 
   .cluster-status {
     display: flex;
-    flex-direction: row;
-    overflow: auto;
-    width: fit-content;
-  
+
     .cluster-status__chart {
       width: $donut-size;
     }
-  
+
     .cluster-status-legend {
       margin-left: $sph--x-large;
     }
+  }
+
+  .cluster-disk-bar {
+    fill: $disk-color;
+  }
+
+  .cluster-memory-bar {
+    fill: $memory-color;
   }
 }
