@@ -119,8 +119,21 @@ func testSiteSuccess(env *helpers.Environment) (testName string, testFunc func(t
 
 		{
 			condition = "Should be able to receive a status update"
-			err = sendStatusUpdate(env, tokenData)
-			helpers.LogTestOutcome(t, condition, err)
+			actual, err := sendStatusUpdate(env, tokenData)
+			if err != nil {
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			expected := types.SiteStatusPostResponse{
+				SiteManagerAddresses: []string{"0.0.0.0:9110"},
+			}
+
+			if !reflect.DeepEqual(*actual, expected) {
+				err = fmt.Errorf("invalid site manager addresses")
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			helpers.LogTestOutcome(t, condition, nil)
 		}
 
 		{
@@ -235,28 +248,28 @@ func approveJoinRequest(env *helpers.Environment, siteName string) error {
 }
 
 // sendStatusUpdate sends a status update to the site manager with the correct client certificate.
-func sendStatusUpdate(env *helpers.Environment, tokenData types.ExternalSiteTokenBody) error {
+func sendStatusUpdate(env *helpers.Environment, tokenData types.ExternalSiteTokenBody) (*types.SiteStatusPostResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	clientCert, err := shared.KeyPairAndCA(env.CertDir(), tokenData.ServerName, shared.CertClient, false)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	clusterCert, err := env.GetClusterCert()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	clusterCertPublicKey, err := clusterCert.PublicKeyX509()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tlsClient, err := helpers.NewTLSHTTPClient(api.URL{}, clientCert, clusterCertPublicKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	input := types.SiteStatusPost{
@@ -278,6 +291,9 @@ func sendStatusUpdate(env *helpers.Environment, tokenData types.ExternalSiteToke
 		},
 	}
 
+	var output types.SiteStatusPostResponse
 	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "sites", "status")
-	return tlsClient.Query(ctx, http.MethodPost, path, input, nil, nil)
+	err = tlsClient.Query(ctx, http.MethodPost, path, input, &output, nil)
+
+	return &output, err
 }

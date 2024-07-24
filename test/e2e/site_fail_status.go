@@ -68,7 +68,7 @@ func testSiteStatusInactiveSite(env *helpers.Environment) (testName string, test
 				helpers.LogTestOutcome(t, condition, err)
 			}
 
-			err = sendStatusUpdate(env, tokenData)
+			_, err = sendStatusUpdate(env, tokenData)
 			if err != nil && err.Error() == "site not found" {
 				err = nil
 			}

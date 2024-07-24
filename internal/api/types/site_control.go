@@ -25,3 +25,8 @@ type SiteStatusPost struct {
 	MemberStatuses    []StatusDistribution `json:"member_statuses"`
 	InstanceStatuses  []StatusDistribution `json:"instance_status"`
 }
+
+// SiteStatusPostResponse is sent to LXD in response to a site status update.
+type SiteStatusPostResponse struct {
+	SiteManagerAddresses []string `json:"site_manager_addresses"`
+}

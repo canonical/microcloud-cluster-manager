@@ -124,7 +124,14 @@ func sitesStatusPost(s state.State, r *http.Request) response.Response {
 		return response.SmartError(err)
 	}
 
-	return response.EmptySyncResponse
+	memberAddresses, err := getSiteManagerAddresses(r.Context(), s)
+	if err != nil {
+		return response.InternalError(err)
+	}
+
+	return response.SyncResponse(true, types.SiteStatusPostResponse{
+		SiteManagerAddresses: memberAddresses,
+	})
 }
 
 func parseStatusDistribution(statuses []types.StatusDistribution) (int64, string) {
