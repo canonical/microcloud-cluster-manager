@@ -31,7 +31,7 @@ const ClusterCreateDetailsForm: FC<Props> = ({ formik }) => {
             id="name"
             name="site_name"
             type="text"
-            label="Site name"
+            label="Cluster name"
             placeholder="Enter Name"
             onBlur={formik.handleBlur}
             onChange={formik.handleChange}

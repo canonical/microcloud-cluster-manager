@@ -15,10 +15,10 @@ import ClusterCreateDetailsForm, {
   newTokenPayload,
 } from "./ClusterCreateDetailsForm";
 import FormFooterLayout from "components/forms/FormFooterLayout";
-import { createToken } from "api/tokens";
+import { createToken, fetchTokens } from "api/tokens";
 import * as Yup from "yup";
 import { queryKeys } from "util/queryKeys";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getDefaultExpiryDate } from "util/createCluster";
 import NotificationRow from "components/NotificationRow";
 
@@ -27,8 +27,17 @@ const CreateCluster: FC = () => {
   const queryClient = useQueryClient();
   const notify = useNotify();
 
+  const { data: tokens = [] } = useQuery({
+    queryKey: [queryKeys.tokens],
+    queryFn: fetchTokens,
+  });
+
+  const existingSiteNames = tokens.map((token) => token.site_name);
+
   const ClusterSchema = Yup.object().shape({
-    site_name: Yup.string().required("Site name is required"),
+    site_name: Yup.string()
+      .required("Cluster name is required")
+      .notOneOf(existingSiteNames, "A token with this name already exists"),
     expiry: Yup.date()
       .optional()
       .min(new Date(), "Expiry date cannot be in the past"),
