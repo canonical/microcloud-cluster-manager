@@ -1,6 +1,6 @@
-domain: lxd-site-manager
+domain: lxd-cluster-manager
 
-image: prod-comms.ps5.docker-registry.canonical.com/lxd-site-manager
+image: prod-comms.ps5.docker-registry.canonical.com/lxd-cluster-manager
 
 env:
   - name: SSL_CERT_DIR

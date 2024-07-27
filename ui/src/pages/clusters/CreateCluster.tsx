@@ -32,12 +32,12 @@ const CreateCluster: FC = () => {
     queryFn: fetchTokens,
   });
 
-  const existingSiteNames = tokens.map((token) => token.site_name);
+  const existingClusterNames = tokens.map((token) => token.cluster_name);
 
   const ClusterSchema = Yup.object().shape({
-    site_name: Yup.string()
+    cluster_name: Yup.string()
       .required("Cluster name is required")
-      .notOneOf(existingSiteNames, "A token with this name already exists"),
+      .notOneOf(existingClusterNames, "A token with this name already exists"),
     expiry: Yup.date()
       .optional()
       .min(new Date(), "Expiry date cannot be in the past"),
@@ -49,7 +49,7 @@ const CreateCluster: FC = () => {
     createToken(JSON.stringify(tokenPayload))
       .then((response) => {
         navigate(
-          "/ui/sites/tokens",
+          "/ui/clusters/tokens",
           notify.queue(
             notify.success(
               response.token,
@@ -70,7 +70,7 @@ const CreateCluster: FC = () => {
 
   const formik = useFormik<CreateClusterFormValues>({
     initialValues: {
-      site_name: "",
+      cluster_name: "",
       expiry: getDefaultExpiryDate(),
     },
     validationSchema: ClusterSchema,

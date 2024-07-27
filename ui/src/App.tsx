@@ -21,11 +21,14 @@ const App: FC = () => {
 
   const loggedInRoutes = (
     <>
-      <Route path="/" element={<Navigate to="/ui/sites" replace={true} />} />
-      <Route path="/ui" element={<Navigate to="/ui/sites" replace={true} />} />
-      <Route path="/ui/sites" element={<ClusterList />} />
-      <Route path="/ui/sites/:activeTab" element={<ClusterList />} />
-      <Route path="/ui/sites/create" element={<CreateCluster />} />
+      <Route path="/" element={<Navigate to="/ui/clusters" replace={true} />} />
+      <Route
+        path="/ui"
+        element={<Navigate to="/ui/clusters" replace={true} />}
+      />
+      <Route path="/ui/clusters" element={<ClusterList />} />
+      <Route path="/ui/clusters/:activeTab" element={<ClusterList />} />
+      <Route path="/ui/clusters/create" element={<CreateCluster />} />
       <Route path="/ui/settings" element={<Settings />} />
       <Route path="*" element={<NoMatch />} />
     </>

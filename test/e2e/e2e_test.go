@@ -8,12 +8,12 @@ import (
 )
 
 var tests = []types.Test{
-	testSiteSuccess,
-	testSiteJoinInvalidHMAC,
-	testSiteJoinExpiredToken,
-	testSiteStatusNoCert,
-	testSiteStatusInactiveSite,
-	testSiteStatusInvalidCert,
+	testRemoteClusterSuccess,
+	testRemoteClusterJoinInvalidHMAC,
+	testRemoteClusterJoinExpiredToken,
+	testRemoteClusterStatusNoCert,
+	testRemoteClusterStatusInactive,
+	testRemoteClusterStatusInvalidCert,
 }
 
 func TestE2E(t *testing.T) {

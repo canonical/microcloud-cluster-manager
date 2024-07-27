@@ -5,13 +5,13 @@ import ScrollableForm from "components/ScrollableForm";
 import { convertToISOFormat } from "util/helpers";
 
 export interface CreateClusterFormValues {
-  site_name?: string;
+  cluster_name?: string;
   expiry?: string;
 }
 
 export const newTokenPayload = (values: CreateClusterFormValues) => {
   const payload: Record<string, string | undefined> = {
-    site_name: values.site_name,
+    cluster_name: values.cluster_name,
     expiry: convertToISOFormat(values.expiry ?? ""),
   };
 
@@ -29,14 +29,16 @@ const ClusterCreateDetailsForm: FC<Props> = ({ formik }) => {
         <Col size={12}>
           <Input
             id="name"
-            name="site_name"
+            name="cluster_name"
             type="text"
             label="Cluster name"
             placeholder="Enter Name"
             onBlur={formik.handleBlur}
             onChange={formik.handleChange}
-            value={formik.values.site_name}
-            error={formik.touched.site_name ? formik.errors.site_name : null}
+            value={formik.values.cluster_name}
+            error={
+              formik.touched.cluster_name ? formik.errors.cluster_name : null
+            }
           />
           <Input
             id="expiry"

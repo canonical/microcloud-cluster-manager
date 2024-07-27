@@ -17,7 +17,7 @@ package database
 //go:generate mapper method -i -d github.com/canonical/microcluster/cluster -e manager_member_config DeleteOne-by-Target
 //go:generate mapper method -i -d github.com/canonical/microcluster/cluster -e manager_member_config Update
 
-// ManagerMemberConfig represents configs for a single site manager member.
+// ManagerMemberConfig represents configs for a single Cluster Manager member.
 type ManagerMemberConfig struct {
 	Target          string `db:"primary=yes"`
 	ID              int

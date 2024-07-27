@@ -14,7 +14,7 @@ import (
 	microClient "github.com/canonical/microcluster/client"
 	"github.com/canonical/microcluster/rest"
 	microTypes "github.com/canonical/microcluster/rest/types"
-	clusterState "github.com/canonical/microcluster/state"
+	microState "github.com/canonical/microcluster/state"
 	"github.com/gorilla/mux"
 
 	"github.com/canonical/lxd-site-manager/internal/api/types"
@@ -23,7 +23,7 @@ import (
 	"github.com/canonical/lxd-site-manager/internal/state"
 )
 
-func memberConfigCmd(s *state.SiteManagerState) rest.Endpoint {
+func memberConfigCmd(s *state.ClusterManagerState) rest.Endpoint {
 	return rest.Endpoint{
 		Path: "member/{name}/config",
 		Patch: rest.EndpointAction{
@@ -39,7 +39,7 @@ func memberConfigCmd(s *state.SiteManagerState) rest.Endpoint {
 	}
 }
 
-func memberConfigsCmd(s *state.SiteManagerState) rest.Endpoint {
+func memberConfigsCmd(s *state.ClusterManagerState) rest.Endpoint {
 	return rest.Endpoint{
 		Path: "member/config",
 		Get: rest.EndpointAction{
@@ -51,8 +51,8 @@ func memberConfigsCmd(s *state.SiteManagerState) rest.Endpoint {
 }
 
 // update existing member configs.
-func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointHandler {
-	return func(clusterState clusterState.State, r *http.Request) response.Response {
+func memberConfigPatch(clusterManagerState *state.ClusterManagerState) types.EndpointHandler {
+	return func(microState microState.State, r *http.Request) response.Response {
 		memberName, err := url.PathUnescape(mux.Vars(r)["name"])
 		if err != nil {
 			return response.BadRequest(err)
@@ -81,7 +81,7 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 		reverter := revert.New()
 		defer reverter.Fail()
 
-		queryClient, err := getClientByName(clusterState, siteManagerState, memberName)
+		queryClient, err := getClientByName(microState, clusterManagerState, memberName)
 		if err != nil {
 			return response.InternalError(fmt.Errorf("failed to get client for member %q: %w", memberName, err))
 		}
@@ -94,7 +94,7 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 
 			// the control listener address is stored in a member's local state directory
 			// we need to update the control listener address, we need to forward the request to the relevant member and let the update happen there
-			if memberName != clusterState.Name() {
+			if memberName != microState.Name() {
 				queryClient.SetClusterNotification()
 				err = client.MemberConfigPatchCmd(r.Context(), queryClient, memberName, &payload)
 				if err != nil {
@@ -119,7 +119,7 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 				newServerConfig[name] = config
 			}
 
-			err = siteManagerState.MicroCluster.UpdateServers(r.Context(), newServerConfig)
+			err = clusterManagerState.MicroCluster.UpdateServers(r.Context(), newServerConfig)
 			if err != nil {
 				return response.InternalError(fmt.Errorf("failed to update local member %q config: %w", memberName, err))
 			}
@@ -127,7 +127,7 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 			// in case if the dqlite transaction fails to update the member config, we need to revert the control listener address update
 			// this will keep daemon local configs in sync with what's stored in dqlite
 			reverter.Add(func() {
-				err := siteManagerState.MicroCluster.UpdateServers(r.Context(), existingServerConfig)
+				err := clusterManagerState.MicroCluster.UpdateServers(r.Context(), existingServerConfig)
 				if err != nil {
 					logger.Warn("Failed to revert control listener address update, data may be inconsistent")
 				}
@@ -136,7 +136,7 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 			})
 		}
 
-		err = clusterState.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		err = microState.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 			// get existing member config entry and use it as a base
 			filter := database.ManagerMemberConfigFilter{
 				Target: &memberName,
@@ -182,7 +182,7 @@ func memberConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointH
 	}
 }
 
-func memberConfigGet(s clusterState.State, r *http.Request) response.Response {
+func memberConfigGet(s microState.State, r *http.Request) response.Response {
 	memberName, err := url.PathUnescape(mux.Vars(r)["name"])
 	if err != nil {
 		return response.BadRequest(err)
@@ -210,7 +210,7 @@ func memberConfigGet(s clusterState.State, r *http.Request) response.Response {
 	return response.SyncResponse(true, toMemberConfigsAPI(dbConfigs)[0])
 }
 
-func memberConfigsGet(s clusterState.State, r *http.Request) response.Response {
+func memberConfigsGet(s microState.State, r *http.Request) response.Response {
 	var dbConfigs []database.ManagerMemberConfig
 	err := s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		var err error
@@ -242,9 +242,9 @@ func toMemberConfigsAPI(dbConfigs []database.ManagerMemberConfig) []types.Member
 	return memberConfigs
 }
 
-func getClientByName(clusterState clusterState.State, siteManagerState *state.SiteManagerState, name string) (*microClient.Client, error) {
-	if clusterState.Name() == name {
-		localClient, err := siteManagerState.MicroCluster.LocalClient()
+func getClientByName(microState microState.State, clusterManagerState *state.ClusterManagerState, name string) (*microClient.Client, error) {
+	if microState.Name() == name {
+		localClient, err := clusterManagerState.MicroCluster.LocalClient()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get local client: %w", err)
 		}
@@ -252,13 +252,13 @@ func getClientByName(clusterState clusterState.State, siteManagerState *state.Si
 		return localClient, nil
 	}
 
-	remotes := clusterState.Remotes().RemotesByName()
+	remotes := microState.Remotes().RemotesByName()
 	targetRemote, ok := remotes[name]
 	if !ok {
 		return nil, fmt.Errorf("member %q not found", name)
 	}
 
-	client, err := siteManagerState.MicroCluster.RemoteClient(targetRemote.Address.String())
+	client, err := clusterManagerState.MicroCluster.RemoteClient(targetRemote.Address.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get remote client for member: %s", name)
 	}

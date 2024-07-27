@@ -13,28 +13,28 @@ import (
 	"github.com/canonical/lxd-site-manager/internal/state"
 )
 
-var oidcLoginCmd = func(s *state.SiteManagerState) rest.Endpoint {
+var oidcLoginCmd = func(s *state.ClusterManagerState) rest.Endpoint {
 	return rest.Endpoint{
 		Path: "oidc/login",
 		Get:  rest.EndpointAction{Handler: oidcLogin(s), AllowUntrusted: true},
 	}
 }
 
-var oidcCallbackCmd = func(s *state.SiteManagerState) rest.Endpoint {
+var oidcCallbackCmd = func(s *state.ClusterManagerState) rest.Endpoint {
 	return rest.Endpoint{
 		Path: "oidc/callback",
 		Get:  rest.EndpointAction{Handler: oidcCallback(s), AllowUntrusted: true},
 	}
 }
 
-var oidcLogoutCmd = func(s *state.SiteManagerState) rest.Endpoint {
+var oidcLogoutCmd = func(s *state.ClusterManagerState) rest.Endpoint {
 	return rest.Endpoint{
 		Path: "oidc/logout",
 		Get:  rest.EndpointAction{Handler: oidcLogout(s), AllowUntrusted: true},
 	}
 }
 
-func oidcLogin(s *state.SiteManagerState) types.EndpointHandler {
+func oidcLogin(s *state.ClusterManagerState) types.EndpointHandler {
 	return func(innerState microState.State, r *http.Request) response.Response {
 		redirectURL := r.URL.Query().Get("next")
 
@@ -57,7 +57,7 @@ func oidcLogin(s *state.SiteManagerState) types.EndpointHandler {
 	}
 }
 
-func oidcCallback(s *state.SiteManagerState) types.EndpointHandler {
+func oidcCallback(s *state.ClusterManagerState) types.EndpointHandler {
 	return func(innerState microState.State, r *http.Request) response.Response {
 		state := r.URL.Query().Get("state")
 		stateToken, err := oidc.DecodeStateToken(state)
@@ -74,7 +74,7 @@ func oidcCallback(s *state.SiteManagerState) types.EndpointHandler {
 	}
 }
 
-func oidcLogout(s *state.SiteManagerState) types.EndpointHandler {
+func oidcLogout(s *state.ClusterManagerState) types.EndpointHandler {
 	return func(innerState microState.State, r *http.Request) response.Response {
 		redirectURL := r.URL.Query().Get("next")
 

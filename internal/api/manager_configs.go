@@ -15,13 +15,13 @@ import (
 	microState "github.com/canonical/microcluster/state"
 
 	"github.com/canonical/lxd-site-manager/internal/api/types"
-	siteManagerClient "github.com/canonical/lxd-site-manager/internal/client"
+	clusterManagerClient "github.com/canonical/lxd-site-manager/internal/client"
 	"github.com/canonical/lxd-site-manager/internal/database"
 	"github.com/canonical/lxd-site-manager/internal/oidc"
 	"github.com/canonical/lxd-site-manager/internal/state"
 )
 
-var managerConfigsCmd = func(s *state.SiteManagerState) rest.Endpoint {
+var managerConfigsCmd = func(s *state.ClusterManagerState) rest.Endpoint {
 	return rest.Endpoint{
 		Path: "config",
 		Patch: rest.EndpointAction{
@@ -38,7 +38,7 @@ var managerConfigsCmd = func(s *state.SiteManagerState) rest.Endpoint {
 }
 
 // partially update manager configs, replace configs only if they exist in payload.
-func managerConfigPatch(siteManagerState *state.SiteManagerState) types.EndpointHandler {
+func managerConfigPatch(clusterManagerState *state.ClusterManagerState) types.EndpointHandler {
 	return func(clusterState microState.State, r *http.Request) response.Response {
 		var payload types.ManagerConfigs
 
@@ -64,7 +64,7 @@ func managerConfigPatch(siteManagerState *state.SiteManagerState) types.Endpoint
 			}
 
 			err = cluster.Query(r.Context(), true, func(ctx context.Context, c *client.Client) error {
-				err := siteManagerClient.ManagerConfigsPatchCmd(ctx, c, &payload)
+				err := clusterManagerClient.ManagerConfigsPatchCmd(ctx, c, &payload)
 				if err != nil {
 					clientURL := c.URL()
 					return fmt.Errorf("Failed to notify cluster member with address %q: %w", clientURL.String(), err)
@@ -102,7 +102,7 @@ func managerConfigPatch(siteManagerState *state.SiteManagerState) types.Endpoint
 		}
 
 		if OIDCConfigsChanged(payload.Config) {
-			err = UpdateDaemonOIDCConfig(updatedConfigs, siteManagerState, clusterState)
+			err = UpdateDaemonOIDCConfig(updatedConfigs, clusterManagerState, clusterState)
 			if err != nil {
 				return response.SmartError(err)
 			}
@@ -153,7 +153,7 @@ func OIDCConfigsChanged(newConfigs map[string]string) bool {
 // UpdateDaemonOIDCConfig updates the daemon OIDC configs.
 func UpdateDaemonOIDCConfig(
 	configs map[string]string,
-	siteManagerState *state.SiteManagerState,
+	clusterManagerState *state.ClusterManagerState,
 	clusterState microState.State,
 ) error {
 	OIDCIssuer, issuerOk := configs["oidc.issuer"]
@@ -181,7 +181,7 @@ func UpdateDaemonOIDCConfig(
 		return err
 	}
 
-	siteManagerState.SetOIDCVerifier(oidcVerifier)
+	clusterManagerState.SetOIDCVerifier(oidcVerifier)
 
 	return nil
 }

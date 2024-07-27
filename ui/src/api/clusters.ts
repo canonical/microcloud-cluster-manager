@@ -4,16 +4,16 @@ import { handleResponse } from "util/helpers";
 
 export const fetchClusters = (): Promise<Cluster[]> => {
   return new Promise((resolve, reject) => {
-    fetch("/1.0/sites")
+    fetch("/1.0/remote-clusters")
       .then(handleResponse)
       .then((data: LxdApiResponse<Cluster[]>) => resolve(data.metadata))
       .catch(reject);
   });
 };
 
-export const deleteCluster = (siteName: string): Promise<void> => {
+export const deleteCluster = (remoteClusterName: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    fetch(`/1.0/sites/${siteName}`, {
+    fetch(`/1.0/remote-clusters/${remoteClusterName}`, {
       method: "DELETE",
     })
       .then(handleResponse)
@@ -22,9 +22,9 @@ export const deleteCluster = (siteName: string): Promise<void> => {
   });
 };
 
-export const approveCluster = (siteName: string): Promise<void> => {
+export const approveCluster = (remoteClusterName: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    fetch(`/1.0/sites/${siteName}`, {
+    fetch(`/1.0/remote-clusters/${remoteClusterName}`, {
       method: "PATCH",
       body: JSON.stringify({ status: "ACTIVE" }),
     })

@@ -82,12 +82,12 @@ func (e *Environment) ControlSocketURL() api.URL {
 
 // DaemonPath returns the path to the daemon.
 func (e *Environment) DaemonPath() string {
-	return e.rootDir + "/cmd/lxd-site-mgrd"
+	return e.rootDir + "/cmd/lxd-cluster-mgrd"
 }
 
 // CLIPath returns the path to the CLI.
 func (e *Environment) CLIPath() string {
-	return e.rootDir + "/cmd/lxd-site-mgr"
+	return e.rootDir + "/cmd/lxd-cluster-mgr"
 }
 
 // AddProcessID adds a process ID to the environment.
@@ -128,11 +128,11 @@ func (e *Environment) Cleanup() error {
 		return err
 	}
 
-	if err := os.Remove(filepath.Join(e.RootDir(), "lxd-site-mgrd")); err != nil {
+	if err := os.Remove(filepath.Join(e.RootDir(), "lxd-cluster-mgrd")); err != nil {
 		return err
 	}
 
-	if err := os.Remove(filepath.Join(e.RootDir(), "lxd-site-mgr")); err != nil {
+	if err := os.Remove(filepath.Join(e.RootDir(), "lxd-cluster-mgr")); err != nil {
 		return err
 	}
 

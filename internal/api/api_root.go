@@ -12,7 +12,7 @@ import (
 	"github.com/canonical/lxd-site-manager/internal/state"
 )
 
-func apiRootCmd(s *state.SiteManagerState) rest.Endpoint {
+func apiRootCmd(s *state.ClusterManagerState) rest.Endpoint {
 	return rest.Endpoint{
 		Path: "",
 		Get: rest.EndpointAction{

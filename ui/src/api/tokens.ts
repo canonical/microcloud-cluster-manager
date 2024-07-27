@@ -4,7 +4,7 @@ import { handleResponse } from "util/helpers";
 
 export const fetchTokens = (): Promise<Token[]> => {
   return new Promise((resolve, reject) => {
-    fetch("/1.0/external-site-join-token")
+    fetch("/1.0/remote-cluster-join-token")
       .then(handleResponse)
       .then((data: LxdApiResponse<Token[]>) => resolve(data.metadata ?? []))
       .catch(reject);
@@ -13,7 +13,7 @@ export const fetchTokens = (): Promise<Token[]> => {
 
 export const createToken = (body: string): Promise<TokenPostResponse> => {
   return new Promise((resolve, reject) => {
-    fetch("/1.0/external-site-join-token", {
+    fetch("/1.0/remote-cluster-join-token", {
       method: "POST",
       body: body,
     })
@@ -23,9 +23,9 @@ export const createToken = (body: string): Promise<TokenPostResponse> => {
   });
 };
 
-export const deleteToken = (siteName: string): Promise<void> => {
+export const deleteToken = (remoteClusterName: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    fetch(`/1.0/external-site-join-token/${siteName}`, {
+    fetch(`/1.0/remote-cluster-join-token/${remoteClusterName}`, {
       method: "DELETE",
     })
       .then(handleResponse)

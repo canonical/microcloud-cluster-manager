@@ -16,7 +16,7 @@ Bootstrap the database on the first run. Run the below init command in a new ter
 
 When running on Linux, create a file at the path `ui/env.local` with the below content. The IP in the file should match your docker bridge. You can find the correct address with the command `ip address show`. On macOS you might be able to skip this step as the IP matches the contents of the `.env` file that is checked into the repo. 
 
-    SITE_MANAGER_BACKEND_IP=172.19.0.1
+    CLUSTER_MANAGER_BACKEND_IP=172.19.0.1
 
 Install dotrun as described in https://github.com/canonical/dotrun#installation Launch it from the ui folder of this repo:
 

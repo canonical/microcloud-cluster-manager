@@ -32,7 +32,7 @@ const ClusterListTokens: FC = () => {
     return {
       columns: [
         {
-          content: `${token.site_name}`,
+          content: `${token.cluster_name}`,
         },
         {
           content: `${isoTimeToString(token.expiry)}`,

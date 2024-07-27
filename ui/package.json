@@ -1,5 +1,5 @@
 {
-  "name": "lxd-site-manager-ui",
+  "name": "lxd-cluster-manager-ui",
   "version": "0.0.1",
   "author": "Canonical Webteam",
   "license": "LGPL-3.0-only",
@@ -20,8 +20,8 @@
     "hooks-add": "husky install",
     "hooks-remove": "husky uninstall",
     "start": "./entrypoint 0.0.0.0:${PORT}",
-    "backend-run": "cd .. && make && go run ./cmd/lxd-site-mgrd --state-dir ./state/dir1/",
-    "backend-init": "cd .. &&  go run ./cmd/lxd-site-mgr --state-dir ./state/dir1/ waitready && go run ./cmd/lxd-site-mgr --state-dir ./state/dir1/ init \"member1\" 0.0.0.0:9001 --bootstrap --control-address 0.0.0.0:9010 && scripts/generate_sites.sh --local && scripts/generate_configs.sh --local && scripts/generate_site_join_token.sh --local",
+    "backend-run": "cd .. && make && go run ./cmd/lxd-cluster-mgrd --state-dir ./state/dir1/",
+    "backend-init": "cd .. &&  go run ./cmd/lxd-cluster-mgr --state-dir ./state/dir1/ waitready && go run ./cmd/lxd-cluster-mgr --state-dir ./state/dir1/ init \"member1\" 0.0.0.0:9001 --bootstrap --control-address 0.0.0.0:9010 && scripts/generate_clusters.sh --local && scripts/generate_configs.sh --local && scripts/generate_cluster_join_token.sh --local",
     "test-e2e": "cd .. && scripts/generate_configs.sh --local && cd ui && npx playwright test",
     "test-e2e-update": "npx playwright test --update-snapshots"
   },

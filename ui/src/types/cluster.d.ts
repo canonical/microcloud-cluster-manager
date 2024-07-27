@@ -20,6 +20,6 @@ export interface Cluster {
   member_statuses: StatusDistribution[];
   memory_total_amount: number;
   memory_usage: number;
-  site_certificate: string;
+  cluster_certificate: string;
   status: string;
 }

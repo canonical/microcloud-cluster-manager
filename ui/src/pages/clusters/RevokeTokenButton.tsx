@@ -14,17 +14,17 @@ const RevokeTokenButton: FC<Props> = ({ token }) => {
   const notify = useNotify();
 
   const handleDeleteToken = async () => {
-    await deleteToken(token.site_name)
+    await deleteToken(token.cluster_name)
       .then(() => {
         void queryClient.invalidateQueries({
           queryKey: [queryKeys.tokens],
         });
         notify.success(
-          `Successfully deleted token for cluster ${token.site_name}.`,
+          `Successfully deleted token for cluster ${token.cluster_name}.`,
         );
       })
       .catch((e: Error) => {
-        notify.failure(`Unable to delete token ${token.site_name}.`, e);
+        notify.failure(`Unable to delete token ${token.cluster_name}.`, e);
       });
   };
 

@@ -1,5 +1,5 @@
 VERSION=$(shell git describe --always --dirty --abbrev=10)
-LDFLAGS="-X github.com/canonical/lxd-site-manager/version.version=$(VERSION)"
+LDFLAGS="-X github.com/canonical/lxd-cluster-manager/version.version=$(VERSION)"
 
 .PHONY: default
 default: build
@@ -10,8 +10,8 @@ compile: build compile-binary
 
 .PHONY: compile-binary
 compile-binary:
-	go build -v ./cmd/lxd-site-mgr
-	go build -v ./cmd/lxd-site-mgrd
+	go build -v ./cmd/lxd-cluster-mgr
+	go build -v ./cmd/lxd-cluster-mgrd
 
 .PHONY: build
 build:
@@ -20,10 +20,10 @@ build:
 	cd internal/api && go generate
 	go install -v \
 		-ldflags $(LDFLAGS) \
-		./cmd/lxd-site-mgr
+		./cmd/lxd-cluster-mgr
 	go install -v \
 		-ldflags $(LDFLAGS) \
-		./cmd/lxd-site-mgrd
+		./cmd/lxd-cluster-mgrd
 
 # Testing targets.
 .PHONY: test

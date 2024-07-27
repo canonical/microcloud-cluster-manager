@@ -14,7 +14,7 @@ import (
 	"github.com/canonical/lxd-site-manager/internal/state"
 )
 
-func authHandler(siteManagerState *state.SiteManagerState) types.AccessHandler {
+func authHandler(clusterManagerState *state.ClusterManagerState) types.AccessHandler {
 	return func(clusterState microState.State, r *http.Request) (bool, response.Response) {
 		// always allow unix socket requests
 		if r.RemoteAddr == "@" {
@@ -25,11 +25,11 @@ func authHandler(siteManagerState *state.SiteManagerState) types.AccessHandler {
 			return false, response.Forbidden(nil)
 		}
 
-		if siteManagerState.OIDCVerifier == nil {
+		if clusterManagerState.OIDCVerifier == nil {
 			return false, response.Forbidden(nil)
 		}
 
-		result, resp, err := siteManagerState.OIDCVerifier.Auth(r.Context(), r)
+		result, resp, err := clusterManagerState.OIDCVerifier.Auth(r.Context(), r)
 		if err != nil {
 			// check if the request is a cluster notification with valid cert
 			if client.IsNotification(r) && r.TLS != nil {

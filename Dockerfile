@@ -29,10 +29,10 @@ FROM ubuntu:jammy
 
 # copy binaries and scripts
 WORKDIR /srv
-COPY --from=build /root/go/bin/lxd-site-mgr /srv/lxd-site-mgr
-COPY --from=build /root/go/bin/lxd-site-mgrd /srv/lxd-site-mgrd
+COPY --from=build /root/go/bin/lxd-cluster-mgr /srv/lxd-cluster-mgr
+COPY --from=build /root/go/bin/lxd-cluster-mgrd /srv/lxd-cluster-mgrd
 COPY --from=build /srv/entrypoint /srv/entrypoint
-COPY --from=build /srv/scripts/generate_sites.sh /srv/scripts/generate_sites.sh
+COPY --from=build /srv/scripts/generate_clusters.sh /srv/scripts/generate_clusters.sh
 COPY --from=build /srv/ui/haproxy-demo.cfg /srv/ui/haproxy-demo.cfg
 COPY --from=build /usr/lib/x86_64-linux-gnu/libdqlite.so.0 /usr/lib/x86_64-linux-gnu/libdqlite.so.0
 COPY --from=build /usr/lib/x86_64-linux-gnu/libuv.so.1 /usr/lib/x86_64-linux-gnu/libuv.so.1

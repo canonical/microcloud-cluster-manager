@@ -31,7 +31,7 @@ const ClusterList: FC = () => {
             <ClusterMemoryGraph key="cluster-memory-graph" />,
           ]}
         />
-        <TabLinks tabs={tabs} activeTab={activeTab} tabUrl="/ui/sites" />
+        <TabLinks tabs={tabs} activeTab={activeTab} tabUrl="/ui/clusters" />
         <NotificationRow />
         <div>
           {!activeTab && <ClusterListActive />}

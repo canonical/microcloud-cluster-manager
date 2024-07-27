@@ -11,7 +11,7 @@ type UserInfo struct {
 	Name  string `json:"name"`
 }
 
-// APIRoot represents environment data for the site manager.
+// APIRoot represents environment data for the Cluster Manager.
 type APIRoot struct {
 	UserInfo
 	Trusted bool `json:"trusted"`

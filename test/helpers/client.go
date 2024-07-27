@@ -53,7 +53,7 @@ func NewUnixHTTPClient(url api.URL) (*Client, error) {
 	}, nil
 }
 
-// NewTLSHTTPClient creates a new http client for TLS connections with site manager.
+// NewTLSHTTPClient creates a new http client for TLS connections with Cluster Manager.
 func NewTLSHTTPClient(url api.URL, clientCert *shared.CertInfo, serverCert *x509.Certificate) (*Client, error) {
 	var tlsConfig *tls.Config
 	// if a server cert is provided, we need to setup the client to trust it

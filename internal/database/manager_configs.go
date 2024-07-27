@@ -17,7 +17,7 @@ package database
 //go:generate mapper method -i -d github.com/canonical/microcluster/cluster -e manager_config DeleteOne-by-Key table=manager_configs
 //go:generate mapper method -i -d github.com/canonical/microcluster/cluster -e manager_config Update table=manager_configs
 
-// ManagerConfig configurations for the entire lxd site manager cluster.
+// ManagerConfig configurations for the entire cluster.
 type ManagerConfig struct {
 	Key   string `db:"primary=yes"`
 	ID    int

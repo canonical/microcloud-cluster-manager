@@ -3,15 +3,15 @@
 haproxy -f ui/haproxy-demo.cfg
 
 # startup the daemon in the background
-NO_PROXY="0.0.0.0,$NO_PROXY" ./lxd-site-mgrd --state-dir ./state/dir1 &
+NO_PROXY="0.0.0.0,$NO_PROXY" ./lxd-cluster-mgrd --state-dir ./state/dir1 &
 
-# initialise the site manager cluster
-./lxd-site-mgr --state-dir ./state/dir1 waitready
-./lxd-site-mgr --state-dir ./state/dir1 init "member" 0.0.0.0:443 --bootstrap --control-address 0.0.0.0:9010
+# initialise the cluster
+./lxd-cluster-mgr --state-dir ./state/dir1 waitready
+./lxd-cluster-mgr --state-dir ./state/dir1 init "member" 0.0.0.0:443 --bootstrap --control-address 0.0.0.0:9010
 
-# initialise data for site manager
-./scripts/generate_sites.sh
-./lxd-site-mgr --state-dir ./state/dir1 config set oidc.issuer=$OIDC_ISSUER oidc.client.id=$OIDC_CLIENT_ID  oidc.audience=$OIDC_AUDIENCE
+# initialise data for Cluster Manager
+./scripts/generate_clusters.sh
+./lxd-cluster-mgr --state-dir ./state/dir1 config set oidc.issuer=$OIDC_ISSUER oidc.client.id=$OIDC_CLIENT_ID  oidc.audience=$OIDC_AUDIENCE
 
 # keep container running
 tail -f /dev/null

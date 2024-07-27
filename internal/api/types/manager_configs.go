@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-// ManagerConfigs represents the site manager configs that are cluster wide.
+// ManagerConfigs represents the Cluster Manager configs that are cluster wide.
 type ManagerConfigs struct {
 	Config map[string]string `json:"config" yaml:"config"`
 }
@@ -17,7 +17,7 @@ func ValidManagerConfigKeys() map[string]bool {
 	}
 }
 
-// ValidateManagerConfigKeys validates the given manager config keys that they exist in the map of valid config keys for site manager.
+// ValidateManagerConfigKeys validates the given manager config keys that they exist in the map of valid config keys for Cluster Manager.
 func ValidateManagerConfigKeys(config map[string]string) error {
 	for k := range config {
 		_, ok := ValidManagerConfigKeys()[k]

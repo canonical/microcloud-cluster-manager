@@ -1,7 +1,7 @@
 export interface Token {
   created_at: string;
   expiry: string;
-  site_name: string;
+  cluster_name: string;
 }
 
 export interface TokenPostResponse {

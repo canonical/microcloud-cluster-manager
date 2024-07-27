@@ -79,8 +79,8 @@ const Navigation: FC = () => {
             <ul className="p-side-navigation__list sidenav-top-ul">
               <li>
                 <NavLink
-                  to={`/ui/sites`}
-                  title={`Sites List`}
+                  to={`/ui/clusters`}
+                  title={`Clusters List`}
                   onClick={softToggleMenu}
                 >
                   <img

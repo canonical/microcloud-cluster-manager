@@ -47,7 +47,7 @@ jobs:
           sudo apt-get install --no-install-recommends -y libdqlite-dev
           cd ui && yarn install --immutable
 
-      - name: Build LXD Site Manager
+      - name: Build LXD Cluster Manager
         run: make
 
       - name: Run static analysis
@@ -115,22 +115,22 @@ jobs:
           set -eux
           cd ui && yarn install --immutable
       
-      - name: Make LXD Site Manager Binaries
+      - name: Make LXD Cluster Manager Binaries
         run: make compile
 
-      - name: Run site manager daemon
-        run: lxd-site-mgrd --state-dir ./state/dir1/ &
+      - name: Run Cluster Manager daemon
+        run: lxd-cluster-mgrd --state-dir ./state/dir1/ &
 
-      - name: Initialise site manager
+      - name: Initialise Cluster Manager
         run: |
-          lxd-site-mgr --state-dir ./state/dir1/ waitready
-          lxd-site-mgr --state-dir ./state/dir1/ init "member1" 0.0.0.0:9001 --bootstrap --control-address 0.0.0.0:9010
+          lxd-cluster-mgr --state-dir ./state/dir1/ waitready
+          lxd-cluster-mgr --state-dir ./state/dir1/ init "member1" 0.0.0.0:9001 --bootstrap --control-address 0.0.0.0:9010
 
-      - name: Add dummy data to site manager
+      - name: Add dummy data to Cluster Manager
         run: |
           set -eux
           sudo chmod 0777 ../lxd-site-manager
-          scripts/generate_sites.sh
+          scripts/generate_clusters.sh
 
       - name: Install Playwright Browsers
         run: cd ui && npx playwright install --with-deps ${{ matrix.browser }}

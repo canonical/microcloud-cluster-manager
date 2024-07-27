@@ -8,7 +8,7 @@ const AddClusterButton: FC = () => {
   return (
     <ActionButton
       onClick={() => {
-        navigate("/ui/sites/create");
+        navigate("/ui/clusters/create");
       }}
       appearance="positive"
       className="u-no-margin--bottom"
