@@ -69,7 +69,7 @@ func testRemoteClusterStatusInactive(env *helpers.Environment) (testName string,
 			}
 
 			_, err = sendStatusUpdate(env, tokenData)
-			if err != nil && err.Error() == "cluster not found" {
+			if err != nil && err.Error() == "remote cluster is pending approval" {
 				err = nil
 			}
 
@@ -102,7 +102,7 @@ func testRemoteClusterStatusInvalidCert(env *helpers.Environment) (testName stri
 			}
 
 			err = sendStatusUpdateInvalidCert(env, tokenData)
-			if err != nil && err.Error() == "cluster not found" {
+			if err != nil && err.Error() == "invalid cluster certificate" {
 				err = nil
 			}
 

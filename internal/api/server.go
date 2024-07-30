@@ -52,25 +52,27 @@ func remoteClusterManagementListener(s *state.ClusterManagerState) rest.Server {
 	}
 }
 
-var remoteClusterControlListener = rest.Server{
-	CoreAPI:   false,
-	PreInit:   false,
-	ServeUnix: false,
-	Resources: []rest.Resources{
-		{
-			PathPrefix: types.APIVersionPrefix,
-			Endpoints: []rest.Endpoint{
-				remoteClustersControlCmd,
-				remoteClustersStatusCmd,
+func remoteClusterControlListener(s *state.ClusterManagerState) rest.Server {
+	return rest.Server{
+		CoreAPI:   false,
+		PreInit:   false,
+		ServeUnix: false,
+		Resources: []rest.Resources{
+			{
+				PathPrefix: types.APIVersionPrefix,
+				Endpoints: []rest.Endpoint{
+					remoteClustersControlCmd(s),
+					remoteClustersStatusCmd(s),
+				},
 			},
 		},
-	},
+	}
 }
 
 // GetServers returns all the network listeners for Cluster Manager.
 func GetServers(s *state.ClusterManagerState) map[string]rest.Server {
 	return map[string]rest.Server{
 		string(ManagementListener): remoteClusterManagementListener(s),
-		string(ControlListener):    remoteClusterControlListener,
+		string(ControlListener):    remoteClusterControlListener(s),
 	}
 }
