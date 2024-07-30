@@ -6,7 +6,7 @@ export const fetchClusters = (): Promise<Cluster[]> => {
   return new Promise((resolve, reject) => {
     fetch("/1.0/remote-clusters")
       .then(handleResponse)
-      .then((data: LxdApiResponse<Cluster[]>) => resolve(data.metadata))
+      .then((data: LxdApiResponse<Cluster[]>) => resolve(data.metadata ?? []))
       .catch(reject);
   });
 };
