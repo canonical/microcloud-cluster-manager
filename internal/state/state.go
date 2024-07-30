@@ -5,7 +5,7 @@ import (
 
 	"github.com/canonical/microcluster/microcluster"
 
-	"github.com/canonical/lxd-site-manager/internal/oidc"
+	"github.com/canonical/lxd-cluster-manager/internal/oidc"
 )
 
 // ClusterManagerState holds the global state of the Cluster Manager.

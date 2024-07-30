@@ -8,7 +8,7 @@ import (
 	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcluster/client"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
 )
 
 // MemberConfigPatchCmd sends a PATCH request to /1.0/member/{name}/config.

@@ -10,7 +10,7 @@ import (
 	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcluster/client"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
 )
 
 // GetRemoteClusters gets the remote clusters.

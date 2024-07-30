@@ -9,9 +9,9 @@ import (
 	"github.com/canonical/microcluster/rest/types"
 	microState "github.com/canonical/microcluster/state"
 
-	"github.com/canonical/lxd-site-manager/internal/api"
-	"github.com/canonical/lxd-site-manager/internal/database"
-	"github.com/canonical/lxd-site-manager/internal/state"
+	"github.com/canonical/lxd-cluster-manager/internal/api"
+	"github.com/canonical/lxd-cluster-manager/internal/database"
+	"github.com/canonical/lxd-cluster-manager/internal/state"
 )
 
 // InitialiseControlListener is a hook that initialises the control listener for the daemon.

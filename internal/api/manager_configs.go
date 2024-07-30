@@ -14,11 +14,11 @@ import (
 	"github.com/canonical/microcluster/rest"
 	microState "github.com/canonical/microcluster/state"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
-	clusterManagerClient "github.com/canonical/lxd-site-manager/internal/client"
-	"github.com/canonical/lxd-site-manager/internal/database"
-	"github.com/canonical/lxd-site-manager/internal/oidc"
-	"github.com/canonical/lxd-site-manager/internal/state"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
+	clusterManagerClient "github.com/canonical/lxd-cluster-manager/internal/client"
+	"github.com/canonical/lxd-cluster-manager/internal/database"
+	"github.com/canonical/lxd-cluster-manager/internal/oidc"
+	"github.com/canonical/lxd-cluster-manager/internal/state"
 )
 
 var managerConfigsCmd = func(s *state.ClusterManagerState) rest.Endpoint {

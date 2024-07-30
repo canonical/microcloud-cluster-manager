@@ -8,9 +8,9 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
-	"github.com/canonical/lxd-site-manager/internal/client"
-	"github.com/canonical/lxd-site-manager/version"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/internal/client"
+	"github.com/canonical/lxd-cluster-manager/version"
 )
 
 type cmdConfig struct {

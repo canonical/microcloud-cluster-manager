@@ -8,9 +8,9 @@ import (
 	microState "github.com/canonical/microcluster/state"
 	"github.com/google/uuid"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
-	"github.com/canonical/lxd-site-manager/internal/oidc"
-	"github.com/canonical/lxd-site-manager/internal/state"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/internal/oidc"
+	"github.com/canonical/lxd-cluster-manager/internal/state"
 )
 
 var oidcLoginCmd = func(s *state.ClusterManagerState) rest.Endpoint {

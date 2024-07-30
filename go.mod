@@ -1,5 +1,4 @@
-// FIXME: rename to lxd-cluster-manager
-module github.com/canonical/lxd-site-manager
+module github.com/canonical/lxd-cluster-manager
 
 go 1.22.4
 

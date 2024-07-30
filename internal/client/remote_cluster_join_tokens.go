@@ -8,7 +8,7 @@ import (
 	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcluster/client"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
 )
 
 // RemoteClusterJoinTokenPostCmd sends a POST request to /1.0/remote-cluster-join-token.

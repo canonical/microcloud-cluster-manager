@@ -15,9 +15,9 @@ import (
 	microState "github.com/canonical/microcluster/state"
 	"github.com/gorilla/mux"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
-	"github.com/canonical/lxd-site-manager/internal/database"
-	"github.com/canonical/lxd-site-manager/internal/state"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/internal/database"
+	"github.com/canonical/lxd-cluster-manager/internal/state"
 )
 
 func remoteClusterJoinTokensCmd(s *state.ClusterManagerState) rest.Endpoint {

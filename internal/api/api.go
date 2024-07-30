@@ -9,9 +9,9 @@ import (
 	"github.com/canonical/microcluster/rest/access"
 	microState "github.com/canonical/microcluster/state"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
-	"github.com/canonical/lxd-site-manager/internal/oidc"
-	"github.com/canonical/lxd-site-manager/internal/state"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/internal/oidc"
+	"github.com/canonical/lxd-cluster-manager/internal/state"
 )
 
 func authHandler(clusterManagerState *state.ClusterManagerState) types.AccessHandler {

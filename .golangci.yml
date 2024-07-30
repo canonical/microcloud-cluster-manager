@@ -13,8 +13,7 @@ linters-settings:
     sections:
       - standard
       - default
-      # FIXME: rename to lxd-cluster-manager
-      - prefix(github.com/canonical/lxd-site-manager)
+      - prefix(github.com/canonical/lxd-cluster-manager)
   errcheck:
     exclude-functions:
       - (io.ReadCloser).Close

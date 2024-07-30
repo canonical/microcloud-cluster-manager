@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"github.com/canonical/lxd-site-manager/test/helpers"
-	"github.com/canonical/lxd-site-manager/test/types"
+	"github.com/canonical/lxd-cluster-manager/test/helpers"
+	"github.com/canonical/lxd-cluster-manager/test/types"
 )
 
 var tests = []types.Test{

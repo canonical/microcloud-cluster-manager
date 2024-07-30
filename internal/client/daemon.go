@@ -9,7 +9,7 @@ import (
 	"github.com/canonical/microcluster/client"
 	apiTypes "github.com/canonical/microcluster/rest/types"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
 )
 
 // GetDaemonServerConfigs sends a GET request to /daemon/servers for fetching server configs.

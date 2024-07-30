@@ -8,8 +8,8 @@ import (
 
 	"github.com/canonical/lxd/shared/api"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
-	"github.com/canonical/lxd-site-manager/test/helpers"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/test/helpers"
 )
 
 func testRemoteClusterStatusNoCert(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {

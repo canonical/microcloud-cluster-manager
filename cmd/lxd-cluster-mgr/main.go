@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/canonical/lxd-site-manager/version"
+	"github.com/canonical/lxd-cluster-manager/version"
 )
 
 // CmdControl has functions that are common to the lxd-cluster-mgr commands.

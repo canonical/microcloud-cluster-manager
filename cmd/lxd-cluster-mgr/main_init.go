@@ -9,8 +9,8 @@ import (
 	"github.com/canonical/microcluster/microcluster"
 	"github.com/spf13/cobra"
 
-	"github.com/canonical/lxd-site-manager/internal/api"
-	"github.com/canonical/lxd-site-manager/version"
+	"github.com/canonical/lxd-cluster-manager/internal/api"
+	"github.com/canonical/lxd-cluster-manager/version"
 )
 
 type cmdInit struct {

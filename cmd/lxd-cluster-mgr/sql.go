@@ -8,7 +8,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 
-	"github.com/canonical/lxd-site-manager/version"
+	"github.com/canonical/lxd-cluster-manager/version"
 )
 
 type cmdSQL struct {

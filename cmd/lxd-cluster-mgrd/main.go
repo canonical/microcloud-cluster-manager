@@ -9,10 +9,10 @@ import (
 	microState "github.com/canonical/microcluster/state"
 	"github.com/spf13/cobra"
 
-	"github.com/canonical/lxd-site-manager/internal/api"
-	"github.com/canonical/lxd-site-manager/internal/database"
-	"github.com/canonical/lxd-site-manager/internal/state"
-	"github.com/canonical/lxd-site-manager/version"
+	"github.com/canonical/lxd-cluster-manager/internal/api"
+	"github.com/canonical/lxd-cluster-manager/internal/database"
+	"github.com/canonical/lxd-cluster-manager/internal/state"
+	"github.com/canonical/lxd-cluster-manager/version"
 )
 
 // Debug indicates whether to log debug messages or not.

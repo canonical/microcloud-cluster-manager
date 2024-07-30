@@ -8,9 +8,9 @@ import (
 	"github.com/canonical/microcluster/microcluster"
 	"github.com/spf13/cobra"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
-	"github.com/canonical/lxd-site-manager/internal/client"
-	"github.com/canonical/lxd-site-manager/version"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/internal/client"
+	"github.com/canonical/lxd-cluster-manager/version"
 )
 
 type cmdRemoteClusterJoinToken struct {

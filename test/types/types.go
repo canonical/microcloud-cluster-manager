@@ -3,7 +3,7 @@ package types
 import (
 	"testing"
 
-	"github.com/canonical/lxd-site-manager/test/helpers"
+	"github.com/canonical/lxd-cluster-manager/test/helpers"
 )
 
 // Test represents a test function.

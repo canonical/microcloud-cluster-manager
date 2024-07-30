@@ -129,7 +129,7 @@ jobs:
       - name: Add dummy data to Cluster Manager
         run: |
           set -eux
-          sudo chmod 0777 ../lxd-site-manager
+          sudo chmod 0777 ../lxd-cluster-manager
           scripts/generate_clusters.sh
 
       - name: Install Playwright Browsers

@@ -9,7 +9,7 @@ import (
 
 	"github.com/canonical/lxd/shared/api"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
 )
 
 // FindToken search for a token by remote cluster name.

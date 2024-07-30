@@ -4,7 +4,7 @@ import (
 	"github.com/canonical/microcluster/microcluster"
 	"github.com/spf13/cobra"
 
-	"github.com/canonical/lxd-site-manager/version"
+	"github.com/canonical/lxd-cluster-manager/version"
 )
 
 type cmdShutdown struct {

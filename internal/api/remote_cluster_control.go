@@ -18,8 +18,8 @@ import (
 	microTypes "github.com/canonical/microcluster/rest/types"
 	"github.com/canonical/microcluster/state"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
-	"github.com/canonical/lxd-site-manager/internal/database"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/internal/database"
 )
 
 var remoteClustersControlCmd = rest.Endpoint{

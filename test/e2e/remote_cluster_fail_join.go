@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/canonical/lxd-site-manager/test/helpers"
+	"github.com/canonical/lxd-cluster-manager/test/helpers"
 )
 
 func testRemoteClusterJoinInvalidHMAC(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {

@@ -3,8 +3,8 @@ package api
 import (
 	"github.com/canonical/microcluster/rest"
 
-	"github.com/canonical/lxd-site-manager/internal/api/types"
-	"github.com/canonical/lxd-site-manager/internal/state"
+	"github.com/canonical/lxd-cluster-manager/internal/api/types"
+	"github.com/canonical/lxd-cluster-manager/internal/state"
 )
 
 // ListenerName represents the name of any network listener relevant in Cluster Manager.
