@@ -53,11 +53,14 @@ var coreRemoteClusterDetailByNameObjects = cluster.RegisterStmt(
 	fmt.Sprintf(`%s WHERE core_remote_clusters.name = ?`, mainCoreRemoteClusterDetailQuery()),
 )
 
-// GetCoreRemoteClustersWithDetails fetches all remote cluster details with core remote cluster information from the database.
-func GetCoreRemoteClustersWithDetails(ctx context.Context, tx *sql.Tx) ([]CoreRemoteClusterWithDetail, error) {
+var coreRemoteClusterDetailByIDObjects = cluster.RegisterStmt(
+	fmt.Sprintf(`%s WHERE core_remote_clusters.id = ?`, mainCoreRemoteClusterDetailQuery()),
+)
+
+func getCoreRemoteClusterWithDetails(ctx context.Context, tx *sql.Tx, stmtCode int, args ...any) ([]CoreRemoteClusterWithDetail, error) {
 	var err error
 	objects := make([]CoreRemoteClusterWithDetail, 0)
-	sqlStmt, err := cluster.Stmt(tx, coreRemoteClusterDetailObjects)
+	sqlStmt, err := cluster.Stmt(tx, stmtCode)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to prepare statement: %w", err)
 	}
@@ -95,60 +98,40 @@ func GetCoreRemoteClustersWithDetails(ctx context.Context, tx *sql.Tx) ([]CoreRe
 		return nil
 	}
 
-	err = query.SelectObjects(ctx, sqlStmt, dest)
+	err = query.SelectObjects(ctx, sqlStmt, dest, args...)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to do a joint fetch from \"core_remote_clusters\" and \"remote_cluster\" tables: %w", err)
+		return nil, fmt.Errorf("Failed to do a joint fetch from \"core_remote_clusters\" and \"remote_cluster_details\" tables: %w", err)
 	}
 
 	return objects, nil
 }
 
+// GetCoreRemoteClustersWithDetails fetches all remote cluster details with core remote cluster information from the database.
+func GetCoreRemoteClustersWithDetails(ctx context.Context, tx *sql.Tx) ([]CoreRemoteClusterWithDetail, error) {
+	remoteClusterDetails, err := getCoreRemoteClusterWithDetails(ctx, tx, coreRemoteClusterDetailObjects)
+	if err != nil {
+		return nil, err
+	}
+
+	return remoteClusterDetails, nil
+}
+
 // GetCoreRemoteClusterWithDetailByName fetches the remote cluster detail with core remote cluster information from the database filtered by remote cluster name.
 func GetCoreRemoteClusterWithDetailByName(ctx context.Context, tx *sql.Tx, remoteClusterName string) ([]CoreRemoteClusterWithDetail, error) {
-	var err error
-	objects := make([]CoreRemoteClusterWithDetail, 0)
-	sqlStmt, err := cluster.Stmt(tx, coreRemoteClusterDetailByNameObjects)
+	remoteClusterDetails, err := getCoreRemoteClusterWithDetails(ctx, tx, coreRemoteClusterDetailByNameObjects, remoteClusterName)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to prepare statement: %w", err)
+		return nil, err
 	}
 
-	dest := func(scan func(dest ...any) error) error {
-		c := CoreRemoteClusterWithDetail{}
-		err := scan(
-			&c.ID,
-			&c.Name,
-			&c.ClusterCertificate,
-			&c.ClusterCreatedAt,
-			&c.Status,
-			&c.CPUTotalCount,
-			&c.CPULoad1,
-			&c.CPULoad5,
-			&c.CPULoad15,
-			&c.MemoryTotalAmount,
-			&c.MemoryUsage,
-			&c.DiskTotalSize,
-			&c.DiskUsage,
-			&c.InstanceCount,
-			&c.InstanceStatuses,
-			&c.MemberCount,
-			&c.MemberStatuses,
-			&c.ClusterJoinedAt,
-			&c.ClusterUpdatedAt,
-		)
+	return remoteClusterDetails, nil
+}
 
-		if err != nil {
-			return err
-		}
-
-		objects = append(objects, c)
-
-		return nil
-	}
-
-	err = query.SelectObjects(ctx, sqlStmt, dest, remoteClusterName)
+// GetCoreRemoteClusterWithDetailByID fetches the remote cluster detail with core information from the database filtered by site id.
+func GetCoreRemoteClusterWithDetailByID(ctx context.Context, tx *sql.Tx, remoteClusterID int64) ([]CoreRemoteClusterWithDetail, error) {
+	remoteClusterDetails, err := getCoreRemoteClusterWithDetails(ctx, tx, coreRemoteClusterDetailByIDObjects, remoteClusterID)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to do a joint fetch from \"core_remote_clusters\" and \"remote_cluster\" tables: %w", err)
+		return nil, err
 	}
 
-	return objects, nil
+	return remoteClusterDetails, nil
 }
