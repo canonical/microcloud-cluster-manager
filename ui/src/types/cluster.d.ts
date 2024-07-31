@@ -23,3 +23,9 @@ export interface Cluster {
   cluster_certificate: string;
   status: string;
 }
+
+export interface MultiMeterValue {
+  amount: number;
+  status: string;
+  color: string;
+}

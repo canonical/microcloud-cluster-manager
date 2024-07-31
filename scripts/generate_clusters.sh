@@ -4,8 +4,8 @@ set -e
 ENTRIES=200
 
 # Instance and member statuses templates
-INSTANCE_STATUSES_TEMPLATE='[{"status": "Running", "count": %d}]'
-MEMBER_STATUSES_TEMPLATE='[{"status": "Online", "count": %d}]'
+INSTANCE_STATUSES_TEMPLATE='[{"status": "Running", "count": %d}, {"status": "Stopped", "count": %d}, {"status": "Frozen", "count": %d}, {"status": "Error", "count": %d}]'
+MEMBER_STATUSES_TEMPLATE='[{"status": "Online", "count": %d}, {"status": "Offline", "count": %d}, {"status": "Evacuated", "count": %d}, {"status": "Blocked", "count": %d}]'
 
 # Prepare bulk insert statements for core_remote_clusters
 CORE_REMOTE_CLUSTERS_INSERT="INSERT INTO core_remote_clusters (name, cluster_certificate) VALUES "
@@ -43,8 +43,8 @@ for i in $(seq 1 $ENTRIES); do
     DISK_USAGE=$(( (SEED * 12345678) % (DISK_TOTAL_SIZE + 1) ))  # 0 to DISK_TOTAL_SIZE
     # Generates a random date and time between date.now and 30 minutes ago.
     LAST_UPDATED_AT=$(date -u -d "@$(( $(date -u -d '30 minutes ago' +%s) + SEED % ($(date -u +%s) - $(date -u -d '30 minutes ago' +%s)) ))" +'%Y-%m-%d %H:%M:%S')
-    INSTANCE_STATUSES=$(printf "$INSTANCE_STATUSES_TEMPLATE" $((SEED % 200 + 1)))
-    MEMBER_STATUSES=$(printf "$MEMBER_STATUSES_TEMPLATE" $((SEED % 4)))
+    INSTANCE_STATUSES=$(printf "$INSTANCE_STATUSES_TEMPLATE" $((SEED % 200 + 1)) $((SEED % 150 + 1)) $((SEED % 100 + 1)) $((SEED % 50 + 1)))
+    MEMBER_STATUSES=$(printf "$MEMBER_STATUSES_TEMPLATE" $((SEED % 4 + 1)) $((SEED % 3 + 1)) $((SEED % 2 + 1)) $((SEED % 1 + 1)))
     REMOTE_CLUSTER_DETAILS_VALUES+=("($CORE_REMOTE_CLUSTER_ID, '$STATUS', '$CPU_TOTAL_COUNT', '$CPU_LOAD_1', '$CPU_LOAD_5', '$CPU_LOAD_15', '$MEMORY_TOTAL_AMOUNT', '$MEMORY_USAGE', '$DISK_TOTAL_SIZE', '$DISK_USAGE', '$INSTANCE_COUNT', '$INSTANCE_STATUSES', '$MEMBER_COUNT', '$MEMBER_STATUSES', '$LAST_UPDATED_AT')")
 done
 
