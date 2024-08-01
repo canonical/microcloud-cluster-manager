@@ -19,7 +19,7 @@ func GetDaemonServerConfigs(ctx context.Context, c *client.Client) (map[string]a
 
 	var serverConfigs map[string]apiTypes.ServerConfig
 	endpoint := api.NewURL().Path("daemon", "servers")
-	err := c.Query(queryCtx, "GET", types.InternalEndpoint, endpoint, nil, &serverConfigs)
+	err := c.Query(queryCtx, "GET", types.InternalPublicEndpoint, endpoint, nil, &serverConfigs)
 	if err != nil {
 		clientURL := c.URL()
 		return nil, fmt.Errorf("Failed performing action on %q: %w", clientURL.String(), err)
