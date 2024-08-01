@@ -1,4 +1,4 @@
-import { ActionButton, useNotify } from "@canonical/react-components";
+import { ConfirmationButton, useNotify } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
 import { deleteCluster } from "api/clusters";
 import { FC, useState } from "react";
@@ -15,29 +15,40 @@ const DeleteClusterButton: FC<Props> = ({ clusterName }) => {
 
   const handleDeleteCluster = async () => {
     setLoading(true);
-
     try {
       await deleteCluster(clusterName);
       await queryClient.invalidateQueries({
         queryKey: [queryKeys.clusters],
       });
-      setLoading(false);
       notify.success(`Successfully deleted cluster ${clusterName}.`);
     } catch (error) {
-      setLoading(false);
       notify.failure(`Unable to delete cluster ${clusterName}.`, error);
     }
+    setLoading(false);
   };
 
   return (
-    <ActionButton
-      className="u-no-margin--bottom"
-      onClick={() => void handleDeleteCluster()}
+    <ConfirmationButton
       appearance="negative"
       loading={isLoading}
+      className="u-no-margin--bottom"
+      confirmationModalProps={{
+        title: "Confirm delete",
+        children: (
+          <p>
+            This will permanently delete the cluster{" "}
+            <strong>{clusterName}</strong>. This action cannot be undone, and
+            can result in data loss.
+          </p>
+        ),
+        confirmButtonLabel: "Delete",
+        onConfirm: () => void handleDeleteCluster(),
+      }}
+      shiftClickEnabled
+      showShiftClickHint
     >
       Delete
-    </ActionButton>
+    </ConfirmationButton>
   );
 };
 
