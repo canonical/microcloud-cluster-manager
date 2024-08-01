@@ -20,7 +20,7 @@ const ClusterList: FC = () => {
   const tabs: string[] = ["Active", "Pending", "Tokens"];
 
   return (
-    <BaseLayout title={"Clusters"} controls={<AddClusterButton />}>
+    <BaseLayout title="Clusters" controls={<AddClusterButton />}>
       <Row>
         <List
           className="cluster-graphs"

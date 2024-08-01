@@ -1,3 +1,4 @@
+@use "sass:map";
 @import "settings";
 @import "vanilla-framework/scss/build";
 @import "./breakpoints";
@@ -15,6 +16,7 @@
 @include vf-p-icon-export;
 @include vf-p-icon-edit;
 @include custom-p-icon;
+@import "breadcrumbs";
 @import "cluster_graphs";
 @import "cluster_list";
 @import "clustercpu";

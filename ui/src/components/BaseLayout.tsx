@@ -1,4 +1,4 @@
-import { FC, ReactNode } from "react";
+import { ElementType, FC, ReactNode } from "react";
 import { AppMain, Panel } from "@canonical/react-components";
 
 interface Props {
@@ -7,6 +7,8 @@ interface Props {
   children: ReactNode;
   mainClassName?: string;
   contentClassName?: string;
+  titleClassName?: string;
+  titleComponent?: ElementType;
 }
 
 const BaseLayout: FC<Props> = ({
@@ -15,6 +17,8 @@ const BaseLayout: FC<Props> = ({
   children,
   mainClassName,
   contentClassName,
+  titleClassName,
+  titleComponent,
 }: Props) => {
   return (
     <AppMain className={mainClassName}>
@@ -23,6 +27,8 @@ const BaseLayout: FC<Props> = ({
         controls={controls}
         wrapContent={true}
         contentClassName={contentClassName}
+        titleClassName={titleClassName}
+        titleComponent={titleComponent}
       >
         {children}
       </Panel>
