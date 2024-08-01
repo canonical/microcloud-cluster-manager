@@ -12,11 +12,13 @@ import NavLink from "components/NavLink";
 import { useMenuCollapsed } from "context/menuCollapsed";
 import { isWidthBelow, logout } from "util/helpers";
 import { useAuth } from "context/auth";
+import { useServer } from "context/useServer";
 
 const Navigation: FC = () => {
   const isSmallScreen = () => isWidthBelow(620);
   const { menuCollapsed, setMenuCollapsed } = useMenuCollapsed();
   const { isAuthenticated } = useAuth();
+  const { data: identity } = useServer();
 
   const handleLogout = () => {
     logout();
@@ -106,6 +108,18 @@ const Navigation: FC = () => {
               </li>
             </ul>
             <ul className="p-side-navigation__list sidenav-bottom-ul">
+              <li className="p-side-navigation__item">
+                <div
+                  className="p-side-navigation__link"
+                  title={`${identity?.name} (${identity?.email})`}
+                >
+                  <Icon
+                    className="p-side-navigation__icon is-dark"
+                    name="profile"
+                  />
+                  <div className="u-truncate">{identity?.name}</div>
+                </div>
+              </li>
               <hr className="is-dark navigation-hr" />
               <li className="p-side-navigation__item">
                 <a
