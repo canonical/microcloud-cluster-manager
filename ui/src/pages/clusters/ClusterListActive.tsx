@@ -1,6 +1,4 @@
 import { FC } from "react";
-import { fetchClusters } from "api/clusters";
-import { useQuery } from "@tanstack/react-query";
 import { MainTable, TablePagination } from "@canonical/react-components";
 import Loader from "components/Loader";
 import { Link } from "react-router-dom";
@@ -10,15 +8,15 @@ import { ClusterMemory } from "./metrics/ClusterMemory";
 import { ClusterDisk } from "./metrics/ClusterDisk";
 import { ClusterNodes } from "./metrics/ClusterNodes";
 import ClusterHeartbeat from "./metrics/ClusterHeartbeat";
-import { queryKeys } from "util/queryKeys";
 import ClusterStatus from "./metrics/ClusterStatus";
+import { Cluster } from "types/cluster";
 
-const ClusterListActive: FC = () => {
-  const { data: clusters = [], isLoading } = useQuery({
-    queryKey: [queryKeys.clusters],
-    queryFn: fetchClusters,
-  });
+type Props = {
+  clusters: Cluster[];
+  isLoading: boolean;
+};
 
+const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
   const filteredClusters = clusters.filter(
     (cluster) => cluster.status == "ACTIVE",
   );
@@ -88,7 +86,7 @@ const ClusterListActive: FC = () => {
       <TablePagination
         data={tableRows}
         id="pagination"
-        itemName="cluster"
+        itemName=" active cluster"
         className="u-no-margin--top"
         aria-label="Table pagination control"
       >

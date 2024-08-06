@@ -11,7 +11,7 @@ const AddClusterButton: FC = () => {
         navigate("/ui/clusters/create");
       }}
       appearance="positive"
-      className="u-no-margin--bottom"
+      className="u-float-right u-no-margin--bottom"
     >
       Add New Cluster
     </ActionButton>

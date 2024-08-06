@@ -1,17 +1,14 @@
 import { Icon } from "@canonical/react-components";
-import { useQuery } from "@tanstack/react-query";
-import { fetchClusters } from "api/clusters";
 import DoughnutChart from "components/DoughnutChart";
 import { FC, ReactNode } from "react";
+import { Cluster } from "types/cluster";
 import { getMinutesSinceLastHeartbeat } from "util/helpers";
-import { queryKeys } from "util/queryKeys";
 
-const ClusterStatusGraph: FC = () => {
-  const { data: clusters = [] } = useQuery({
-    queryKey: [queryKeys.clusters],
-    queryFn: fetchClusters,
-  });
+interface Props {
+  clusters: Cluster[];
+}
 
+const ClusterStatusGraph: FC<Props> = ({ clusters }) => {
   const totalClusters = clusters.length;
   const activeClusters = clusters.filter(
     (cluster) =>

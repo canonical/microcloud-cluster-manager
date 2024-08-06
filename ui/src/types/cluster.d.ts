@@ -29,3 +29,9 @@ export interface MultiMeterValue {
   status: string;
   color: string;
 }
+
+export type ClusterInstanceStatus = "Running" | "Frozen" | "Error" | "Stopped";
+
+export type ClusterNodeStatus = "Online" | "Blocked" | "Offline" | "Evacuated";
+
+export type ClusterPercentiles = 0.5 | 0.75 | 0.8 | 0.9;
