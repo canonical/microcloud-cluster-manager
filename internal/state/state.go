@@ -12,16 +12,12 @@ import (
 type ClusterManagerState struct {
 	// OIDCVerifier is the OpenID Connect verifier used for user authentication and validate authentication for protected API endpoints.
 	OIDCVerifier *oidc.Verifier
-	// MicroCluster is the MicroCluster instance.
-	MicroCluster *microcluster.MicroCluster
 	mu           sync.RWMutex
 }
 
 // New creates a new ClusterManagerState.
 func New(m *microcluster.MicroCluster) *ClusterManagerState {
-	return &ClusterManagerState{
-		MicroCluster: m,
-	}
+	return &ClusterManagerState{}
 }
 
 // SetOIDCVerifier sets the OIDCVerifier.
