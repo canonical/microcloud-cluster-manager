@@ -34,20 +34,20 @@ const ClusterDetailNodeGraph: FC<Props> = ({ cluster }: Props) => {
         segments={[
           {
             color: "#0E8420",
-            tooltip: "Running",
+            tooltip: "Online",
             value: onlineMembers,
           },
           {
             color: "#CC7900",
-            tooltip: "Stopped",
+            tooltip: "Offline",
             value: offlineMembers,
           },
           {
-            color: "#C7162B",
-            tooltip: "Frozen",
+            color: "#24598f",
+            tooltip: "Evacuated",
             value: evacuatedMembers,
           },
-          { color: "#000", tooltip: "Error", value: blockedMembers },
+          { color: "#C7162B", tooltip: "Blocked", value: blockedMembers },
         ]}
         size={150}
       />
@@ -65,7 +65,7 @@ const ClusterDetailNodeGraph: FC<Props> = ({ cluster }: Props) => {
           Offline
         </li>
         <li>
-          <Icon name="status-failed-small" />
+          <Icon name="status-in-progress-small" />
           {getPercentageString(evacuatedMembers)}
           Evacuated
         </li>

@@ -1,9 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { fetchCluster } from "api/clusters";
 import { FC, useEffect, useState } from "react";
 import { Cluster } from "types/cluster";
 import { getSecondsSinceLastHeartbeat } from "util/helpers";
-import { queryKeys } from "util/queryKeys";
 
 interface Props {
   cluster: Cluster;
@@ -12,23 +9,12 @@ interface Props {
 const ClusterTimer: FC<Props> = ({ cluster }: Props) => {
   const [seconds, setSeconds] = useState(getSecondsSinceLastHeartbeat(cluster));
 
-  const { data: data } = useQuery({
-    queryKey: [queryKeys.clusters, cluster.name],
-    queryFn: () => fetchCluster(cluster.name),
-    refetchInterval: 60000,
-    refetchIntervalInBackground: true,
-  });
-
   useEffect(() => {
     const timerId = setInterval(() => {
-      setSeconds((prev) => prev + 1);
+      setSeconds(getSecondsSinceLastHeartbeat(cluster));
     }, 1000);
     return () => clearInterval(timerId);
-  }, []);
-
-  useEffect(() => {
-    setSeconds(getSecondsSinceLastHeartbeat(data as Cluster));
-  }, [data]);
+  }, [cluster, seconds]);
 
   const getFormattedTimeLeft = () => {
     const minutes = Math.floor(seconds / 60);
@@ -46,4 +32,5 @@ const ClusterTimer: FC<Props> = ({ cluster }: Props) => {
     </div>
   );
 };
+
 export default ClusterTimer;

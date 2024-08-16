@@ -42,8 +42,8 @@ const ClusterDetailInstanceGraph: FC<Props> = ({ cluster }: Props) => {
             tooltip: "Stopped",
             value: stoppedInstances,
           },
-          { color: "#C7162B", tooltip: "Frozen", value: frozenInstances },
-          { color: "#000", tooltip: "Error", value: errorInstances },
+          { color: "#24598f", tooltip: "Frozen", value: frozenInstances },
+          { color: "#C7162B", tooltip: "Error", value: errorInstances },
         ]}
         size={150}
       />
@@ -61,7 +61,7 @@ const ClusterDetailInstanceGraph: FC<Props> = ({ cluster }: Props) => {
           Stopped
         </li>
         <li>
-          <Icon name="status-failed-small" />
+          <Icon name="status-in-progress-small" />
           {getPercentageString(frozenInstances)}
           Frozen
         </li>

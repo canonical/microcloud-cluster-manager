@@ -22,7 +22,10 @@ export function getMinutesSinceLastHeartbeat(cluster: Cluster): number {
   return Math.floor((Date.now() - lastSeenTime) / 60000);
 }
 
-export function getSecondsSinceLastHeartbeat(cluster: Cluster): number {
+export function getSecondsSinceLastHeartbeat(cluster?: Cluster): number {
+  if (!cluster) {
+    return 0;
+  }
   const lastSeenTime = Date.parse(cluster.last_status_update_at);
   return Math.floor((Date.now() - lastSeenTime) / 1000);
 }

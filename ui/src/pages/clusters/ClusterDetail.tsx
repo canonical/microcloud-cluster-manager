@@ -25,6 +25,8 @@ const ClusterDetail: FC = () => {
   } = useQuery({
     queryKey: [queryKeys.clusters, name],
     queryFn: () => fetchCluster(name),
+    refetchInterval: 60000,
+    refetchIntervalInBackground: true,
   });
 
   if (!cluster) {
@@ -35,9 +37,9 @@ const ClusterDetail: FC = () => {
     <BaseLayout
       title={
         <BreadCrumbHeader
-          name={`${cluster.name}`}
+          name={cluster.name}
           parentItems={[
-            <Link to={`/ui/clusters`} key={1}>
+            <Link to="/ui/clusters" key="clusters">
               Clusters
             </Link>,
           ]}
