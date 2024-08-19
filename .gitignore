@@ -14,3 +14,4 @@ haproxy-local.cfg
 .vscode
 internal/api/static
 *__debug*
+lxd-cluster-manager*.snap

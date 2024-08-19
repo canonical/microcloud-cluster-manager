@@ -1,0 +1,4 @@
+#!/bin/sh
+LXD_CLUSTER_MANAGER="lxd-cluster-mgr"
+
+exec "${LXD_CLUSTER_MANAGER}" --state-dir "${SNAP_COMMON}/state" "$@"

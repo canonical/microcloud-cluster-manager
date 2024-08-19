@@ -1,0 +1,50 @@
+name: Snapstore release
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'canonical' }}
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set Up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Build snap
+      id: build-snap
+      uses: diddlesnaps/snapcraft-multiarch-action@v1
+      with:
+        architecture: amd64
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: lxd-cluster-manager-snap-amd64
+        path: ${{ steps.build-snap.outputs.snap }}
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+
+    - name: Download artifact
+      id: artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: lxd-cluster-manager-snap-amd64
+        path: .
+
+    - name: Publish snap to private store
+      uses: snapcore/action-publish@v1
+      env:
+        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
+      with:
+        snap: lxd-cluster-manager_0.1.0_amd64.snap
+        release: latest/edge
