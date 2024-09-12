@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/canonical/lxd/shared/api"
-	"github.com/canonical/microcluster/client"
-	apiTypes "github.com/canonical/microcluster/rest/types"
+	"github.com/canonical/microcluster/v2/client"
+	apiTypes "github.com/canonical/microcluster/v2/rest/types"
 
 	"github.com/canonical/lxd-cluster-manager/internal/api/types"
 )

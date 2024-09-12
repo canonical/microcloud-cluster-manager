@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/canonical/lxd/shared/logger"
-	"github.com/canonical/microcluster/microcluster"
-	microState "github.com/canonical/microcluster/state"
+	"github.com/canonical/microcluster/v2/microcluster"
+	microState "github.com/canonical/microcluster/v2/state"
 	"github.com/spf13/cobra"
 
 	"github.com/canonical/lxd-cluster-manager/internal/api"

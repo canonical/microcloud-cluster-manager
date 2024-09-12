@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/canonical/lxd/lxd/response"
-	"github.com/canonical/microcluster/rest"
-	microState "github.com/canonical/microcluster/state"
+	"github.com/canonical/microcluster/v2/rest"
+	microState "github.com/canonical/microcluster/v2/state"
 
 	"github.com/canonical/lxd-cluster-manager/internal/api/types"
 	"github.com/canonical/lxd-cluster-manager/internal/state"

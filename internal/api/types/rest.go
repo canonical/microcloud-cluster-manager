@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/canonical/lxd/lxd/response"
-	"github.com/canonical/microcluster/state"
+	"github.com/canonical/microcluster/v2/state"
 )
 
 // AccessHandler represents a function that handles an API endpoint with access control.

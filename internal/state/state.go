@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/canonical/microcluster/microcluster"
+	"github.com/canonical/microcluster/v2/microcluster"
 
 	"github.com/canonical/lxd-cluster-manager/internal/oidc"
 )

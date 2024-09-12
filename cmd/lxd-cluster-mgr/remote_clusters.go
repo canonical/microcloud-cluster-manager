@@ -6,8 +6,8 @@ import (
 	"sort"
 
 	cli "github.com/canonical/lxd/shared/cmd"
-	microClient "github.com/canonical/microcluster/client"
-	"github.com/canonical/microcluster/microcluster"
+	microClient "github.com/canonical/microcluster/v2/client"
+	"github.com/canonical/microcluster/v2/microcluster"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
