@@ -1,6 +1,6 @@
 package types
 
-import "github.com/canonical/microcluster/rest/types"
+import "github.com/canonical/microcluster/v2/rest/types"
 
 const (
 	// APIVersionPrefix is the path prefix for API related endpoints.

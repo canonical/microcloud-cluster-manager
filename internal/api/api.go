@@ -8,9 +8,9 @@ import (
 	"github.com/canonical/lxd/lxd/request"
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/lxd/util"
-	"github.com/canonical/microcluster/client"
-	"github.com/canonical/microcluster/rest/access"
-	microState "github.com/canonical/microcluster/state"
+	"github.com/canonical/microcluster/v2/client"
+	"github.com/canonical/microcluster/v2/rest/access"
+	microState "github.com/canonical/microcluster/v2/state"
 
 	"github.com/canonical/lxd-cluster-manager/internal/api/types"
 	"github.com/canonical/lxd-cluster-manager/internal/oidc"

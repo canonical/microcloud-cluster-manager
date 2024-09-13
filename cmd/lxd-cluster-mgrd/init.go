@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/canonical/microcluster/microcluster"
-	"github.com/canonical/microcluster/rest/types"
-	microState "github.com/canonical/microcluster/state"
+	"github.com/canonical/microcluster/v2/microcluster"
+	"github.com/canonical/microcluster/v2/rest/types"
+	microState "github.com/canonical/microcluster/v2/state"
 
 	"github.com/canonical/lxd-cluster-manager/internal/api"
 	"github.com/canonical/lxd-cluster-manager/internal/database"

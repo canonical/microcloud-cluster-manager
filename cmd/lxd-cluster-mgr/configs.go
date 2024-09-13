@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/canonical/microcluster/microcluster"
+	"github.com/canonical/microcluster/v2/microcluster"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 

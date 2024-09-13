@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/canonical/lxd/lxd/db/query"
-	"github.com/canonical/microcluster/cluster"
+	"github.com/canonical/microcluster/v2/cluster"
 )
 
 // CoreRemoteClusterWithDetail is a struct that contains all the information about a remote cluster directly queried from the database.

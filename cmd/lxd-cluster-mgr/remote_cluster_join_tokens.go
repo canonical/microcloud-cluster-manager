@@ -5,7 +5,7 @@ import (
 	"time"
 
 	lxdCmd "github.com/canonical/lxd/shared/cmd"
-	"github.com/canonical/microcluster/microcluster"
+	"github.com/canonical/microcluster/v2/microcluster"
 	"github.com/spf13/cobra"
 
 	"github.com/canonical/lxd-cluster-manager/internal/api/types"
