@@ -70,6 +70,8 @@ func (c *cmdDaemon) run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	usePG := true
+
 	clusterManagerState := state.New(m)
 
 	dargs := microcluster.DaemonArgs{
@@ -86,6 +88,13 @@ func (c *cmdDaemon) run(cmd *cobra.Command, args []string) error {
 
 	dargs.Hooks = &microState.Hooks{
 		PostBootstrap: func(ctx context.Context, clusterState microState.State, initConfig map[string]string) error {
+			dbManager, err := database.NewDBConnManager(ctx, clusterState, usePG, true)
+			if err != nil {
+				return err
+			}
+
+			clusterManagerState.SetDatabase(dbManager.DB)
+
 			return InitialiseControlListener(ctx, clusterState, m, initConfig)
 		},
 
@@ -94,6 +103,13 @@ func (c *cmdDaemon) run(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return err
 			}
+
+			dbManager, err := database.NewDBConnManager(ctx, clusterState, usePG, false)
+			if err != nil {
+				return err
+			}
+
+			clusterManagerState.SetDatabase(dbManager.DB)
 
 			return InitialiseControlListener(ctx, clusterState, m, initConfig)
 		},

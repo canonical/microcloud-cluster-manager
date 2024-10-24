@@ -12,43 +12,43 @@ import (
 
 	"github.com/canonical/lxd/lxd/db/query"
 	"github.com/canonical/lxd/shared/api"
-	"github.com/canonical/microcluster/v2/cluster"
 )
 
 var _ = api.ServerEnvironment{}
 
-var coreRemoteClusterTokenObjects = cluster.RegisterStmt(`
+var coreRemoteClusterTokenObjects = `
 SELECT core_remote_cluster_tokens.cluster_name, core_remote_cluster_tokens.id, core_remote_cluster_tokens.secret, core_remote_cluster_tokens.expiry, core_remote_cluster_tokens.created_at
   FROM core_remote_cluster_tokens
   ORDER BY core_remote_cluster_tokens.cluster_name
-`)
+`
 
-var coreRemoteClusterTokenObjectsByClusterName = cluster.RegisterStmt(`
+var coreRemoteClusterTokenObjectsByClusterName = `
 SELECT core_remote_cluster_tokens.cluster_name, core_remote_cluster_tokens.id, core_remote_cluster_tokens.secret, core_remote_cluster_tokens.expiry, core_remote_cluster_tokens.created_at
   FROM core_remote_cluster_tokens
-  WHERE ( core_remote_cluster_tokens.cluster_name = ? )
+  WHERE ( core_remote_cluster_tokens.cluster_name = $1 )
   ORDER BY core_remote_cluster_tokens.cluster_name
-`)
+`
 
-var coreRemoteClusterTokenID = cluster.RegisterStmt(`
+var coreRemoteClusterTokenID = `
 SELECT core_remote_cluster_tokens.id FROM core_remote_cluster_tokens
-  WHERE core_remote_cluster_tokens.cluster_name = ?
-`)
+  WHERE core_remote_cluster_tokens.cluster_name = $1
+`
 
-var coreRemoteClusterTokenCreate = cluster.RegisterStmt(`
+var coreRemoteClusterTokenCreate = `
 INSERT INTO core_remote_cluster_tokens (cluster_name, secret, expiry, created_at)
-  VALUES (?, ?, ?, ?)
-`)
+  VALUES ($1, $2, $3, $4)
+  RETURNING id
+`
 
-var coreRemoteClusterTokenDeleteByClusterName = cluster.RegisterStmt(`
-DELETE FROM core_remote_cluster_tokens WHERE cluster_name = ?
-`)
+var coreRemoteClusterTokenDeleteByClusterName = `
+DELETE FROM core_remote_cluster_tokens WHERE cluster_name = $1
+`
 
-var coreRemoteClusterTokenUpdate = cluster.RegisterStmt(`
+var coreRemoteClusterTokenUpdate = `
 UPDATE core_remote_cluster_tokens
-  SET cluster_name = ?, secret = ?, expiry = ?, created_at = ?
- WHERE id = ?
-`)
+  SET cluster_name = $1, secret = $2, expiry = $3, created_at = $4
+ WHERE id = $5
+`
 
 // coreRemoteClusterTokenColumns returns a string of column names to be used with a SELECT statement for the entity.
 // Use this function when building statements to retrieve database entries matching the CoreRemoteClusterToken entity.
@@ -118,7 +118,7 @@ func GetCoreRemoteClusterTokens(ctx context.Context, tx *sql.Tx, filters ...Core
 	queryParts := [2]string{}
 
 	if len(filters) == 0 {
-		sqlStmt, err = cluster.Stmt(tx, coreRemoteClusterTokenObjects)
+		sqlStmt, err = tx.Prepare(coreRemoteClusterTokenObjects)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to get \"coreRemoteClusterTokenObjects\" prepared statement: %w", err)
 		}
@@ -128,7 +128,7 @@ func GetCoreRemoteClusterTokens(ctx context.Context, tx *sql.Tx, filters ...Core
 		if filter.ClusterName != nil {
 			args = append(args, []any{filter.ClusterName}...)
 			if len(filters) == 1 {
-				sqlStmt, err = cluster.Stmt(tx, coreRemoteClusterTokenObjectsByClusterName)
+				sqlStmt, err = tx.Prepare(coreRemoteClusterTokenObjectsByClusterName)
 				if err != nil {
 					return nil, fmt.Errorf("Failed to get \"coreRemoteClusterTokenObjectsByClusterName\" prepared statement: %w", err)
 				}
@@ -136,12 +136,7 @@ func GetCoreRemoteClusterTokens(ctx context.Context, tx *sql.Tx, filters ...Core
 				break
 			}
 
-			query, err := cluster.StmtString(coreRemoteClusterTokenObjectsByClusterName)
-			if err != nil {
-				return nil, fmt.Errorf("Failed to get \"coreRemoteClusterTokenObjects\" prepared statement: %w", err)
-			}
-
-			parts := strings.SplitN(query, "ORDER BY", 2)
+			parts := strings.SplitN(coreRemoteClusterTokenObjectsByClusterName, "ORDER BY", 2)
 			if i == 0 {
 				copy(queryParts[:], parts)
 				continue
@@ -195,7 +190,7 @@ func GetCoreRemoteClusterToken(ctx context.Context, tx *sql.Tx, clusterName stri
 // GetCoreRemoteClusterTokenID return the ID of the core_remote_cluster_token with the given key.
 // generator: core_remote_cluster_token ID
 func GetCoreRemoteClusterTokenID(ctx context.Context, tx *sql.Tx, clusterName string) (int64, error) {
-	stmt, err := cluster.Stmt(tx, coreRemoteClusterTokenID)
+	stmt, err := tx.Prepare(coreRemoteClusterTokenID)
 	if err != nil {
 		return -1, fmt.Errorf("Failed to get \"coreRemoteClusterTokenID\" prepared statement: %w", err)
 	}
@@ -251,29 +246,25 @@ func CreateCoreRemoteClusterToken(ctx context.Context, tx *sql.Tx, object CoreRe
 	args[3] = object.CreatedAt
 
 	// Prepared statement to use.
-	stmt, err := cluster.Stmt(tx, coreRemoteClusterTokenCreate)
+	stmt, err := tx.Prepare(coreRemoteClusterTokenCreate)
 	if err != nil {
 		return -1, fmt.Errorf("Failed to get \"coreRemoteClusterTokenCreate\" prepared statement: %w", err)
 	}
 
 	// Execute the statement.
-	result, err := stmt.Exec(args...)
+	var lastInsertId int64
+	err = stmt.QueryRow(args...).Scan(&lastInsertId)
 	if err != nil {
 		return -1, fmt.Errorf("Failed to create \"cores_remotes_clusters_tokens\" entry: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return -1, fmt.Errorf("Failed to fetch \"cores_remotes_clusters_tokens\" entry ID: %w", err)
-	}
-
-	return id, nil
+	return lastInsertId, nil
 }
 
 // DeleteCoreRemoteClusterToken deletes the core_remote_cluster_token matching the given key parameters.
 // generator: core_remote_cluster_token DeleteOne-by-ClusterName
 func DeleteCoreRemoteClusterToken(ctx context.Context, tx *sql.Tx, clusterName string) error {
-	stmt, err := cluster.Stmt(tx, coreRemoteClusterTokenDeleteByClusterName)
+	stmt, err := tx.Prepare(coreRemoteClusterTokenDeleteByClusterName)
 	if err != nil {
 		return fmt.Errorf("Failed to get \"coreRemoteClusterTokenDeleteByClusterName\" prepared statement: %w", err)
 	}
@@ -305,7 +296,7 @@ func UpdateCoreRemoteClusterToken(ctx context.Context, tx *sql.Tx, clusterName s
 		return err
 	}
 
-	stmt, err := cluster.Stmt(tx, coreRemoteClusterTokenUpdate)
+	stmt, err := tx.Prepare(coreRemoteClusterTokenUpdate)
 	if err != nil {
 		return fmt.Errorf("Failed to get \"coreRemoteClusterTokenUpdate\" prepared statement: %w", err)
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/canonical/microcluster/v2/microcluster"
 
+	"github.com/canonical/lxd-cluster-manager/internal/database"
 	"github.com/canonical/lxd-cluster-manager/internal/oidc"
 )
 
@@ -16,6 +17,7 @@ type ClusterManagerState struct {
 	// CertificateCache is a map of certificate fingerprints to remote cluster certificates.
 	CertificatesCache *CertificatesCache
 	mu                sync.RWMutex
+	Database          database.Database
 }
 
 // New creates a new ClusterManagerState.
@@ -34,4 +36,12 @@ func (s *ClusterManagerState) SetOIDCVerifier(verifier *oidc.Verifier) {
 	defer s.mu.Unlock()
 
 	s.OIDCVerifier = verifier
+}
+
+// SetDatabase sets the database.
+func (s *ClusterManagerState) SetDatabase(db database.Database) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.Database = db
 }

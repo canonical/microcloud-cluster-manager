@@ -57,7 +57,7 @@ func remoteClustersStatusPost(managerState *state.ClusterManagerState) types.End
 			return response.SmartError(err)
 		}
 
-		err = clusterState.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		err = managerState.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 			dbRemoteCluster, err := database.GetRemoteClusterDetail(ctx, tx, remoteClusterID)
 			if err != nil {
 				return err
@@ -117,7 +117,7 @@ func remoteClustersPost(managerState *state.ClusterManagerState) types.EndpointH
 
 		// get token secret for HMAC verification
 		var token *database.CoreRemoteClusterToken
-		err = clusterState.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		err = managerState.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 			var err error
 			token, err = database.GetCoreRemoteClusterToken(ctx, tx, payload.ClusterName)
 			if err != nil {
@@ -144,7 +144,7 @@ func remoteClustersPost(managerState *state.ClusterManagerState) types.EndpointH
 
 		// Create remote cluster entry and delete token in a single db transaction
 		var remoteClusterID int64
-		err = clusterState.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+		err = managerState.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
 			var err error
 			// create remote cluster entry
 			remoteClusterID, err = database.CreateCoreRemoteCluster(ctx, tx, database.CoreRemoteCluster{

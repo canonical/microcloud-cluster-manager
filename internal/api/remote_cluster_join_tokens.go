@@ -24,11 +24,11 @@ func remoteClusterJoinTokensCmd(s *state.ClusterManagerState) rest.Endpoint {
 	return rest.Endpoint{
 		Path: "remote-cluster-join-token",
 		Post: rest.EndpointAction{
-			Handler:        tokenPost,
+			Handler:        tokenPost(s),
 			AllowUntrusted: true,
 			AccessHandler:  oidcAuthHandler(s),
 		},
-		Get: rest.EndpointAction{Handler: tokenGet, AllowUntrusted: true},
+		Get: rest.EndpointAction{Handler: tokenGet(s), AllowUntrusted: true},
 	}
 }
 
@@ -36,127 +36,132 @@ func remoteClusterJoinTokenCmd(s *state.ClusterManagerState) rest.Endpoint {
 	return rest.Endpoint{
 		Path: "remote-cluster-join-token/{remoteClusterName}",
 		Delete: rest.EndpointAction{
-			Handler:        tokenDelete,
+			Handler:        tokenDelete(s),
 			AllowUntrusted: true,
 			AccessHandler:  oidcAuthHandler(s),
 		},
 	}
 }
+func tokenPost(cms *state.ClusterManagerState) types.EndpointHandler {
+	return func(s microState.State, r *http.Request) response.Response {
+		payload := types.RemoteClusterTokenPost{}
 
-func tokenPost(s microState.State, r *http.Request) response.Response {
-	payload := types.RemoteClusterTokenPost{}
-
-	err := json.NewDecoder(r.Body).Decode(&payload)
-	if err != nil {
-		return response.BadRequest(err)
-	}
-
-	// default expiry to 1 day if not set
-	if payload.Expiry == (time.Time{}) {
-		payload.Expiry = time.Now().Add(time.Hour * 24)
-	}
-
-	if payload.Expiry.Before(time.Now()) {
-		return response.BadRequest(fmt.Errorf("expiry date must be in the future"))
-	}
-
-	if payload.ClusterName == "" {
-		return response.BadRequest(fmt.Errorf("cluster name is required"))
-	}
-
-	secret, err := shared.RandomCryptoString()
-	if err != nil {
-		return response.InternalError(err)
-	}
-
-	// store token details in the database
-	err = s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
-		var err error
-		tokenData := database.CoreRemoteClusterToken{
-			ClusterName: payload.ClusterName,
-			Secret:      secret,
-			Expiry:      payload.Expiry,
-			CreatedAt:   time.Now(),
+		err := json.NewDecoder(r.Body).Decode(&payload)
+		if err != nil {
+			return response.BadRequest(err)
 		}
-		_, err = database.CreateCoreRemoteClusterToken(ctx, tx, tokenData)
 
-		return err
-	})
+		// default expiry to 1 day if not set
+		if payload.Expiry == (time.Time{}) {
+			payload.Expiry = time.Now().Add(time.Hour * 24)
+		}
 
-	if err != nil {
-		return response.SmartError(err)
-	}
+		if payload.Expiry.Before(time.Now()) {
+			return response.BadRequest(fmt.Errorf("expiry date must be in the future"))
+		}
 
-	// create the token to be sent to LXD
-	clusterCert, err := s.ClusterCert().PublicKeyX509()
-	if err != nil {
-		return response.InternalError(err)
-	}
+		if payload.ClusterName == "" {
+			return response.BadRequest(fmt.Errorf("cluster name is required"))
+		}
 
-	memberAddresses, err := getClusterManagerAddresses(r.Context(), s)
-	if err != nil {
-		return response.InternalError(err)
-	}
+		secret, err := shared.RandomCryptoString()
+		if err != nil {
+			return response.InternalError(err)
+		}
 
-	token := types.RemoteClusterTokenBody{
-		Secret:      secret,
-		ExpiresAt:   payload.Expiry,
-		Addresses:   memberAddresses,
-		ServerName:  payload.ClusterName,
-		Fingerprint: shared.CertFingerprint(clusterCert),
-	}
+		// store token details in the database
+		err = cms.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+			var err error
+			tokenData := database.CoreRemoteClusterToken{
+				ClusterName: payload.ClusterName,
+				Secret:      secret,
+				Expiry:      payload.Expiry,
+				CreatedAt:   time.Now(),
+			}
+			_, err = database.CreateCoreRemoteClusterToken(ctx, tx, tokenData)
 
-	encodedToken, err := token.Encode()
-	if err != nil {
-		return response.InternalError(err)
-	}
-
-	return response.SyncResponse(true, types.RemoteClusterTokenPostResponse{Token: encodedToken})
-}
-
-func tokenGet(s microState.State, r *http.Request) response.Response {
-	var tokens []database.CoreRemoteClusterToken
-	err := s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
-		var err error
-		tokens, err = database.GetCoreRemoteClusterTokens(ctx, tx)
-		return err
-	})
-
-	if err != nil {
-		return response.SmartError(err)
-	}
-
-	var responseTokens []types.RemoteClusterToken
-	for _, token := range tokens {
-		responseTokens = append(responseTokens, types.RemoteClusterToken{
-			Expiry:      token.Expiry,
-			ClusterName: token.ClusterName,
-			CreateAt:    token.CreatedAt,
+			return err
 		})
-	}
 
-	return response.SyncResponse(true, responseTokens)
+		if err != nil {
+			return response.SmartError(err)
+		}
+
+		// create the token to be sent to LXD
+		clusterCert, err := s.ClusterCert().PublicKeyX509()
+		if err != nil {
+			return response.InternalError(err)
+		}
+
+		memberAddresses, err := getClusterManagerAddresses(r.Context(), s)
+		if err != nil {
+			return response.InternalError(err)
+		}
+
+		token := types.RemoteClusterTokenBody{
+			Secret:      secret,
+			ExpiresAt:   payload.Expiry,
+			Addresses:   memberAddresses,
+			ServerName:  payload.ClusterName,
+			Fingerprint: shared.CertFingerprint(clusterCert),
+		}
+
+		encodedToken, err := token.Encode()
+		if err != nil {
+			return response.InternalError(err)
+		}
+
+		return response.SyncResponse(true, types.RemoteClusterTokenPostResponse{Token: encodedToken})
+	}
 }
 
-func tokenDelete(s microState.State, r *http.Request) response.Response {
-	remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
-	if err != nil {
-		return response.SmartError(err)
+func tokenGet(cms *state.ClusterManagerState) types.EndpointHandler {
+	return func(s microState.State, r *http.Request) response.Response {
+		var tokens []database.CoreRemoteClusterToken
+		err := cms.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+			var err error
+			tokens, err = database.GetCoreRemoteClusterTokens(ctx, tx)
+			return err
+		})
+
+		if err != nil {
+			return response.SmartError(err)
+		}
+
+		var responseTokens []types.RemoteClusterToken
+		for _, token := range tokens {
+			responseTokens = append(responseTokens, types.RemoteClusterToken{
+				Expiry:      token.Expiry,
+				ClusterName: token.ClusterName,
+				CreateAt:    token.CreatedAt,
+			})
+		}
+
+		return response.SyncResponse(true, responseTokens)
 	}
+}
 
-	if remoteClusterName == "" {
-		return response.BadRequest(fmt.Errorf("cluster name is required"))
+func tokenDelete(cms *state.ClusterManagerState) types.EndpointHandler {
+	return func(s microState.State, r *http.Request) response.Response {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err)
+		}
+
+		if remoteClusterName == "" {
+			return response.BadRequest(fmt.Errorf("cluster name is required"))
+		}
+
+		err = cms.Database.Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
+			return database.DeleteCoreRemoteClusterToken(ctx, tx, remoteClusterName)
+		})
+
+		if err != nil {
+			return response.SmartError(err)
+		}
+
+		return response.SyncResponse(true, nil)
 	}
-
-	err = s.Database().Transaction(r.Context(), func(ctx context.Context, tx *sql.Tx) error {
-		return database.DeleteCoreRemoteClusterToken(ctx, tx, remoteClusterName)
-	})
-
-	if err != nil {
-		return response.SmartError(err)
-	}
-
-	return response.SyncResponse(true, nil)
 }
 
 // getClusterManagerAddresses returns the addresses of the cluster managers that are online.
