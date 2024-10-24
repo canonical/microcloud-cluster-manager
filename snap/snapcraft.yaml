@@ -24,46 +24,29 @@ apps:
 
 parts:
   dqlite:
-    after:
-      - raft
     source: https://github.com/canonical/dqlite
     source-type: git
     source-depth: 1
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=
+      - --enable-build-raft
     stage-packages:
-      - libsqlite3-0
-      - libuv1
+      - liblz4-1
+      - libuv1t64
+      - sqlite3
     build-packages:
+      - liblz4-dev
       - libsqlite3-dev
       - libuv1-dev
-      - pkg-config
     organize:
+      usr/bin/: bin/
       usr/lib/: lib/
     prime:
+      - bin/sqlite3
       - lib/libdqlite*so*
+      - lib/*/libsqlite3*so*
       - lib/*/libuv*
-
-  raft:
-    source: https://github.com/canonical/raft
-    source-type: git
-    source-depth: 1
-    plugin: autotools
-    autotools-configure-parameters:
-      - --prefix=
-    stage-packages:
-      - libuv1
-      - liblz4-1
-    build-packages:
-      - libuv1-dev
-      - liblz4-dev
-      - pkg-config
-    organize:
-      usr/lib/: lib/
-    prime:
-      - lib/libraft*so*
-      - lib/*/libuv.so*
       #- lib/*/liblz4.so*  # use liblz4.so from the base snap
 
   lxd-cluster-manager:
@@ -106,7 +89,6 @@ parts:
   strip:
     after:
       - dqlite
-      - raft
       - lxd-cluster-manager
     plugin: nil
     override-prime: |
