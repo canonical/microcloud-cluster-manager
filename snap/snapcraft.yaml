@@ -33,7 +33,7 @@ parts:
       - --enable-build-raft
     stage-packages:
       - liblz4-1
-      - libuv1t64
+      - libuv1
       - sqlite3
     build-packages:
       - liblz4-dev
