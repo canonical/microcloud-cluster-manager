@@ -11,7 +11,7 @@ export const handleResponse = async (response: Response) => {
     const result: ErrorResponse = await response.json();
     throw Error(result.error);
   }
-  return response.json();
+  return response.json() as unknown;
 };
 
 export const isWidthBelow = (width: number): boolean =>
