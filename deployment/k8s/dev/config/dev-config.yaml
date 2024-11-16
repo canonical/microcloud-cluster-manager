@@ -1,0 +1,26 @@
+# TODO: split this into separate configmaps
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  labels:
+    app: db
+data:
+  # configs for the database deployment
+  POSTGRES_DB: cm
+  POSTGRES_USER: admin
+  POSTGRES_PASSWORD: admin
+  # configs for the management deployment
+  DB_PORT: "5432"
+  DB_USER: admin
+  DB_PASSWORD: admin
+  DB_NAME: cm
+  DB_HOST: localhost
+  DB_MAX_OPEN: "5"
+  DB_MAX_IDLE: "2"
+  DB_DISABLE_TLS: "true"
+  SERVER_HOST: "localhost"
+  MANAGEMENT_PORT: "9000"
+  CONTROL_PORT: "9001"
+  # TODO: define proper versioning strategy
+  VERSION: "development"

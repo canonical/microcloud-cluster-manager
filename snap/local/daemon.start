@@ -1,6 +1,0 @@
-#!/bin/sh
-export DQLITE_SOCKET="@snap.${SNAP_INSTANCE_NAME}.dqlite"
-
-LXD_CLUSTER_MANAGER_DAEMON="lxd-cluster-mgrd"
-
-exec "${LXD_CLUSTER_MANAGER_DAEMON}" --state-dir "${SNAP_COMMON}/state"

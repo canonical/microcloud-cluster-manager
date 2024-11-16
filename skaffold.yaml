@@ -1,0 +1,117 @@
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
+  name: cluster-manager-dev
+build:
+  artifacts:
+  - image: management-img
+    context: .
+    docker:
+      dockerfile: deployment/docker/dockerfile.management
+      target: dev
+      buildArgs:
+        BUILD_REF: "development" 
+    # trigger rebuild of image when any go files change
+    sync:
+      infer:
+      - '**/*.go'
+  - image: control-img
+    context: .
+    docker:
+      dockerfile: deployment/docker/dockerfile.control
+      target: dev
+      buildArgs:
+        BUILD_REF: "development" 
+    # trigger rebuild of image when any go files change
+    sync:
+      infer:
+      - '**/*.go'
+  - image: admin-img
+    context: .
+    docker:
+      dockerfile: deployment/docker/dockerfile.admin
+      target: dev
+      buildArgs:
+        BUILD_REF: "development" 
+    # trigger rebuild of image when any go files change
+    sync:
+      manual:
+      - src: cmd/admin/*.go
+        dest: /app/admin
+      - src: pkg/database/**/*.go
+        dest: /app/pkg/database
+
+# default dev deploy
+deploy:
+  kustomize:
+    paths:
+    - deployment/k8s/dev
+
+portForward:
+- resourceType: deployment
+  resourceName: management-depl
+  port: management
+  localPort: 8414
+- resourceType: deployment
+  resourceName: control-depl
+  port: control
+  localPort: 8415
+# For debugging purposes, we can connect via pgadmin here
+- resourceType: deployment
+  resourceName: db-depl
+  port: db
+  localPort: 5432
+
+profiles:
+- name: debug
+  build:
+    artifacts:
+    - image: management-img
+      context: .
+      docker:
+        dockerfile: deployment/docker/dockerfile.management
+        target: debug
+        buildArgs:
+          BUILD_REF: "development" 
+    - image: control-img
+      context: .
+      docker:
+        dockerfile: deployment/docker/dockerfile.control
+        target: debug
+        buildArgs:
+          BUILD_REF: "development" 
+    - image: admin-img
+      context: .
+      docker:
+        dockerfile: deployment/docker/dockerfile.admin
+        target: dev
+        buildArgs:
+          BUILD_REF: "development" 
+      # trigger rebuild of image when any go files change
+      sync:
+        manual:
+        - src: cmd/admin/*.go
+          dest: /app/admin
+        - src: pkg/database/**/*.go
+          dest: /app/pkg/database
+  portForward:
+  - resourceType: deployment
+    resourceName: management-depl
+    port: management
+    localPort: 8414
+  - resourceType: deployment
+    resourceName: control-depl
+    port: control
+    localPort: 8415
+  - resourceType: deployment
+    resourceName: management-depl
+    port: debug  # Debug port exposed by Delve
+    localPort: 40000
+  - resourceType: deployment
+    resourceName: control-depl
+    port: debug  # Debug port exposed by Delve
+    localPort: 40001
+  - resourceType: deployment
+    resourceName: db-depl
+    port: db
+    localPort: 5432

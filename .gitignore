@@ -1,17 +1,1 @@
-.idea
-/state/
-/test/e2e/state/
-/test/e2e/certs/
-ui/build
-ui/.dotrun.json
-ui/.env.local
-ui/node_modules
-ui/playwright-report
-ui/keys
-ui/tests/.auth
-test-results
-haproxy-local.cfg
 .vscode
-internal/api/static
-*__debug*
-lxd-cluster-manager*.snap

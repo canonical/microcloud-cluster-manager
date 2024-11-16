@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: management-depl
+spec:
+  selector:
+    matchLabels:
+      app: management
+  template:
+    metadata:
+      labels:
+        app: management
+    spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      terminationGracePeriodSeconds: 60
+      initContainers:
+      - name: init
+        image: admin-img
+        envFrom:
+        - configMapRef:
+            name: config
+      # TODO: use init containers to do db migration and seeding
+      containers:
+      - name: management
+        image: management-img
+        ports:
+        - name: management
+          containerPort: 9000
+        # TODO: more ports for readiness and liveness probes
+        envFrom:
+        - configMapRef:
+            name: config

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: management-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: management
+  ports:
+  - name: management
+    port: 9000
+    targetPort: management

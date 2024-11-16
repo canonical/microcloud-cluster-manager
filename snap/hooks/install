@@ -1,7 +1,0 @@
-#!/bin/bash -e
-#
-# Copyright 2024 Canonical Ltd.  All rights reserved.
-#
-
-mkdir -p "$SNAP_COMMON"/state
-chmod 0700 "$SNAP_COMMON"/state

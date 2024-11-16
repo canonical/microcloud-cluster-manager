@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: control-depl
+spec:
+  selector:
+    matchLabels:
+      app: control
+  template:
+    metadata:
+      labels:
+        app: control
+    spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: control
+        image: control-img
+        ports:
+        - name: control
+          containerPort: 9001
+        # TODO: more ports for readiness and liveness probes
+        envFrom:
+        - configMapRef:
+            name: config
