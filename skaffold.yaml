@@ -46,6 +46,12 @@ deploy:
   kustomize:
     paths:
     - deployment/k8s/dev
+    hooks:
+      # NOTE: we want to make sure that certificate is created before the deployment
+      # therefore we are not deploying the certificate related resources using kustomize
+      before:
+        - host:
+            command: ["deployment/k8s/base/cert/init-cert.sh"]
 
 portForward:
 - resourceType: deployment

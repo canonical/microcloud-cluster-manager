@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"expvar"
 	"fmt"
 	"net/http"
@@ -58,7 +59,8 @@ func run(logger *zap.SugaredLogger) error {
 	// =========================================================================
 	// Load configuration
 
-	cfg, err := config.LoadConfig()
+	requireCert := true
+	cfg, err := config.LoadConfig(requireCert)
 	if err != nil {
 		logger.Error("Failed to load configuration")
 	}
@@ -124,7 +126,13 @@ func run(logger *zap.SugaredLogger) error {
 	version := "1.0"
 	a.RegisterRoutes(routes.APIRoutes, version)
 
-	// Construct a server to service the requests against the mux.
+	// Construct a TLS enabled server to service the requests against the mux.
+	tlsConfig := &tls.Config{}
+	// List of server certs presented during handshake.
+	// NOTE: for the management service we do not need to setup mtls, therefore client certificates are not required.
+	tlsConfig.Certificates = []tls.Certificate{cfg.ServerCert}
+	tlsConfig.MinVersion = tls.VersionTLS13
+
 	server := http.Server{
 		Addr:         cfg.ServerHost + ":" + cfg.ManagementPort,
 		Handler:      a,
@@ -132,6 +140,7 @@ func run(logger *zap.SugaredLogger) error {
 		WriteTimeout: time.Duration(cfg.WriteTimeout) * time.Second,
 		IdleTimeout:  time.Duration(cfg.IdleTimeout) * time.Second,
 		ErrorLog:     zap.NewStdLog(logger.Desugar()),
+		TLSConfig:    tlsConfig,
 	}
 
 	// Make a channel to listen for errors coming from the listener. Use a
@@ -141,7 +150,7 @@ func run(logger *zap.SugaredLogger) error {
 	// Start the server listening for requests.
 	go func() {
 		logger.Infow("startup", "status", "api router started", "host", server.Addr)
-		serverErrors <- server.ListenAndServe()
+		serverErrors <- server.ListenAndServeTLS("", "")
 	}()
 
 	// =========================================================================

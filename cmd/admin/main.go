@@ -36,7 +36,9 @@ func migrate(log *zap.SugaredLogger) error {
 
 	// =========================================================================
 	// Load configuration
-	cfg, err := config.LoadConfig()
+
+	requireCert := false
+	cfg, err := config.LoadConfig(requireCert)
 	if err != nil {
 		log.Error("Failed to load configuration")
 	}

@@ -58,7 +58,8 @@ func run(logger *zap.SugaredLogger) error {
 	// =========================================================================
 	// Load configuration
 
-	cfg, err := config.LoadConfig()
+	requireCert := true
+	cfg, err := config.LoadConfig(requireCert)
 	if err != nil {
 		logger.Error("Failed to load configuration")
 	}

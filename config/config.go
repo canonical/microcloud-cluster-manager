@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/tls"
+	"fmt"
 	"os"
 	"strconv"
 
@@ -9,7 +11,8 @@ import (
 
 type Config struct {
 	// system configs
-	Version string
+	Version    string
+	ServerCert tls.Certificate
 	// db configs
 	database.DBConfig
 	// api configs
@@ -38,7 +41,27 @@ func getNumConfig(key string, defaultValue int) (int, error) {
 	return val, nil
 }
 
-func LoadConfig() (*Config, error) {
+func getServiceCert() (tls.Certificate, error) {
+	tlsCertPath := os.Getenv("TLS_CERT_PATH")
+	if tlsCertPath == "" {
+		return tls.Certificate{}, fmt.Errorf("TLS_CERT_PATH is required")
+	}
+
+	tlsKeyPath := os.Getenv("TLS_KEY_PATH")
+	if tlsKeyPath == "" {
+		return tls.Certificate{}, fmt.Errorf("TLS_KEY_PATH is required")
+	}
+
+	cert, err := tls.LoadX509KeyPair(tlsCertPath, tlsKeyPath)
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("could not load TLS key pair: %w", err)
+	}
+
+	return cert, nil
+}
+
+// LoadConfig loads the configuration from the environment variables.
+func LoadConfig(requireCerts bool) (*Config, error) {
 	version := os.Getenv("VERSION")
 	if version == "" {
 		version = "development"
@@ -99,6 +122,14 @@ func LoadConfig() (*Config, error) {
 		controlPort = "9001"
 	}
 
+	var serverCert tls.Certificate
+	if requireCerts {
+		serverCert, err = getServiceCert()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &Config{
 		Version:        version,
 		ServerHost:     serverHost,
@@ -108,6 +139,7 @@ func LoadConfig() (*Config, error) {
 		ReadTimeout:    10,            // in seconds
 		WriteTimeout:   10,            // in seconds
 		IdleTimeout:    60,            // in seconds
+		ServerCert:     serverCert,
 		DBConfig: database.DBConfig{
 			DBPort:         dbPort,
 			DBUser:         dbUser,

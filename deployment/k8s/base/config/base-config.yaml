@@ -5,6 +5,23 @@ metadata:
   labels:
     app: config
 data:
+  # configs for the database deployment
   POSTGRES_DB: base
   POSTGRES_USER: base
   POSTGRES_PASSWORD: base
+  # configs for the management deployment
+  DB_PORT: base
+  DB_USER: base
+  DB_PASSWORD: base
+  DB_NAME: base
+  DB_HOST: base
+  DB_MAX_OPEN: base
+  DB_MAX_IDLE: base
+  DB_DISABLE_TLS: base
+  SERVER_HOST: base
+  MANAGEMENT_PORT: base
+  CONTROL_PORT: base
+  # TODO: define proper versioning strategy
+  VERSION: base
+  TLS_CERT_PATH: /etc/ssl/certs/tls.crt
+  TLS_KEY_PATH: /etc/ssl/certs/tls.key

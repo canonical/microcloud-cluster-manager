@@ -12,4 +12,5 @@ patches:
 - path: ./db/dev-db-pv.yaml
 - path: ./db/dev-db-pvc.yaml
 - path: ./management/dev-cm-depl.yaml
+- path: ./management/dev-cm-svc.yaml
 - path: ./control/dev-cc-depl.yaml

@@ -1,0 +1,14 @@
+# Note: for local development, we are directly passing https traffic to the management service
+apiVersion: v1
+kind: Service
+metadata:
+  name: management-svc
+spec:
+  type: LoadBalancer
+  selector:
+    app: management
+  ports:
+  - name: management
+    port: 9000
+    targetPort: management
+    protocol: TCP
