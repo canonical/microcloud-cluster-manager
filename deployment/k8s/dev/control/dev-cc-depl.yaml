@@ -21,7 +21,7 @@ spec:
             cpu: "2000m" # Up to 2 full cores
           requests:
             cpu: "1000m" # Use 1 full cores
-        image: control-img
+        image: cluster-manager-img
         ports:
         - name: debug
           containerPort: 40001

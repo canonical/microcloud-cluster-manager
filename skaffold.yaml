@@ -4,10 +4,10 @@ metadata:
   name: cluster-manager-dev
 build:
   artifacts:
-  - image: management-img
+  - image: cluster-manager-img
     context: .
     docker:
-      dockerfile: deployment/docker/dockerfile.management
+      dockerfile: deployment/docker/dockerfile.dev
       target: dev
       buildArgs:
         BUILD_REF: "development" 
@@ -15,31 +15,6 @@ build:
     sync:
       infer:
       - '**/*.go'
-  - image: control-img
-    context: .
-    docker:
-      dockerfile: deployment/docker/dockerfile.control
-      target: dev
-      buildArgs:
-        BUILD_REF: "development" 
-    # trigger rebuild of image when any go files change
-    sync:
-      infer:
-      - '**/*.go'
-  - image: admin-img
-    context: .
-    docker:
-      dockerfile: deployment/docker/dockerfile.admin
-      target: dev
-      buildArgs:
-        BUILD_REF: "development" 
-    # trigger rebuild of image when any go files change
-    sync:
-      manual:
-      - src: cmd/admin/*.go
-        dest: /app/admin
-      - src: pkg/database/**/*.go
-        dest: /app/pkg/database
 
 # default dev deploy
 deploy:
@@ -72,34 +47,14 @@ profiles:
 - name: debug
   build:
     artifacts:
-    - image: management-img
+    - image: cluster-manager-img
       context: .
       docker:
-        dockerfile: deployment/docker/dockerfile.management
+        dockerfile: deployment/docker/dockerfile.dev
         target: debug
         buildArgs:
           BUILD_REF: "development" 
-    - image: control-img
-      context: .
-      docker:
-        dockerfile: deployment/docker/dockerfile.control
-        target: debug
-        buildArgs:
-          BUILD_REF: "development" 
-    - image: admin-img
-      context: .
-      docker:
-        dockerfile: deployment/docker/dockerfile.admin
-        target: dev
-        buildArgs:
-          BUILD_REF: "development" 
-      # trigger rebuild of image when any go files change
-      sync:
-        manual:
-        - src: cmd/admin/*.go
-          dest: /app/admin
-        - src: pkg/database/**/*.go
-          dest: /app/pkg/database
+          DEBUG: "true"
   portForward:
   - resourceType: deployment
     resourceName: management-depl

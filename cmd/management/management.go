@@ -1,4 +1,4 @@
-package main
+package management
 
 import (
 	"context"
@@ -24,23 +24,8 @@ import (
 	"github.com/canonical/lxd-cluster-manager/internal/pkg/middleware"
 )
 
-var build = "development"
-var service = "MANAGEMENT"
-
-func main() {
-	logger.SetService(service)
-	defer logger.Cleanup()
-
-	// Perform the startup and shutdown sequence.
-	err := run()
-	if err != nil {
-		logger.Log.Errorw("startup", "ERROR", err)
-		logger.Log.Sync()
-		os.Exit(1)
-	}
-}
-
-func run() error {
+// Run will initialise and start the management service API
+func Run() error {
 
 	// =========================================================================
 	// GOMAXPROCS
@@ -64,8 +49,8 @@ func run() error {
 	// =========================================================================
 	// App starting
 
-	logger.Log.Infow("starting service", "environment", build)
-	expvar.NewString("build").Set(build)
+	logger.Log.Infow("starting service", "environment", cfg.Version)
+	expvar.NewString("build").Set(cfg.Version)
 	defer logger.Log.Infow("shutdown complete")
 
 	// =========================================================================

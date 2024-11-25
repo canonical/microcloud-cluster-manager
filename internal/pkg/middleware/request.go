@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/canonical/lxd-cluster-manager/internal/pkg/logger"
-	"github.com/canonical/lxd-cluster-manager/internal/pkg/request"
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/google/uuid"
+
+	"github.com/canonical/lxd-cluster-manager/internal/pkg/logger"
+	"github.com/canonical/lxd-cluster-manager/internal/pkg/request"
 )
 
 // RequestTrace is a middleware that adds a trace ID and timestamp to the request context

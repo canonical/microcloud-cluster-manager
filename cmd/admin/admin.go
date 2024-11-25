@@ -1,9 +1,8 @@
-package main
+package admin
 
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/canonical/lxd-cluster-manager/config"
@@ -12,18 +11,9 @@ import (
 	"github.com/canonical/lxd-cluster-manager/internal/pkg/logger"
 )
 
-var service = "ADMIN"
-
-func main() {
-	logger.SetService(service)
-	defer logger.Cleanup()
-
-	err := migrate()
-	if err != nil {
-		logger.Log.Errorw("admin", "ERROR", err)
-		logger.Log.Sync()
-		os.Exit(1)
-	}
+// Run will execute all the admin jobs
+func Run() error {
+	return migrate()
 }
 
 func migrate() error {

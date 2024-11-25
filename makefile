@@ -40,24 +40,6 @@ update-gomod:
 tidy-gomod:
 	go mod tidy -go=$(GOMIN)
 
-# ==============================================================================
-# Docker utility targets.
-
-VERSION := ".1.0
-
-.PHONY: all
-all: build-management
-
-.PHONY: build-management
-build-management:
-	docker build \
-		-D \
-		-f deployment/docker/dockerfile.management \
-		-t management-img:$(VERSION) \
-		--build-arg BUILD_REF=$(VERSION) \
-		--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
-		.
-
 # ====================================================================
 # Local dev cluster utility targets. (k8s, kustomize, kind, skaffold)
 
@@ -105,9 +87,7 @@ clean-dev:
 	skaffold delete
 	docker container prune -f
 	docker images -f "dangling=true" -q | xargs -r docker rmi
-	docker images --filter=reference='management-img:*' -q | xargs -I {} docker rmi {} -f
-	docker images --filter=reference='control-img:*' -q | xargs -I {} docker rmi {} -f
-	docker images --filter=reference='admin-img:*' -q | xargs -I {} docker rmi {} -f
+	docker images --filter=reference='cluster-manager-img:*' -q | xargs -I {} docker rmi {} -f
 
 .PHONY: dev
 dev: start-cluster dev-k8s-deploy

@@ -2,6 +2,7 @@
 # build the GO binaries for dev and debug versions
 FROM golang:1.22.7 AS builder
 ARG BUILD_REF
+ARG DEBUG=false
 WORKDIR /app
 
 # install dependencies first for optimised build caching
@@ -10,19 +11,23 @@ RUN go mod download
 
 # copy the source code into the container.
 COPY . ./
-WORKDIR /app/cmd/control
+WORKDIR /app/cmd
 
-# compile debug binary which is less optimised
-RUN CGO_ENABLED=0 go build -gcflags 'all=-N -l' -ldflags "-X main.build=${BUILD_REF}" -o app.debug
+# compile debug binary which is less optimised, only if debug is enabled
+RUN if [ "$DEBUG" = "true" ]; then \ 
+        CGO_ENABLED=0 go build -gcflags 'all=-N -l' -ldflags "-X main.build=${BUILD_REF}" -o app.debug; \
+    fi
 
 # compile dev binary which is more optimised
-RUN CGO_ENABLED=0 go build -ldflags "-X main.build=${BUILD_REF}" -o app.dev
+RUN if [ "$DEBUG" != "true" ]; then \ 
+        CGO_ENABLED=0 go build -ldflags "-X main.build=${BUILD_REF}" -o app.dev; \
+    fi
 
 # ========================================================================
 # development stage to be run as normal dev target
 FROM alpine:3.20 as dev
 # copy the dev binary from the builder stage
-COPY --from=builder /app/cmd/control/app.dev /app/app.dev
+COPY --from=builder /app/cmd/app.dev /app/app.dev
 # this specifies the default binary to execute when the container starts
 ENTRYPOINT [ "/app/app.dev" ]
 
@@ -32,9 +37,9 @@ FROM golang:1.22.7 as debug
 # Install Delve for debugging go
 RUN go install github.com/go-delve/delve/cmd/dlv@v1.23.1
 # copy the debug binary from the builder stage
-COPY --from=builder /app/cmd/control/app.debug /app/app.debug
+COPY --from=builder /app/cmd/app.debug /app/app.debug
 
 WORKDIR /app
 
-EXPOSE 40001
-CMD ["/go/bin/dlv", "--listen=:40001", "--headless=true", "--api-version=2", "--accept-multiclient", "exec", "/app/app.debug"]
+EXPOSE 40000
+ENTRYPOINT ["/go/bin/dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "exec", "/app/app.debug"]

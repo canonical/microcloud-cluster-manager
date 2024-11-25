@@ -1,0 +1,8 @@
+ui/
+.github/
+.vscode/
+*.md
+makefile
+*.yaml
+.dockerignore
+.gitignore
