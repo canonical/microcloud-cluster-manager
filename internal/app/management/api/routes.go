@@ -7,6 +7,7 @@ import (
 
 var APIRoutes = []types.RouteGroup{
 	v1.UI,
+	v1.UIRoot,
 	v1.ApiRoot,
 	v1.Auth,
 	v1.RemoteCluster,

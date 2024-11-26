@@ -1,16 +1,36 @@
 # ========================================================================
+# build the UI static assets
+FROM node:21 AS builder-ui
+WORKDIR /app
+
+COPY ui/package.json ui/yarn.lock ./
+RUN yarn install
+
+COPY ui ./
+
+RUN yarn build
+
+# ========================================================================
 # build the GO binaries for dev and debug versions
-FROM golang:1.22.7 AS builder
+FROM golang:1.22.7 AS builder-backend
 ARG BUILD_REF
 ARG DEBUG=false
 WORKDIR /app
 
 # install dependencies first for optimised build caching
-COPY go.mod ./
+COPY go.mod go.sum ./
 RUN go mod download
+
+# copy the built UI into the backend container
+COPY --from=builder-ui /app/build /ui/build
 
 # copy the source code into the container.
 COPY . ./
+
+# pull UI static assets over for binary embedding later
+WORKDIR /app/internal/app/management/api/v1/
+RUN go generate
+
 WORKDIR /app/cmd
 
 # compile debug binary which is less optimised, only if debug is enabled
@@ -27,7 +47,7 @@ RUN if [ "$DEBUG" != "true" ]; then \
 # development stage to be run as normal dev target
 FROM alpine:3.20 as dev
 # copy the dev binary from the builder stage
-COPY --from=builder /app/cmd/app.dev /app/app.dev
+COPY --from=builder-backend /app/cmd/app.dev /app/app.dev
 # this specifies the default binary to execute when the container starts
 ENTRYPOINT [ "/app/app.dev" ]
 
@@ -37,7 +57,7 @@ FROM golang:1.22.7 as debug
 # Install Delve for debugging go
 RUN go install github.com/go-delve/delve/cmd/dlv@v1.23.1
 # copy the debug binary from the builder stage
-COPY --from=builder /app/cmd/app.debug /app/app.debug
+COPY --from=builder-backend /app/cmd/app.debug /app/app.debug
 
 WORKDIR /app
 

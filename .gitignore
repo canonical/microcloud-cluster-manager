@@ -7,6 +7,7 @@ ui/node_modules
 ui/playwright-report
 ui/keys
 ui/tests/.auth
+internal/app/management/api/v1/static
 test-results
 haproxy-local.cfg
 *__debug*

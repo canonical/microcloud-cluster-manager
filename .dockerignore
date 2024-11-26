@@ -1,4 +1,6 @@
-ui/
+ui/node_modules/
+ui/keys/
+ui/tests/
 .github/
 .vscode/
 *.md

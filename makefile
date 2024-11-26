@@ -99,6 +99,12 @@ debug: start-cluster debug-k8s-deploy
 nuke: clean-dev delete-cluster
 
 # ====================================================================
+# UI utilities
+.PHONY: ui
+ui: 
+	cd ui && dotrun
+
+# ====================================================================
 # dev database utilities
 
 .PHONY: migrate-db
