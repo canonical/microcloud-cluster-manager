@@ -1,6 +1,9 @@
 ui/node_modules/
 ui/keys/
 ui/tests/
+ui/playwright-report/
+ui/test-results/
+tests/
 test/e2e/data
 .github/
 .vscode/

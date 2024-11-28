@@ -8,16 +8,17 @@ import (
 	"github.com/canonical/lxd-cluster-manager/config"
 	"github.com/canonical/lxd-cluster-manager/internal/pkg/database"
 	"github.com/canonical/lxd-cluster-manager/internal/pkg/database/schema"
+	"github.com/canonical/lxd-cluster-manager/internal/pkg/database/seed"
 	"github.com/canonical/lxd-cluster-manager/internal/pkg/logger"
 )
 
 // Run will execute all the admin jobs
 func Run() error {
-	return migrate()
+	return admin()
 }
 
-func migrate() error {
-	logger.Log.Infow("migrate", "message", "Migrating the database")
+func admin() error {
+	logger.Log.Infow("admin", "message", "Starting admin jobs")
 
 	// =========================================================================
 	// Load configuration
@@ -29,7 +30,7 @@ func migrate() error {
 
 	// =========================================================================
 	// connect to database
-	logger.Log.Infow("admin migrate", "status", "connecting to the database", "host", cfg.DBHost)
+	logger.Log.Infow("admin", "status", "connecting to the database", "host", cfg.DBHost)
 	dbConfigs := database.DBConfig{
 		DBHost:         cfg.DBHost,
 		DBUser:         cfg.DBUser,
@@ -49,30 +50,49 @@ func migrate() error {
 		db.Close()
 	}()
 
-	// =========================================================================
-	// Migrate the database
-	// time out the database migration after 5 minutes
+	// time out the database connection after 5 minutes
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	// ensure the database is ready
 	err = db.StatusCheck(ctx)
 	if err != nil {
-		logger.Log.Errorw("admin migrate", "status", "database not ready", "ERROR", err)
+		logger.Log.Errorw("admin", "status", "database connection timeout", "ERROR", err)
 		return err
 	}
 
+	// =========================================================================
+	// Migrate the database
+
+	logger.Log.Infow("admin", "message", "Starting database migration")
+
 	applied, err := schema.Migrate(ctx, db.Conn().DB, cfg.Version)
 	if applied {
-		logger.Log.Infow("admin migrate", "status", "database version matches the environment version, no migration needed")
+		logger.Log.Infow("admin", "status", "database version matches the environment version, no migration needed")
 		return nil
 	}
 
 	if err != nil {
-		logger.Log.Errorw("admin migrate", "status", "database migration failed", "ERROR", err)
+		logger.Log.Errorw("admin", "status", "database migration failed", "ERROR", err)
 		return err
 	}
 
-	logger.Log.Infow("admin migrate", "status", "database migration successful")
+	logger.Log.Infow("admin", "status", "database migration successful")
+
+	// =========================================================================
+	// Seed the database
+
+	if cfg.Version == "development" {
+		logger.Log.Infow("admin", "message", "Starting database seeding")
+
+		err := seed.SeedDatabase(ctx, db)
+		if err != nil {
+			logger.Log.Errorw("admin", "status", "database seeding failed", "ERROR", err)
+			return err
+		}
+
+		logger.Log.Infow("admin", "status", "database seeding successful")
+	}
+
 	return nil
 }

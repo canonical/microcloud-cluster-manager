@@ -140,3 +140,7 @@ migrate-db:
 .PHONY: test-e2e
 test-e2e:
 	go test -count=1 -v ./test/e2e
+
+.PHONY: test-ui-e2e
+test-ui-e2e:
+	cd ui && npx playwright test
