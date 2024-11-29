@@ -155,13 +155,20 @@ func seedRemoteClusterTokens(ctx context.Context, db *database.DB) error {
 }
 
 // generateRandomStatuses generates a JSON array of statuses with random counts.
-func generateRandomStatuses(status1 string, status2 string, maxCount int) []byte {
-	count1 := rand.Intn(maxCount/2 + 1)
-	count2 := maxCount - count1
+func generateRandomStatuses(status1, status2, status3, status4 string, maxCount int) []byte {
+	// Generate random values for the first three statuses
+	count1 := rand.Intn(maxCount / 2) // Max is half to balance distribution
+	count2 := rand.Intn(maxCount - count1)
+	count3 := rand.Intn(maxCount - count1 - count2)
+	count4 := maxCount - count1 - count2 - count3
+
 	statuses := []map[string]interface{}{
 		{"status": status1, "count": count1},
 		{"status": status2, "count": count2},
+		{"status": status3, "count": count3},
+		{"status": status4, "count": count4},
 	}
+
 	result, _ := json.Marshal(statuses)
 	return result
 }
@@ -176,8 +183,8 @@ func generateRemoteClusterDetails(count int) []store.RemoteClusterDetail {
 		memoryUsage := rand.Intn(totalMemory + 1)
 		totalDisk := (rand.Intn(200) + 1) * 1000 // Random disk size in multiples of 1000
 		diskUsage := rand.Intn(totalDisk + 1)
-		totalInstances := rand.Intn(50) + 1
-		totalMembers := rand.Intn(20) + 1
+		totalInstances := rand.Intn(50) + 2
+		totalMembers := rand.Intn(20) + 2
 
 		clusters[i] = store.RemoteClusterDetail{
 			RemoteClusterID:   i + 1,
@@ -190,9 +197,9 @@ func generateRemoteClusterDetails(count int) []store.RemoteClusterDetail {
 			DiskTotalSize:     totalDisk,
 			DiskUsage:         diskUsage,
 			InstanceCount:     totalInstances,
-			InstanceStatuses:  generateRandomStatuses("running", "stopped", totalInstances),
+			InstanceStatuses:  generateRandomStatuses("Running", "Stopped", "Frozen", "Error", totalInstances),
 			MemberCount:       totalMembers,
-			MemberStatuses:    generateRandomStatuses("active", "inactive", totalMembers),
+			MemberStatuses:    generateRandomStatuses("Online", "Offline", "Evacuated", "Blocked", totalMembers),
 			CreatedAt:         time.Now(),
 			UpdatedAt:         time.Now(),
 		}
