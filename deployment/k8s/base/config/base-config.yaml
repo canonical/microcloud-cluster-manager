@@ -5,10 +5,6 @@ metadata:
   labels:
     app: config
 data:
-  # configs for the database deployment
-  POSTGRES_DB: base
-  POSTGRES_USER: base
-  POSTGRES_PASSWORD: base
   # configs for the management-api deployment
   DB_PORT: base
   DB_USER: base
@@ -19,8 +15,7 @@ data:
   DB_MAX_IDLE: base
   DB_DISABLE_TLS: base
   SERVER_HOST: base
-  MANAGEMENT_API_PORT: base
-  CLUSTER_CONNECTOR_PORT: base
+  SERVER_PORT: base
   # TODO: define proper versioning strategy
   VERSION: base
   MANAGEMENT_API_TLS_PATH: /etc/ssl/management-api

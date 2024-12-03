@@ -100,3 +100,27 @@ func (a *API) Mux() *mux.Router {
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.mux.ServeHTTP(w, r)
 }
+
+// GetStatusServer sets up the status endpoint for liveliness and readiness checks.
+func (a *API) GetStatusServer() *http.Server {
+	// Define the status server
+	statusRouter := mux.NewRouter()
+	statusRouter.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+		err := a.db.StatusCheck(r.Context())
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			logger.Log.Errorw("Status check failed", "err", err)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		logger.Log.Infow("Status ok")
+	})
+
+	statusServer := &http.Server{
+		Addr:    ":10000", // Status server listens on a different port
+		Handler: statusRouter,
+	}
+
+	return statusServer
+}

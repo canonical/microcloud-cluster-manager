@@ -8,10 +8,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"github.com/canonical/lxd/shared"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -103,11 +101,6 @@ func (e *Environment) Init() error {
 		return err
 	}
 
-	err = e.setTestMode("true")
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -140,12 +133,6 @@ func (e *Environment) Cleanup() error {
 		}
 	}
 
-	// Reset the test mode
-	err := e.setTestMode("false")
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -167,79 +154,6 @@ func (e *Environment) ManagementAPIHost() string {
 // ClusterConnectorHost returns the cluster-connector host.
 func (e *Environment) ClusterConnectorHost() string {
 	return e.clusterConnectorHost
-}
-
-func (e *Environment) setTestMode(val string) error {
-	deploymentName := "management-api-depl"
-	containerName := "management-api"
-
-	// Get the Deployment
-	deployment, err := e.kClient.AppsV1().Deployments("default").Get(context.TODO(), deploymentName, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to get deployment: %v", err)
-	}
-
-	// Find the container in the deployment's spec
-	var container *corev1.Container
-	for i := range deployment.Spec.Template.Spec.Containers {
-		if deployment.Spec.Template.Spec.Containers[i].Name == containerName {
-			container = &deployment.Spec.Template.Spec.Containers[i]
-			break
-		}
-	}
-
-	if container == nil {
-		return fmt.Errorf("container %s not found in deployment %s", containerName, deploymentName)
-	}
-
-	// Update the environment variable in the container
-	updated := false
-	for i := range container.Env {
-		if container.Env[i].Name == "TEST_MODE" {
-			container.Env[i].Value = val
-			updated = true
-			break
-		}
-	}
-
-	if !updated {
-		// Add the environment variable if it doesn't exist
-		container.Env = append(container.Env, corev1.EnvVar{
-			Name:  "TEST_MODE",
-			Value: val,
-		})
-	}
-
-	// Update the deployment with the new environment variable
-	_, err = e.kClient.AppsV1().Deployments("default").Update(context.TODO(), deployment, metav1.UpdateOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to update deployment: %v", err)
-	}
-
-	// Wait for the deployment to be ready
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	timeoutChan := time.After(60 * time.Second)
-
-	for {
-		select {
-		case <-timeoutChan:
-			return fmt.Errorf("timed out waiting for deployment to be ready")
-		case <-ticker.C:
-			// Get the latest status of the deployment
-			deployment, err := e.kClient.AppsV1().Deployments("default").Get(context.TODO(), deploymentName, metav1.GetOptions{})
-			if err != nil {
-				return fmt.Errorf("failed to get deployment: %v", err)
-			}
-
-			// Check if the deployment has finished updating
-			if deployment.Status.AvailableReplicas == *deployment.Spec.Replicas {
-				// All replicas are available, the deployment is complete
-				return nil
-			}
-		}
-	}
 }
 
 func (e *Environment) setCertificates() error {

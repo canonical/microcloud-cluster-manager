@@ -5,7 +5,10 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: cluster-connector
@@ -14,9 +17,6 @@ spec:
       labels:
         app: cluster-connector
     spec:
-      # NOTE: for local development, have the pods run on the same network as the host
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: cluster-connector
         resources:

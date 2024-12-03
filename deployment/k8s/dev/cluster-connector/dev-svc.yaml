@@ -9,6 +9,6 @@ spec:
     app: cluster-connector
   ports:
   - name: cluster-conn
-    port: 9001
+    port: 9000
     targetPort: cluster-conn
     protocol: TCP

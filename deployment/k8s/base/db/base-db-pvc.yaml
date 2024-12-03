@@ -5,5 +5,9 @@ metadata:
   labels:
     app: db
 spec:
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 2Gi
   accessModes:
     - ReadWriteMany

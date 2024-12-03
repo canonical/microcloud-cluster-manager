@@ -2,13 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: config
-  labels:
-    app: db
 data:
-  # configs for the database deployment
-  POSTGRES_DB: cm
-  POSTGRES_USER: admin
-  POSTGRES_PASSWORD: admin
   # configs for the management-api deployment
   DB_PORT: "5432"
   DB_USER: admin
@@ -19,8 +13,7 @@ data:
   DB_MAX_IDLE: "2"
   DB_DISABLE_TLS: "true"
   SERVER_HOST: "localhost"
-  MANAGEMENT_API_PORT: "9000"
-  CLUSTER_CONNECTOR_PORT: "9001"
+  SERVER_PORT: "9000"
   TEST_MODE: "false"
   # TODO: define proper versioning strategy
   VERSION: "development"

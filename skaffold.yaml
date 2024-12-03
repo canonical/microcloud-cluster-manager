@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: cluster-manager-dev
@@ -10,36 +10,44 @@ build:
       dockerfile: deployment/docker/dockerfile.dev
       target: dev
       buildArgs:
-        BUILD_REF: "development" 
-    # trigger rebuild of image when any go files change
+        BUILD_REF: "development"
     sync:
       infer:
-      - '**/*.go'
+      - 'cmd/'
+      - 'config/'
+      - 'internal/'
+      - 'go.mod'
+      - 'go.sum'
 
-# default dev deploy
-deploy:
+manifests:
   kustomize:
     paths:
     - deployment/k8s/dev
-    hooks:
-      # NOTE: we want to make sure that certificate is created before the deployment
-      # therefore we are not deploying the certificate related resources using kustomize
-      before:
-        - host:
-            command: ["deployment/k8s/base/cert/init-cert.sh"]
+  hooks:
+    # NOTE: we want to make sure that certificate is created before the deployment
+    # therefore we are not deploying the certificate related resources using kustomize
+    before:
+      - host:
+          command: ["deployment/k8s/base/cert/init-cert.sh"]
+
+deploy:
+  statusCheck: true
+  statusCheckDeadlineSeconds:	180
+  tolerateFailuresUntilDeadline: true
+  kubectl: {}
 
 portForward:
-- resourceType: deployment
-  resourceName: management-api-depl
+- resourceType: service
+  resourceName: management-api-svc
   port: management-api
   localPort: 9000
-- resourceType: deployment
-  resourceName: cluster-connector-depl
+- resourceType: service
+  resourceName: cluster-connector-svc
   port: cluster-conn
   localPort: 9001
 # For debugging purposes, we can connect via pgadmin here
-- resourceType: deployment
-  resourceName: db-depl
+- resourceType: service
+  resourceName: db-svc
   port: db
   localPort: 5432
 
@@ -72,7 +80,7 @@ profiles:
     resourceName: cluster-connector-depl
     port: debug  # Debug port exposed by Delve
     localPort: 40001
-  - resourceType: deployment
-    resourceName: db-depl
+  - resourceType: StatefulSet
+    resourceName: db-ss
     port: db
     localPort: 5432

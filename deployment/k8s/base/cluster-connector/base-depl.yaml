@@ -11,13 +11,28 @@ spec:
       labels:
         app: cluster-connector
     spec:
-      terminationGracePeriodSeconds: 60
       containers:
       - name: cluster-connector
         image: cluster-connector-img
         ports:
         - name: cluster-conn
-          containerPort: 9001
+          containerPort: 9000
+        readinessProbe:
+          httpGet:
+            path: "/status"
+            port: 10000
+          initialDelaySeconds: 1
+          failureThreshold: 10
+          timeoutSeconds: 5
+          periodSeconds: 30
+        livenessProbe:
+          httpGet:
+            path: "/status"
+            port: 10000
+          initialDelaySeconds: 1
+          failureThreshold: 10
+          timeoutSeconds: 5
+          periodSeconds: 30
         envFrom:
         - configMapRef:
             name: config

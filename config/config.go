@@ -24,13 +24,12 @@ type Config struct {
 	// db configs
 	database.DBConfig
 	// api configs
-	ServerHost           string
-	ManagementAPIPort    string
-	ClusterConnectorPort string
-	AllowedOrigins       []string
-	ReadTimeout          int
-	WriteTimeout         int
-	IdleTimeout          int
+	ServerHost     string
+	ServerPort     string
+	AllowedOrigins []string
+	ReadTimeout    int
+	WriteTimeout   int
+	IdleTimeout    int
 	// oidc configs
 	OIDCClientID string
 	OIDCIssuer   string
@@ -111,8 +110,7 @@ func LoadConfig() (*Config, error) {
 		Version:                 getEnvOrDefault("VERSION", "development"),
 		APIVersion:              getEnvOrDefault("API_VERSION", "1.0"),
 		ServerHost:              getEnvOrDefault("SERVER_HOST", "localhost"),
-		ManagementAPIPort:       getEnvOrDefault("MANAGEMENT_API_PORT", "9000"),
-		ClusterConnectorPort:    getEnvOrDefault("CLUSTER_CONNECTOR_PORT", "9001"),
+		ServerPort:              getEnvOrDefault("SERVER_PORT", "9000"),
 		TestMode:                getEnvOrDefault("TEST_MODE", "false") == "true",
 		AllowedOrigins:          []string{"*"},
 		ReadTimeout:             10,

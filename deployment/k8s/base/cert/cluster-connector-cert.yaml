@@ -11,7 +11,10 @@ spec:
   renewBefore: 360h # 15 days
   # domains that the certificate will cover
   dnsNames:
-    - "localhost"
+    - localhost
+  # for local development only, we setup the self-signed certificate to function as a CA
+  isCA: true
+  commonName: localhost
   issuerRef:
     name: cert-issuer
     kind: ClusterIssuer

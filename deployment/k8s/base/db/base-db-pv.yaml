@@ -6,6 +6,9 @@ metadata:
     type: local
     app: db
 spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
   accessModes:
     - ReadWriteMany
   # NOTE: this should only be used for development purposes

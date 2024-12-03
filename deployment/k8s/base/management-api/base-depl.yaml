@@ -11,7 +11,6 @@ spec:
       labels:
         app: management-api
     spec:
-      terminationGracePeriodSeconds: 60
       initContainers:
       - name: init
         image: cluster-manager-img
@@ -27,6 +26,22 @@ spec:
         ports:
         - name: management-api
           containerPort: 9000
+        readinessProbe:
+          httpGet:
+            path: "/status"
+            port: 10000
+          initialDelaySeconds: 1
+          failureThreshold: 3
+          timeoutSeconds: 5
+          periodSeconds: 30
+        livenessProbe:
+          httpGet:
+            path: "/status"
+            port: 10000
+          initialDelaySeconds: 1
+          failureThreshold: 3
+          timeoutSeconds: 5
+          periodSeconds: 30
         envFrom:
         - configMapRef:
             name: config

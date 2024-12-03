@@ -1,6 +1,6 @@
 ui/
 tests/
-test/e2e/data
+test/
 .github/
 .vscode/
 *.md

@@ -9,8 +9,6 @@ resources:
 
 patches:
 - path: ./config/dev-config.yaml
-- path: ./db/dev-db-pv.yaml
-- path: ./db/dev-db-pvc.yaml
 - path: ./management-api/dev-depl.yaml
 - path: ./management-api/dev-svc.yaml
 - path: ./cluster-connector/dev-depl.yaml

@@ -120,7 +120,7 @@ func Run() (err error) {
 	// Construct a TLS enabled server to service the requests against the mux.
 	tlsConfig := util.ServerTLSConfig(cfg.ManagementAPICert)
 	server := http.Server{
-		Addr:         cfg.ServerHost + ":" + cfg.ManagementAPIPort,
+		Addr:         cfg.ServerHost + ":" + cfg.ServerPort,
 		Handler:      a,
 		ReadTimeout:  time.Duration(cfg.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(cfg.WriteTimeout) * time.Second,
@@ -137,6 +137,13 @@ func Run() (err error) {
 	go func() {
 		logger.Log.Infow("startup", "status", "api router started", "host", server.Addr)
 		serverErrors <- server.ListenAndServeTLS("", "")
+	}()
+
+	// setup status endpoint on different port
+	statusServer := a.GetStatusServer()
+	go func() {
+		logger.Log.Infow("startup", "status", "status server started", "host", statusServer.Addr)
+		serverErrors <- statusServer.ListenAndServe()
 	}()
 
 	// =========================================================================

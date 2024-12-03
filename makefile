@@ -114,32 +114,21 @@ migrate-db:
 # ====================================================================
 # test utilities
 
-# management-api API tests
-# POST /1.0/remote-cluster-join-token
-# curl -X POST http://localhost:8414/1.0/remote-cluster-join-token -H "Content-Type: application/json" -d '{ "expiry": "2024-11-21T15:30:00Z", "cluster_name": "example-cluster" }'
-# GET /1.0/remote-cluster-join-token
-# curl -X GET http://localhost:8414/1.0/remote-cluster-join-token -H "Content-Type: application/json"
-# DELETE /1.0/remote-cluster-join-token/:name
-# curl -X DELETE http://localhost:8414/1.0/remote-cluster-join-token/example-cluster -H "Content-Type: application/json"
-# GET /1.0/remote-cluster
-# curl -X GET http://localhost:8414/1.0/remote-cluster -H "Content-Type: application/json"
-# GET /1.0/remote-cluster/:name
-# curl -X GET http://localhost:8414/1.0/remote-cluster/test -H "Content-Type: application/json"
-# PATCH /1.0/remote-cluster-join-token/:name
-# curl -X PATCH http://localhost:8414/1.0/remote-cluster/test -H "Content-Type: application/json" -d '{ "status": "ACTIVE" }'
-# DELETE /1.0/remote-cluster/:name
-# curl -X DELETE http://localhost:8414/1.0/remote-cluster/test -H "Content-Type: application/json"
+# to ensure that all pods are ready before running tests, we check the liveliness of the pods
+# rollout restart seems to break k8s portforwarding, here we make a request to the server to ensure it is up as well as reset the portforwarding
+.PHONY: switch-test-mode
+switch-test-mode:
+	kubectl patch configmap config --patch '{"data":{"TEST_MODE":"$(IS_ON)"}}'
+	kubectl rollout restart deployment/management-api-depl
+	kubectl rollout status deployment/management-api-depl --timeout=300s
+	@{ curl --insecure https://localhost:9000 > /dev/null 2>&1 || true; } 2>/dev/null
 
-# cluster connector API tests
-# POST /1.0/remote-cluster
-# curl -X POST http://localhost:8415/1.0/remote-cluster -H "Content-Type: application/json" -d '{ "cluster_certificate": "abc", "cluster_name": "test-cluster" }'
-# POST /1.0/remote-cluster/status
-# curl -X POST http://localhost:8415/1.0/remote-cluster/status -H "Content-Type: application/json" -d '{ "cpu_total_count": 20, "cpu_load_1": "0.1", "cpu_load_5": "0.2", "cpu_load_15": "0.3", "memory_total_amount": 30, "memory_usage": 40, "disk_total_size": 50, "disk_usage": 60, "member_statuses": [{"status": "RUNNING", "count": 10}, {"status": "DOWN", "count": 100}], "instance_statuses": [{"status": "RUNNING", "count": 10}, {"status": "DOWN", "count": 100}], "cluster_name": "test-cluster" }'
-# DELETE /1.0/remote-cluster/:name
-# curl -X DELETE http://localhost:8415/1.0/remote-cluster/test-cluster -H "Content-Type: application/json"
+# Need to set TEST_MODE to true in the management-api deployment so we can by pass oidc authentication
 .PHONY: test-e2e
-test-e2e:
+test-e2e: 
+	$(MAKE) switch-test-mode IS_ON=true
 	go test -count=1 -v ./test/e2e
+	$(MAKE) switch-test-mode IS_ON=false
 
 .PHONY: test-ui-e2e
 test-ui-e2e:

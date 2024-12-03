@@ -1,10 +1,11 @@
 # NOTE: no point in setting up patches for this as these configs are most likely going to change
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: db-depl
+  name: db-ss
 spec:
   replicas: 1
+  serviceName: db
   selector:
     matchLabels:
       app: db
@@ -19,15 +20,15 @@ spec:
         imagePullPolicy: IfNotPresent
         resources:
           limits:
-            cpu: "1000m" # Up to 1 full core
+            cpu: "2000m" # Up to 1 full core
           requests:
-            cpu: "1000m" # Use 1 full core
+            cpu: "2000m" # Use 1 full core
         ports:
         - name: db 
           containerPort: 5432
         envFrom:
         - configMapRef:
-            name: config
+            name: db-config
         livenessProbe:
           exec:
             command:
