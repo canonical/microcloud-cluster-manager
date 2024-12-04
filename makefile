@@ -1,4 +1,4 @@
-GOMIN=1.22.7
+GOMIN=1.23.4
 
 .PHONY: default
 default: all

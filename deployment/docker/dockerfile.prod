@@ -9,7 +9,7 @@ RUN yarn build
 
 # ========================================================================
 # build the GO binaries for dev and debug versions
-FROM golang:1.22.7 AS builder-backend
+FROM golang:1.23.4 AS builder-backend
 ARG BUILD_REF
 WORKDIR /app
 

@@ -1,6 +1,6 @@
 # ========================================================================
 # build the GO binaries for dev and debug versions
-FROM golang:1.22.7 AS builder-backend
+FROM golang:1.23.4 AS builder-backend
 ARG BUILD_REF
 ARG DEBUG=false
 WORKDIR /app
@@ -33,7 +33,7 @@ ENTRYPOINT [ "/app/app.dev" ]
 
 # ========================================================================
 # debug stage to be run as debug target
-FROM golang:1.22.7 as debug
+FROM golang:1.23.4 as debug
 # Install Delve for debugging go
 RUN go install github.com/go-delve/delve/cmd/dlv@v1.23.1
 # copy the debug binary from the builder stage
