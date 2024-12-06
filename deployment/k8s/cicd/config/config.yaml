@@ -16,9 +16,9 @@ data:
   DB_PASSWORD: admin
   DB_PORT: "5432"
   DB_USER: admin
-  OIDC_AUDIENCE: https://dev-xjrvvfikbsv4jxn7.us.auth0.com/api/v2/
-  OIDC_CLIENT_ID: NBXrnTZUrulBYNPuc4raZySTEWDTuvM2
-  OIDC_ISSUER: https://dev-xjrvvfikbsv4jxn7.us.auth0.com/
+  OIDC_AUDIENCE: https://lxd-ui-demo.us.auth0.com/api/v2/
+  OIDC_CLIENT_ID: OZSAeCbqAXZid3LL1gRQEkLXP9KlwZtJ
+  OIDC_ISSUER: https://lxd-ui-demo.us.auth0.com/
   SERVER_HOST: localhost
   SERVER_PORT: "9000"
   TEST_MODE: "false"

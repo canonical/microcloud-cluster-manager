@@ -19,7 +19,8 @@ spec:
     spec:
       initContainers:
       - name: init
-        image: localhost:32000/lxd-cluster-manager:1.0.0
+        # replace image name with lxd-cluster-manager:<VERSION>
+        image: IMAGE_NAME
         command:
         - /usr/bin/lxd-cluster-manager
         envFrom:
@@ -30,7 +31,8 @@ spec:
           value: admin
       containers:
       - name: management-api
-        image: localhost:32000/lxd-cluster-manager:1.0.0
+        # replace image name with lxd-cluster-manager:<VERSION>
+        image: IMAGE_NAME
         command:
         - /usr/bin/lxd-cluster-manager
         ports:
