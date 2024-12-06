@@ -5,6 +5,7 @@ GO_BIN?=app # name of the output application binary
 GO?=go # name of the go binary
 GOFLAGS?=-ldflags=-w -ldflags=-s -a # remove debug info, strip symbol table, force packages rebuild
 GO_UI_FOLDER?=internal/app/management-api/api/v1/static
+MAKEFLAGS += --no-print-directory
 
 # export all variables defined as environment variables
 .EXPORT_ALL_VARIABLES:
@@ -15,15 +16,20 @@ default: all
 # ==============================================================================
 # Static code linting utility targets.
 
-.PHONY: check
-check: check-static
-
-.PHONY: check-static
-check-static:
+.PHONY: lint-backend
+lint-backend:
 ifeq ($(shell command -v golangci-lint 2> /dev/null),)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin
 endif
 	golangci-lint run --timeout 5m
+
+.PHONY: lint-ui-scss
+lint-ui-scss:
+	cd ui && yarn run lint-scss
+
+.PHONY: lint-ui-js
+lint-ui-js:
+	cd ui && yarn run lint-js
 
 # ==============================================================================
 # Go module utility targets.
@@ -58,10 +64,6 @@ start-cluster:
 .PHONY: delete-cluster
 delete-cluster:
 	kind delete cluster --name $(KIND_CLUSTER)
-
-.PHONY: dev-k8s-configs
-dev-k8s-configs:
-	kubectl kustomize deployment/k8s/dev
 
 .PHONY: dev-k8s-deploy
 dev-k8s-deploy:
@@ -101,13 +103,6 @@ ui:
 	cd ui && dotrun
 
 # ====================================================================
-# dev database utilities
-
-.PHONY: migrate-db
-migrate-db:
-	go run cmd/admin/main.go
-
-# ====================================================================
 # test utilities
 
 # to ensure that all pods are ready before running tests, we check the liveliness of the pods
@@ -128,10 +123,34 @@ test-e2e:
 
 .PHONY: test-ui-e2e
 test-ui-e2e:
-	cd ui && CI=$(CI) npx playwright test
+	cd ui && CI=$(CI) npx playwright test --project $(PROJECT)
 
 # ====================================================================
-# production build utilities for rockcraft
+# CI build utilities for rockcraft
+
+.PHONY: rock-version
+rock-version:
+	@awk -F': ' '/^version:/ {print $$2; exit} END {if (NR == 0) exit 1}' rockcraft.yaml | tr -d '"' || echo "Error: version not found in rockcraft.yaml"
+
+.PHONY: rock-name
+rock-name:
+	@echo "lxd-cluster-manager_$(shell $(MAKE) rock-version)_amd64.rock"
+
+.PHONY: docker-image-name
+docker-image-name:
+	@echo "lxd-cluster-manager:$(shell $(MAKE) rock-version)"
+
+.PHONY: rock-to-docker
+rock-to-docker:
+	rockcraft.skopeo --insecure-policy copy \
+		oci-archive:$(shell $(MAKE) rock-name) \
+		docker-daemon:$(shell $(MAKE) docker-image-name)
+
+# Output a docker image into tarball format, which can be side loaded into a microk8s cluster
+# https://microk8s.io/docs/registry-images
+.PHONY: docker-image-to-tarball
+docker-image-to-tarball:
+	docker save $(shell $(MAKE) docker-image-name) > lxd-cluster-manager.tar
 
 .PHONY: build-ui
 build-ui:
@@ -149,3 +168,89 @@ copy-ui:
 .PHONY: build
 build: build-ui copy-ui
 	$(GO) build -C cmd -o $(GO_BIN) ./
+
+# ====================================================================
+# CI k8s deployment utilities
+
+.PHONY: deploy-cert-manager
+deploy-cert-manager:
+	@echo "Installing cert-manager.."
+	kubectl apply -f deployment/k8s/cicd/cert/cert-manager.yaml
+	@echo "Waiting for Cert-Manager deployment to become available..."
+	kubectl wait --for=condition=available --timeout=300s deployment --all -n cert-manager
+	@echo "Applying ClusterIssuer..."
+	kubectl apply -f deployment/k8s/cicd/cert/cert-issuer.yaml
+	@echo "Applying Certificates..."
+	kubectl apply -f deployment/k8s/cicd/cert/management-api-cert.yaml
+	kubectl apply -f deployment/k8s/cicd/cert/cluster-connector-cert.yaml
+	@echo "Waiting for the certificate Secrets to be created..."
+	kubectl wait --for=create --timeout=600s secret/management-api-cert-secret -n default
+	kubectl wait --for=create --timeout=600s secret/cluster-connector-cert-secret -n default
+	@echo "Certificates are ready!"
+
+.PHONY: deploy-db
+deploy-db:
+	@echo "Deploying Postgres database..."
+	kubectl apply -f deployment/k8s/cicd/db/config.yaml
+	kubectl apply -f deployment/k8s/cicd/db/pv.yaml
+	kubectl apply -f deployment/k8s/cicd/db/pvc.yaml
+	kubectl apply -f deployment/k8s/cicd/db/svc.yaml
+	kubectl apply -f deployment/k8s/cicd/db/ss.yaml
+	kubectl rollout status --watch --timeout=600s statefulset/db-ss
+	@echo "Postgres database is ready!"
+
+.PHONY: deploy-configs
+deploy-configs:
+	@echo "Deploying configs..."
+	kubectl apply -f deployment/k8s/cicd/config/config.yaml
+	kubectl wait --for=create --timeout=600s cm/config -n default
+	@echo "Configs is ready!"
+
+.PHONY: deploy-management-api
+deploy-management-api:
+	@echo "Deploying management-api..."
+	sed -i 's/IMAGE_NAME/$(IMAGE_NAME)/g' deployment/k8s/cicd/management-api/depl.yaml
+	kubectl apply -f deployment/k8s/cicd/management-api/svc.yaml
+	kubectl apply -f deployment/k8s/cicd/management-api/depl.yaml
+	kubectl rollout status --watch --timeout=600s deployment/management-api-depl
+	@echo "Management-api is ready!"
+
+.PHONY: deploy-cluster-connector
+deploy-cluster-connector:
+	@echo "Deploying cluster-connector..."
+	sed -i 's/IMAGE_NAME/$(IMAGE_NAME)/g' deployment/k8s/cicd/cluster-connector/depl.yaml
+	kubectl apply -f deployment/k8s/cicd/cluster-connector/svc.yaml
+	kubectl apply -f deployment/k8s/cicd/cluster-connector/depl.yaml
+	kubectl rollout status --watch --timeout=600s deployment/cluster-connector-depl
+	@echo "Cluster-connector is ready!"
+
+.PHONY: expose-services
+expose-services:
+	@echo "Exposing management-api and cluster-connector..."
+	@( \
+		services="svc/management-api-svc:9000:management-api svc/cluster-connector-svc:9001:cluster-conn"; \
+		while true; do \
+			for svc in $$services; do \
+				svc_name=$$(echo $$svc | cut -d':' -f1); \
+				local_port=$$(echo $$svc | cut -d':' -f2); \
+				target_port=$$(echo $$svc | cut -d':' -f3); \
+				\
+				# Check if port-forwarding is already active \
+				if ! lsof -i :$$local_port > /dev/null; then \
+					echo "Reconnecting to $$svc_name..."; \
+					kubectl port-forward $$svc_name $$local_port:$$target_port & \
+				fi; \
+			done; \
+			sleep 5; \
+		done; \
+	) &
+	@echo "management-api and cluster-connector are exposed on localhost:9000 and localhost:9001 respectively"
+
+.PHONY: deploy-ci-k8s-cluster
+deploy-ci-k8s-cluster:
+	$(MAKE) deploy-cert-manager
+	$(MAKE) deploy-db
+	$(MAKE) deploy-configs
+	$(MAKE) deploy-management-api IMAGE_NAME=$(IMAGE_NAME)
+	$(MAKE) deploy-cluster-connector IMAGE_NAME=$(IMAGE_NAME)
+	$(MAKE) expose-services

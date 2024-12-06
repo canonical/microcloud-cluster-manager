@@ -19,6 +19,6 @@ data:
   VERSION: "development"
   CLUSTER_CONNECTOR_ADDRESS: "localhost:9001"
   # oidc configs
-  OIDC_CLIENT_ID: NBXrnTZUrulBYNPuc4raZySTEWDTuvM2
-  OIDC_ISSUER: https://dev-xjrvvfikbsv4jxn7.us.auth0.com/
-  OIDC_AUDIENCE: https://dev-xjrvvfikbsv4jxn7.us.auth0.com/api/v2/
+  OIDC_CLIENT_ID: OZSAeCbqAXZid3LL1gRQEkLXP9KlwZtJ
+  OIDC_ISSUER: https://lxd-ui-demo.us.auth0.com/
+  OIDC_AUDIENCE: https://lxd-ui-demo.us.auth0.com/api/v2/
