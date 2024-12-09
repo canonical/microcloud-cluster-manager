@@ -1,5 +1,5 @@
 name: PR checks
-on: workflow_dispatch
+on: pull_request
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -8,7 +8,6 @@ concurrency:
 jobs:
   commits:
     name: Canonical CLA signed and Signed-off-by (DCO)
-    if: github.event_name == 'pull_request'
     permissions:
       pull-requests: read # to get list of commits from the PR
     runs-on: ubuntu-latest
@@ -70,7 +69,6 @@ jobs:
     name: Build Rock
     runs-on: ubuntu-latest
     outputs:
-      app-version: ${{ steps.rock-to-docker.outputs.app-version }}
       image-name: ${{ steps.rock-to-docker.outputs.image-name }}
     steps:
       
@@ -87,7 +85,6 @@ jobs:
         id: rock-to-docker
         run: |
           make rock-to-docker
-          echo "app-version=$(make rock-version)" >> $GITHUB_OUTPUT
           echo "image-name=$(make docker-image-name)" >> $GITHUB_OUTPUT
       
       - name: Convert docker image to tarbal
