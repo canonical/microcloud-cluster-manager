@@ -1037,10 +1037,10 @@
     "@babel/helper-string-parser" "^7.25.9"
     "@babel/helper-validator-identifier" "^7.25.9"
 
-"@canonical/react-components@1.7.0":
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-1.7.0.tgz#e1863b92a0115e9a1d64d894b32197cb4b19b912"
-  integrity sha512-L+H99qfv6lIpHDfiMLQutN7VPYBCyu8SezWvOkomfixL4OsdFPw0Whr92l85p553BN9FyXjtEyqX8s+D1U0JlQ==
+"@canonical/react-components@1.7.1":
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-1.7.1.tgz#5202774abac6d858896a857cd24ae3746f7fcabb"
+  integrity sha512-ekd7tE+yiABdFikTyqr7n6Rwggo02b2tEvnNvEtY01S56qRBnhJFilDgebe8nZX/A/1ukzs0PYOzi2kD8SwIKA==
   dependencies:
     "@types/jest" "29.5.12"
     "@types/node" "20.16.3"
@@ -2569,7 +2569,7 @@ domexception@^4.0.0:
   dependencies:
     webidl-conversions "^7.0.0"
 
-dotenv@*, dotenv@^16.4.5:
+dotenv@*, dotenv@16.4.5:
   version "16.4.5"
   resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.4.5.tgz#cdd3b3b604cb327e286b4762e13502f717cb099f"
   integrity sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==
@@ -5560,10 +5560,10 @@ util-deprecate@^1.0.2:
   resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
   integrity sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==
 
-vanilla-framework@4.18.0:
-  version "4.18.0"
-  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.18.0.tgz#69c0a9aac824dc10f569e901a9281d4fb0da4c17"
-  integrity sha512-lVfRUHWbY/iCWEMxkYLNjCG43NnYF2+EHAKcabsDK5kYy/B+7R/8i7gnJpARL3hybqPvsPf3hHQIfFDd7MzVRQ==
+vanilla-framework@4.18.3:
+  version "4.18.3"
+  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.18.3.tgz#8b7e3cc164eab90c540880fd7b87fa8dc91ff9e1"
+  integrity sha512-WsOgD/iI27de80cMS9IYFq1X4nbsEOFfqUmTT7V57k5C20WHwshUA0ocw4R21ThN+A7amh4+c7i0mtcr9a/+uQ==
 
 vite-node@2.1.1:
   version "2.1.1"
