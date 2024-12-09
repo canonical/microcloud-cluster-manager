@@ -21,7 +21,7 @@ lint-backend:
 ifeq ($(shell command -v golangci-lint 2> /dev/null),)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin
 endif
-	golangci-lint run --timeout 5m
+	golangci-lint run --timeout 10m
 
 .PHONY: lint-ui-scss
 lint-ui-scss:
