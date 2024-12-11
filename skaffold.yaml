@@ -31,6 +31,8 @@ profiles:
         target: dev
         buildArgs:
           BUILD_REF: "development"
+        cliFlags:
+        - "--rm=true"
       sync:
         infer:
         - 'cmd/'

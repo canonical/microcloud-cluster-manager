@@ -25,7 +25,7 @@ RUN if [ "$DEBUG" != "true" ]; then \
 
 # ========================================================================
 # development stage to be run as normal dev target
-FROM alpine:3.20 as dev
+FROM alpine:3.20 AS dev
 # copy the dev binary from the builder stage
 COPY --from=builder-backend /usr/bin/cmd/lxd-cluster-manager /usr/bin/lxd-cluster-manager
 # this specifies the default binary to execute when the container starts
@@ -33,7 +33,7 @@ ENTRYPOINT [ "/usr/bin/lxd-cluster-manager" ]
 
 # ========================================================================
 # debug stage to be run as debug target
-FROM golang:1.23.4 as debug
+FROM golang:1.23.4 AS debug
 # Install Delve for debugging go
 RUN go install github.com/go-delve/delve/cmd/dlv@v1.23.1
 # copy the debug binary from the builder stage

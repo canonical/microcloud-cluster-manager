@@ -91,7 +91,7 @@ rock-k8s-deploy:
 .PHONY: clean-dev
 clean-dev:
 	rm -rf tmp
-	docker container prune -f
+	docker container prune -f --filter "label=io.x-k8s.kind.cluster=dev-cluster"
 	docker images -f "dangling=true" -q | xargs -r docker rmi
 	docker images --filter=reference='lxd-cluster-manager:*' -q | xargs -I {} docker rmi {} -f
 
