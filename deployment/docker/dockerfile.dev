@@ -25,7 +25,7 @@ RUN if [ "$DEBUG" != "true" ]; then \
 
 # ========================================================================
 # development stage to be run as normal dev target
-FROM alpine:3.20 AS dev
+FROM alpine:3.21 AS dev
 # copy the dev binary from the builder stage
 COPY --from=builder-backend /usr/bin/cmd/lxd-cluster-manager /usr/bin/lxd-cluster-manager
 # this specifies the default binary to execute when the container starts
