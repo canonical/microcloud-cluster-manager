@@ -74,12 +74,17 @@ jobs:
       
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install LXD for Rockcraft
+        uses: canonical/setup-lxd@v0.1.1
+        with:
+          channel: 5.21/stable
       
       - name: Run Rockcraft
-        uses: canonical/craft-actions/rockcraft-pack@main
-        with:
-          verbosity: trace
-          rockcraft-channel: latest/stable
+        run: |
+          export PATH=$PATH:/snap/bin
+          sudo snap install --channel latest/stable --classic rockcraft
+          rockcraft pack --verbosity debug
       
       - name: Move rock to docker daemon
         id: rock-to-docker
