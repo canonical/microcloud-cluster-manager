@@ -1037,10 +1037,10 @@
     "@babel/helper-string-parser" "^7.25.9"
     "@babel/helper-validator-identifier" "^7.25.9"
 
-"@canonical/react-components@1.7.2":
-  version "1.7.2"
-  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-1.7.2.tgz#545323385fcf9aced5c22e3b59d39e62cf6580c2"
-  integrity sha512-w2eTePgJ/xH48MPeIaM1YRsUSPSzcD2fq2nGS3D7IiW68MrLl0rZGx5UQGpvICKLwUUQoGktryS68ns3h4QuVg==
+"@canonical/react-components@1.7.3":
+  version "1.7.3"
+  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-1.7.3.tgz#1a5529d0c71a5362edfeee6971324e6feefc1454"
+  integrity sha512-+MxpZdLhHacZzbyN4CJ3YrTtLBD/grcgkhedC6Xp7+xuwwXOJivnIbNxqRbml2k+nEhPRkKpNa1y8e17nlD+nA==
   dependencies:
     "@types/jest" "29.5.12"
     "@types/node" "20.16.3"
@@ -5560,10 +5560,10 @@ util-deprecate@^1.0.2:
   resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
   integrity sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==
 
-vanilla-framework@4.18.4:
-  version "4.18.4"
-  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.18.4.tgz#8f740cd369d9a61d1cc3c34d3119660db4030e4a"
-  integrity sha512-g5jotlb6ENcK1+9hF3QsP5y8hGIXkgEdwjnDGTMEJ3vmtmwSJNa3KWp0QaFBE59nIZq71VGxTbYh+GI+9dzlLQ==
+vanilla-framework@4.18.5:
+  version "4.18.5"
+  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.18.5.tgz#038e3bbeaeca49ae6cf6a074e0ed83901818eae6"
+  integrity sha512-UuYI6se/IV/u9YfzYPIs2FNJapgi9ld7F3s9IbjeR0yCvfH1HCjfZdDPD23tkQDBHiT6wNT6wugXDqFnunVJfQ==
 
 vite-node@2.1.1:
   version "2.1.1"
