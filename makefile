@@ -134,7 +134,7 @@ test-e2e:
 
 .PHONY: test-ui-e2e
 test-ui-e2e:
-	cd ui && CI=$(CI) npx playwright test --project $(PROJECT)
+	cd ui && CI=$(CI) npx playwright test $(if $(PROJECT),--project $(PROJECT))
 
 # ====================================================================
 # CI build utilities for rockcraft

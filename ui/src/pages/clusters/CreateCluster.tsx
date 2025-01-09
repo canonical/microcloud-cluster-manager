@@ -48,7 +48,7 @@ const CreateCluster: FC = () => {
 
     createToken(JSON.stringify(tokenPayload))
       .then((response) => {
-        navigate(
+        void navigate(
           "/ui/clusters/tokens",
           notify.queue(
             notify.success(
