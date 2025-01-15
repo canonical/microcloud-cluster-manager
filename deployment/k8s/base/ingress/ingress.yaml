@@ -4,7 +4,8 @@ metadata:
   name: cm-ingress
   namespace: default
   annotations:
-    ingress.kubernetes.io/ssl-passthrough: "true"
+    haproxy.org/ssl-passthrough: "true"
+    haproxy.org/forwarded-for: "true"
 spec:
   ingressClassName: haproxy
   rules:

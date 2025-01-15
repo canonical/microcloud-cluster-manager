@@ -1,8 +1,9 @@
-# Note: for local development, we are directly passing https traffic to the management-api service
 apiVersion: v1
 kind: Service
 metadata:
   name: management-api-svc
+  annotations:
+    haproxy.org/load-balance: "source"
 spec:
   type: ClusterIP
   selector:

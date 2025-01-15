@@ -40,7 +40,7 @@ const config: PlaywrightTestConfig = {
     // For local testing, it's better to use the vite dev server so we don't need to rebuild assets
     baseURL: process.env.CI
       ? "https://localhost:9000/ui"
-      : "https://0.0.0.0:8414/ui",
+      : "https://ma.lxd-cm.local:8414/ui",
     ignoreHTTPSErrors: true,
     video: "retain-on-failure",
 

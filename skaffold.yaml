@@ -57,12 +57,6 @@ profiles:
     namespace: default
     port: db
     localPort: 5432
-  # ingress forwards
-  - resourceType: service
-    resourceName: haproxy-kubernetes-ingress
-    namespace: haproxy-controller
-    port: https
-    localPort: 9002
 
 - name: debug
   build:
@@ -137,9 +131,3 @@ profiles:
     namespace: default
     port: db
     localPort: 5432
-  # ingress forwards
-  - resourceType: service
-    resourceName: haproxy-kubernetes-ingress
-    namespace: haproxy-controller
-    port: https
-    localPort: 9002

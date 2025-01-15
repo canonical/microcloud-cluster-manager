@@ -122,6 +122,14 @@ Watching for changes...
 
 ### Run the UI in a separate terminal
 
+First you should add the local development hosts `ma.lxd-cm.local` and `cc.lxd-cm.local` to your `/etc/hosts` file. You can do this with the following command:
+
+```
+sudo make add-hosts
+```
+
+Then to start the UI development server, run the following:
+
 ```
 make ui
 ```
@@ -139,11 +147,11 @@ Checking for dotrun image updates...
 
 yarn run v1.22.21
 $ ./entrypoint 0.0.0.0:${PORT}
-[WARNING] 344/114722 (65) : parsing [haproxy-local.cfg:11] : 'bind 0.0.0.0:8414' : 
+[WARNING] 344/114722 (65) : parsing [haproxy-local.cfg:11] : 'bind ma.lxd-cm.local:8414' : 
   unable to load default 1024 bits DH parameter for certificate 'keys/lxd-cm.pem'.
   , SSL library will use an automatically generated DH parameter.
 [WARNING] 344/114722 (65) : Setting tune.ssl.default-dh-param to 1024 by default, if your workload permits it you should set it to at least 2048. Please set a value >= 1024 to make this warning disappear.
-Listening at https://0.0.0.0:8414
+Listening at https://ma.lxd-cm.local:8414
 Re-optimizing dependencies because lockfile has changed
 
   VITE v5.4.8  ready in 164 ms
@@ -151,7 +159,7 @@ Re-optimizing dependencies because lockfile has changed
   ➜  press h + enter to show help
 ```
 
-**NOTE**: You can reach the UI in your browser at `https://localhost:8414`.
+**NOTE**: You can reach the UI in your browser at `https://ma.lxd-cm.local:8414`.
 <br>
 
 ### Stop and cleanup the development cluster

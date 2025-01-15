@@ -17,8 +17,18 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/ui/assets": {
-        target: "https://0.0.0.0:8414/",
+        target: "https://ma.lxd-cm.local:8414/",
         rewrite: (path) => path.replace(/^\/ui/, ""),
+        secure: false,
+      },
+      // NOTE: the following paths will be directed to the cluster ingress for local development
+      // Here we do not want to change the host header for oidc flow
+      "/1.0": {
+        target: "https://ma.lxd-cm.local:9002/",
+        secure: false,
+      },
+      "/oidc": {
+        target: "https://ma.lxd-cm.local:9002/",
         secure: false,
       },
     },

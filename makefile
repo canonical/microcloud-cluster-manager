@@ -378,3 +378,15 @@ install-dotrun:
 	else \
 		echo "dotrun is already installed."; \
 	fi
+
+.PHONY: add-hosts
+add-hosts:
+	@echo "Adding lxd-cluster-manager local entries to /etc/hosts..."
+	@if ! grep -q "# lxd-cluster-manager local" /etc/hosts; then \
+		sudo sh -c 'echo "# lxd-cluster-manager local" >> /etc/hosts'; \
+		sudo sh -c 'echo "127.0.0.1 ma.lxd-cm.local" >> /etc/hosts'; \
+		sudo sh -c 'echo "127.0.0.1 cc.lxd-cm.local" >> /etc/hosts'; \
+		echo "Entries added to /etc/hosts."; \
+	else \
+		echo "Entries already exist in /etc/hosts."; \
+	fi

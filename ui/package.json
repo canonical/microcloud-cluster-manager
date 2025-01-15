@@ -19,7 +19,7 @@
     "lint-js": "yarn lint-js-eslint && yarn lint-js-prettier",
     "hooks-add": "husky install",
     "hooks-remove": "husky uninstall",
-    "start": "./entrypoint 0.0.0.0:${PORT}",
+    "start": "./entrypoint ma.lxd-cm.local:${PORT}",
     "test-e2e": "npx playwright test",
     "test-e2e-update": "npx playwright test --update-snapshots"
   },

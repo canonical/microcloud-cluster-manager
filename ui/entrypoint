@@ -5,7 +5,6 @@ set -e
 HAPROXY_BIND="$1"
 cp haproxy.cfg haproxy-local.cfg
 sed -i "s#BIND_ADDRESS#$HAPROXY_BIND#" haproxy-local.cfg
-sed -i "s#CLUSTER_MANAGER_BACKEND_IP#$CLUSTER_MANAGER_BACKEND_IP#" haproxy-local.cfg
 
 # generate certificates for dev environment
 if [ ! -d "keys" ]; then

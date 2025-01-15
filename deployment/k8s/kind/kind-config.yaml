@@ -6,3 +6,7 @@ nodes:
   extraMounts:
   - hostPath: /data/postgresql
     containerPath: /data/postgresql
+  extraPortMappings:
+  - containerPort: 30000
+    hostPort: 9002
+    protocol: TCP

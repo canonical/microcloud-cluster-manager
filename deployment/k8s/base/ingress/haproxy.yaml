@@ -221,6 +221,7 @@ spec:
     port: 443
     protocol: TCP
     targetPort: 8443
+    nodePort: 30000
   - name: stat
     port: 1024
     protocol: TCP

@@ -1,4 +1,3 @@
-# Note: for local development, we are directly passing https traffic to the cluster-connector service
 apiVersion: v1
 kind: Service
 metadata:
