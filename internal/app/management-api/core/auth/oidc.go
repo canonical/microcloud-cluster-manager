@@ -495,7 +495,7 @@ func (o *Verifier) Host() string {
 }
 
 // NewVerifier returns a Verifier.
-func NewVerifier(issuer string, clientID string, audience string, cert *shared.CertInfo, isDev bool) (*Verifier, error) {
+func NewVerifier(issuer string, clientID string, audience string, cert *shared.CertInfo) (*Verifier, error) {
 	// Setup a http client for communicating with the OIDC provider.
 	httpClientFunc := func() (*http.Client, error) {
 		client, err := util.HTTPClient("", http.ProxyFromEnvironment)
@@ -510,15 +510,11 @@ func NewVerifier(issuer string, clientID string, audience string, cert *shared.C
 		}
 
 		newTransport := existingTransport.Clone()
-		clientTLSConfig, err := shared.GetTLSConfig(cert.CA())
+		clientTLSConfig, err := shared.GetTLSConfig(nil)
 		if err != nil {
 			return nil, err
 		}
 
-		// TODO: see if it's possible to overcome this even locally
-		if isDev {
-			clientTLSConfig.InsecureSkipVerify = true
-		}
 		newTransport.TLSClientConfig = clientTLSConfig
 		client.Transport = newTransport
 

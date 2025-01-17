@@ -24,6 +24,11 @@ services:
 
 # dependencies
 parts:
+  certificates:
+    plugin: nil
+    stage-packages:
+      - ca-certificates
+
   app-build:
     plugin: go
     source: .
@@ -41,4 +46,4 @@ parts:
     organize:
       opt/lxd-cluster-manager/bin/app: usr/bin/lxd-cluster-manager
     stage-packages:
-      - base-files_var # TODO: figure out what this is for, referenced admin UI
+      - base-files_var
