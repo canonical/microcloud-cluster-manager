@@ -63,7 +63,6 @@ func Run() (err error) {
 		cfg.OIDCClientID,
 		cfg.OIDCAudience,
 		cfg.ManagementAPICert,
-		cfg.Version == "development",
 	)
 
 	if err != nil {
