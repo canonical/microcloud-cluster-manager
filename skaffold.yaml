@@ -18,7 +18,11 @@ deploy:
   statusCheck: true
   statusCheckDeadlineSeconds:	180
   tolerateFailuresUntilDeadline: true
-  kubectl: {}
+  kubectl:
+    hooks:
+      after:
+        - host:
+            command: ["make", "dev-cos-deploy"]
 
 profiles:
 - name: docker

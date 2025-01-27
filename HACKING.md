@@ -67,6 +67,15 @@ Nodejs is required to run the development UI. Instead of installing Nodejs direc
 
 Dotrun is required to spin up a development container for the UI. You can install it by following the instructions [here](https://github.com/canonical/dotrun#installation).
 
+#### Juju
+
+Juju is required to deploy the Canonical Observability [Stack](https://charmhub.io/topics/canonical-observability-stack) to our development k8s cluster.
+To install Juju, run the following command:
+
+```
+make install-juju
+```
+
 <br><br>
 
 # Optional dependencies

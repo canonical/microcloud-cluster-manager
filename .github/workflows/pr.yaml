@@ -120,13 +120,13 @@ jobs:
       - name: Setup microk8s cluster
         uses: balchua/microk8s-actions@v0.4.3
         with:
-          channel: '1.31/stable'
+          channel: '1.31-strict/stable'
           # load local rock image into k8s cluster
           # https://microk8s.io/docs/sideload
           sideload-images-path: '${{ github.workspace }}/docker-image'
-      
+
       - name: Deploy k8s resources
-        run: make deploy-ci-k8s-cluster IMAGE_NAME=${{ needs.build-rock.outputs.image-name }}
+        run: deployment/k8s/cicd/deploy-cos-on-microk8s.sh ${{ needs.build-rock.outputs.image-name }}
       
       - name: Install Go
         uses: actions/setup-go@v5
@@ -134,9 +134,7 @@ jobs:
           go-version: 1.23.x
       
       - name: Run backend E2E tests
-        run: |
-          sudo microk8s config > ~/.kube/config
-          make test-e2e
+        run: make test-e2e
 
   ui-e2e:
     name: UI E2E tests
@@ -160,13 +158,13 @@ jobs:
       - name: Setup microk8s cluster
         uses: balchua/microk8s-actions@v0.4.3
         with:
-          channel: '1.31/stable'
+          channel: '1.31-strict/stable'
           # load local rock image into k8s cluster
           # https://microk8s.io/docs/sideload
           sideload-images-path: '${{ github.workspace }}/docker-image'
       
       - name: Deploy k8s resources
-        run: make deploy-ci-k8s-cluster IMAGE_NAME=${{ needs.build-rock.outputs.image-name }}
+        run: deployment/k8s/cicd/deploy-cos-on-microk8s.sh ${{ needs.build-rock.outputs.image-name }}
       
       - name: Install Node.js
         uses: actions/setup-node@v4

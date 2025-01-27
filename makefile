@@ -96,16 +96,16 @@ clean-dev:
 	docker images --filter=reference='lxd-cluster-manager:*' -q | xargs -I {} docker rmi {} -f
 
 .PHONY: dev
-dev: start-cluster dev-k8s-deploy
+dev: start-cluster dev-juju-setup dev-k8s-deploy
 
 .PHONY: debug
-debug: start-cluster debug-k8s-deploy
+debug: start-cluster dev-juju-setup debug-k8s-deploy
 
 .PHONY: dev-rock
-dev-rock: start-cluster rock-k8s-deploy
+dev-rock: start-cluster dev-juju-setup rock-k8s-deploy
 
 .PHONY: nuke
-nuke: clean-dev delete-cluster
+nuke: clean-dev delete-cluster dev-clean-juju
 
 # ====================================================================
 # UI utilities
@@ -259,7 +259,7 @@ deploy-ci-k8s-cluster:
 .PHONY: install-deps
 install-deps: install-go install-docker install-kubectl \
 							install-kind install-skaffold install-nvm \
-							install-dotrun
+							install-juju install-dotrun
 
 # install golang based on version in go.mod if it does not exist
 .PHONY: install-go
@@ -361,9 +361,20 @@ install-dotrun:
 	@if ! command -v dotrun >/dev/null 2>&1; then \
 		echo "\n---------> Installing dotrun..."; \
 		curl -sSL https://raw.githubusercontent.com/canonical/dotrun/main/scripts/install.sh | bash; \
+		pipx ensurepath; \
 		source $$HOME/.bashrc; \
 	else \
 		echo "dotrun is already installed."; \
+	fi
+
+# install juju if it does not exist
+.PHONY: install-juju
+install-juju:
+	@if ! command -v juju >/dev/null 2>&1; then \
+		echo "\n---------> Installing Juju..."; \
+		sudo snap install juju --channel=3.6/stable; \
+	else \
+		echo "Juju is already installed."; \
 	fi
 
 # add local host entries to /etc/hosts
@@ -378,3 +389,44 @@ add-hosts:
 	else \
 		echo "Entries already exist in /etc/hosts."; \
 	fi
+
+# ====================================================================
+# juju setup utilities
+
+# development juju setup
+.PHONY: dev-juju-setup
+dev-juju-setup:
+	@echo "Setting up Juju controller for development..."
+	@if ! juju clouds --client --all | grep cluster-manager; then \
+		juju add-k8s --context-name kind-dev-cluster cluster-manager; \
+		juju bootstrap cluster-manager cm-controller; \
+	else \
+		echo "Juju controller already exists."; \
+	fi
+
+.PHONY: dev-cos-deploy
+dev-cos-deploy:
+	@echo "Deploying COS-Lite to the dev cluster..."
+	@if ! kubectl get ns | grep cos; then \
+		echo "Applying DNS configuration..."; \
+		kubectl apply -f deployment/k8s/dev/dns; \
+		@echo "Installing MetalLB for COS-Lite ingress..."; \
+		kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml; \
+		kubectl wait --for=condition=available --timeout=300s deployment --all -n metallb-system; \
+		kubectl rollout status daemonset speaker -n metallb-system --timeout 120s; \
+		echo "Setting MetalLB address pool..."; \
+		ip_addr=$$(ip -4 -j route get 2.2.2.2 | jq -r '.[] | .prefsrc'); \
+		ip_range=$${ip_addr}-$${ip_addr}; \
+		ip_range_str="addresses:\\n      - $${ip_range}"; \
+		sed "s@{{addresses}}@$${ip_range_str}@g" deployment/k8s/dev/metallb/addresspool.yaml | kubectl apply -f -; \
+		echo "Deploying COS-Lite to the dev cluster..."; \
+		juju add-model cos && juju switch cos; \
+		juju deploy cos-lite --trust; \
+	else \
+		echo "COS-Lite already deployed."; \
+	fi
+
+.PHONY: dev-clean-juju
+dev-clean-juju:
+	juju unregister cm-controller --no-prompt
+	juju remove-cloud cluster-manager
