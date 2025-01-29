@@ -32,7 +32,7 @@
     "react-dom": "18.3.1",
     "react-router-dom": "6.28.1",
     "react-useportal": "1.0.19",
-    "vanilla-framework": "4.19.0",
+    "vanilla-framework": "4.20.3",
     "yup": "1.6.1"
   },
   "devDependencies": {
