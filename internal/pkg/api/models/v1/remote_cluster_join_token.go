@@ -28,7 +28,7 @@ type RemoteClusterToken struct {
 type RemoteClusterTokenBody struct {
 	Secret      string    `json:"secret"`
 	ExpiresAt   time.Time `json:"expires_at,omitempty"`
-	Address     string    `json:"address"`
+	Addresses   []string  `json:"addresses"`
 	ServerName  string    `json:"server_name"`
 	Fingerprint string    `json:"fingerprint"`
 }

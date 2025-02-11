@@ -98,7 +98,7 @@ func tokenPost(rc types.RouteConfig) types.EndpointHandler {
 		token := models.RemoteClusterTokenBody{
 			Secret:      secret,
 			ExpiresAt:   payload.Expiry,
-			Address:     clusterConnectorAddress,
+			Addresses:   []string{clusterConnectorAddress},
 			ServerName:  payload.ClusterName,
 			Fingerprint: shared.CertFingerprint(cert),
 		}
