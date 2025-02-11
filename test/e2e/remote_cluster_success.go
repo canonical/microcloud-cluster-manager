@@ -42,7 +42,7 @@ func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFu
 				helpers.LogTestOutcome(t, condition, err)
 			}
 
-			if tokenData.Address != env.ClusterConnectorHostPort() {
+			if tokenData.Addresses[0] != env.ClusterConnectorHostPort() {
 				err = fmt.Errorf("invalid address")
 				helpers.LogTestOutcome(t, condition, err)
 			}
@@ -211,7 +211,7 @@ func sendJoinRequest(env *helpers.Environment, tokenData models.RemoteClusterTok
 		RemotClusterCertificate: string(clientCert.PublicKey()),
 	}
 
-	path := api.NewURL().Scheme("https").Host(tokenData.Address).Path("1.0", "remote-cluster")
+	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-cluster")
 	adjustHeaders := func(req *http.Request) error {
 		mac := hmac.New(sha256.New, []byte(tokenData.Secret))
 		inputBytes, err := json.Marshal(input)
@@ -292,7 +292,7 @@ func sendStatusUpdate(env *helpers.Environment, tokenData models.RemoteClusterTo
 	}
 
 	var output models.RemoteClusterStatusPostResponse
-	path := api.NewURL().Scheme("https").Host(tokenData.Address).Path("1.0", "remote-cluster", "status")
+	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-cluster", "status")
 	err = tlsClient.Query(ctx, http.MethodPost, path, input, &output, nil)
 
 	return &output, err

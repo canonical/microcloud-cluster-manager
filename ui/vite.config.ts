@@ -32,6 +32,7 @@ export default defineConfig({
         secure: false,
       },
     },
+    allowedHosts: ["ma.lxd-cm.local"],
   },
   build: {
     outDir: "./build/ui",

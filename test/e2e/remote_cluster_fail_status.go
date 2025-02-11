@@ -135,7 +135,7 @@ func sendStatusUpdateNoCert(env *helpers.Environment, tokenData models.RemoteClu
 		return err
 	}
 
-	path := api.NewURL().Scheme("https").Host(tokenData.Address).Path("1.0", "remote-cluster", "status")
+	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-cluster", "status")
 	return tlsClient.Query(ctx, http.MethodPost, path, nil, nil, nil)
 }
 
@@ -156,6 +156,6 @@ func sendStatusUpdateInvalidCert(env *helpers.Environment, tokenData models.Remo
 		return err
 	}
 
-	path := api.NewURL().Scheme("https").Host(tokenData.Address).Path("1.0", "remote-clusters", "status")
+	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-clusters", "status")
 	return tlsClient.Query(ctx, http.MethodPost, path, nil, nil, nil)
 }
