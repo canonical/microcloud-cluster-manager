@@ -13,7 +13,7 @@ require (
 	github.com/zitadel/oidc/v3 v3.34.1
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.33.0
+	golang.org/x/crypto v0.34.0
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 	k8s.io/apimachinery v0.32.1
 	k8s.io/client-go v0.32.1
