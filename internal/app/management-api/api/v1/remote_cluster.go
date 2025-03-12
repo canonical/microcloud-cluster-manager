@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/canonical/lxd-cluster-manager/internal/app/management-api/core/auth"
@@ -199,6 +200,10 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 			LastStatusUpdateAt: e.ClusterUpdatedAt,
 		})
 	}
+
+	sort.Slice(remoteClusters, func(i, j int) bool {
+		return remoteClusters[i].Name < remoteClusters[j].Name
+	})
 
 	return remoteClusters, nil
 }

@@ -17,19 +17,18 @@ type Props = {
 };
 
 const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
-  const filteredClusters = clusters.filter(
-    (cluster) => cluster.status == "ACTIVE",
-  );
-
   const tableHeaders = [
     {
       content: "Cluster Name",
+      sortKey: "name",
     },
     {
       content: "Status",
+      sortKey: "status",
     },
     {
       content: "Last Heartbeat",
+      sortKey: "lastHeartbeat",
     },
     {
       content: "Nodes",
@@ -48,7 +47,7 @@ const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
     },
   ];
 
-  const tableRows = filteredClusters.map((cluster) => {
+  const tableRows = clusters.map((cluster) => {
     return {
       columns: [
         {
@@ -74,6 +73,11 @@ const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
           content: <ClusterDisk cluster={cluster} />,
         },
       ],
+      sortData: {
+          name: cluster.name,
+          status: cluster.status,
+          lastHeartbeat: cluster.last_status_update_at,
+      },
     };
   });
 
@@ -102,6 +106,7 @@ const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
           }
           headers={tableHeaders}
           rows={tableRows}
+          sortable
         />
       </TablePagination>
     </div>

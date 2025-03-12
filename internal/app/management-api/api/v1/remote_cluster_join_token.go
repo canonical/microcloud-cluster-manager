@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/canonical/lxd-cluster-manager/internal/app/management-api/core/auth"
@@ -141,6 +142,10 @@ func tokensGet(rc types.RouteConfig) types.EndpointHandler {
 				CreateAt:    token.CreatedAt,
 			})
 		}
+
+		sort.Slice(responseTokens, func(i, j int) bool {
+			return responseTokens[i].CreateAt.Before(responseTokens[j].CreateAt)
+		})
 
 		return response.SyncResponse(true, responseTokens).Render(w, r)
 	}
