@@ -37,7 +37,7 @@ func SeedDatabase(ctx context.Context, db *database.DB) error {
 // generateRemoteClusters generates a slice of remote clusters with the given count.
 func generateRemoteClusters(count int) []store.RemoteCluster {
 	rand.Seed(uint64(time.Now().UnixNano()))
-	statusOptions := []string{"ACTIVE", "PENDING_APPROVAL"}
+	statusOptions := []string{"ACTIVE"}
 	clusters := make([]store.RemoteCluster, count)
 
 	for i := 0; i < count; i++ {

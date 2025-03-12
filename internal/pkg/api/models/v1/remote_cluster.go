@@ -6,8 +6,6 @@ import "time"
 type RemoteClusterStatus string
 
 const (
-	// PENDING_APPROVAL is the status of a remote cluster that is waiting for approval. A join reuqest would have been received for the remote cluster.
-	PENDING_APPROVAL RemoteClusterStatus = "PENDING_APPROVAL"
 	// ACTIVE is the status of a remote cluster once its join request has been approved.
 	ACTIVE RemoteClusterStatus = "ACTIVE"
 )

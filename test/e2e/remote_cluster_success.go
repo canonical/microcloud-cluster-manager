@@ -67,13 +67,13 @@ func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFu
 		}
 
 		{
-			condition = "Should be able to get remote cluster with PENDING_APPROVAL status"
+			condition = "Should be able to get remote cluster with ACTIVE status"
 			remoteCluster, err := helpers.FindRemoteCluster(env, remoteClusterName)
 			if err != nil {
 				helpers.LogTestOutcome(t, condition, err)
 			}
 
-			if remoteCluster.Status != string(models.PENDING_APPROVAL) {
+			if remoteCluster.Status != string(models.ACTIVE) {
 				err = fmt.Errorf("invalid remote cluster status")
 				helpers.LogTestOutcome(t, condition, err)
 			}
