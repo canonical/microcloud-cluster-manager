@@ -11,6 +11,7 @@ import ClusterTimer from "./metrics/ClusterTimer";
 import ClusterDetailMetrics from "./metrics/ClusterDetailMetrics";
 import Loader from "components/Loader";
 import BreadCrumbHeader from "components/BreadcrumbHeader";
+import DeleteClusterButton from "pages/clusters/DeleteClusterButton";
 
 const ClusterDetail: FC = () => {
   const { name } = useParams<{ name: string }>();
@@ -45,6 +46,7 @@ const ClusterDetail: FC = () => {
           ]}
         />
       }
+      controls={<DeleteClusterButton clusterName={cluster.name} />}
     >
       {isLoading && <Loader text="Loading cluster details..." />}
       {!isLoading && !cluster && !error && <>Loading cluster failed</>}

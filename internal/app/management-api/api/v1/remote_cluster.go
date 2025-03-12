@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/canonical/lxd-cluster-manager/internal/app/management-api/core/auth"
@@ -133,7 +134,7 @@ func remoteClusterPatch(rc types.RouteConfig) types.EndpointHandler {
 		}
 
 		if payload.Status != "" {
-			if payload.Status != models.PENDING_APPROVAL && payload.Status != models.ACTIVE {
+			if payload.Status != models.ACTIVE {
 				return response.BadRequest(fmt.Errorf("invalid status")).Render(w, r)
 			}
 		}
@@ -146,9 +147,6 @@ func remoteClusterPatch(rc types.RouteConfig) types.EndpointHandler {
 
 			newRemoteCluster := existingRemoteCluster
 			if payload.Status != "" {
-				if existingRemoteCluster.Status == string(models.PENDING_APPROVAL) && payload.Status == models.ACTIVE {
-					newRemoteCluster.JoinedAt = time.Now()
-				}
 				newRemoteCluster.Status = string(payload.Status)
 			}
 
@@ -202,6 +200,10 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 			LastStatusUpdateAt: e.ClusterUpdatedAt,
 		})
 	}
+
+	sort.Slice(remoteClusters, func(i, j int) bool {
+		return remoteClusters[i].Name < remoteClusters[j].Name
+	})
 
 	return remoteClusters, nil
 }

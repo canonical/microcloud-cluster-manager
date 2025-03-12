@@ -1,8 +1,13 @@
-import { ConfirmationButton, useNotify } from "@canonical/react-components";
+import {
+  ConfirmationButton,
+  Icon,
+  useNotify,
+} from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
 import { deleteCluster } from "api/clusters";
 import { FC, useState } from "react";
 import { queryKeys } from "util/queryKeys";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   clusterName: string;
@@ -11,12 +16,14 @@ type Props = {
 const DeleteClusterButton: FC<Props> = ({ clusterName }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
+  const navigate = useNavigate();
   const [isLoading, setLoading] = useState(false);
 
-  const handleDeleteCluster = async () => {
+  const handleDelete = async () => {
     setLoading(true);
     try {
       await deleteCluster(clusterName);
+      navigate("/ui/clusters");
       await queryClient.invalidateQueries({
         queryKey: [queryKeys.clusters],
       });
@@ -29,9 +36,9 @@ const DeleteClusterButton: FC<Props> = ({ clusterName }) => {
 
   return (
     <ConfirmationButton
-      appearance="negative"
+      appearance=""
       loading={isLoading}
-      className="u-no-margin--bottom"
+      className="u-no-margin--bottom has-icon"
       confirmationModalProps={{
         title: "Confirm delete",
         children: (
@@ -42,12 +49,13 @@ const DeleteClusterButton: FC<Props> = ({ clusterName }) => {
           </p>
         ),
         confirmButtonLabel: "Delete",
-        onConfirm: () => void handleDeleteCluster(),
+        onConfirm: () => void handleDelete(),
       }}
       shiftClickEnabled
       showShiftClickHint
     >
-      Delete
+      <Icon name="delete" />
+      <span>Delete</span>
     </ConfirmationButton>
   );
 };

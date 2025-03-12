@@ -71,9 +71,6 @@ func testRemoteClusterStatusInactive(env *helpers.Environment) (testName string,
 			}
 
 			_, err = sendStatusUpdate(env, tokenData)
-			if err != nil && err.Error() == "remote cluster is pending approval" {
-				err = nil
-			}
 
 			helpers.LogTestOutcome(t, condition, err)
 		}

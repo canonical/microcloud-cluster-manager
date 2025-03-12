@@ -37,15 +37,15 @@ func SeedDatabase(ctx context.Context, db *database.DB) error {
 // generateRemoteClusters generates a slice of remote clusters with the given count.
 func generateRemoteClusters(count int) []store.RemoteCluster {
 	rand.Seed(uint64(time.Now().UnixNano()))
-	statusOptions := []string{"ACTIVE", "PENDING_APPROVAL"}
+	statusOptions := []string{"ACTIVE"}
 	clusters := make([]store.RemoteCluster, count)
 
 	for i := 0; i < count; i++ {
 		status := statusOptions[rand.Intn(len(statusOptions))] // Randomly select status
 		clusters[i] = store.RemoteCluster{
-			Name:               fmt.Sprintf("cluster-%d", i+1),
+			Name:               fmt.Sprintf("cluster-%02d", i+1),
 			Status:             status,
-			ClusterCertificate: fmt.Sprintf("cert-%d", i+1),
+			ClusterCertificate: fmt.Sprintf("cert-%02d", i+1),
 			JoinedAt:           time.Now(),
 			CreatedAt:          time.Now(),
 		}
@@ -103,8 +103,8 @@ func generateRemoteClusterTokens(count int) []store.RemoteClusterToken {
 
 	for i := 0; i < count; i++ {
 		tokens[i] = store.RemoteClusterToken{
-			ClusterName: fmt.Sprintf("cluster-%d", i+1),
-			Secret:      fmt.Sprintf("secret-%d", i+1),
+			ClusterName: fmt.Sprintf("cluster-%02d", i+1),
+			Secret:      fmt.Sprintf("secret-%02d", i+1),
 			Expiry:      time.Now().Add(30 * time.Hour),
 			CreatedAt:   time.Now(),
 		}

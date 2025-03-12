@@ -14,9 +14,6 @@ const ClusterStatusGraph: FC<Props> = ({ clusters }) => {
     (cluster) =>
       cluster.status == "ACTIVE" && getMinutesSinceLastHeartbeat(cluster) < 5,
   ).length;
-  const pendingClusters = clusters.filter(
-    (cluster) => cluster.status == "PENDING_APPROVAL",
-  ).length;
   const degradedClusters = clusters.filter(
     (cluster) =>
       cluster.status == "ACTIVE" && getMinutesSinceLastHeartbeat(cluster) > 5,
@@ -38,7 +35,6 @@ const ClusterStatusGraph: FC<Props> = ({ clusters }) => {
         segmentWidth={40}
         segments={[
           { color: "#0E8420", tooltip: "Active", value: activeClusters },
-          { color: "#CC7900", tooltip: "Pending", value: pendingClusters },
           { color: "#C7162B", tooltip: "Degraded", value: degradedClusters },
         ]}
         size={150}
@@ -50,11 +46,6 @@ const ClusterStatusGraph: FC<Props> = ({ clusters }) => {
         <li>
           <Icon name="status-succeeded-small" />
           {getPercentageString(activeClusters)} Online
-        </li>
-        <li>
-          <Icon name="status-waiting-small" />
-          {getPercentageString(pendingClusters)}
-          Pending
         </li>
         <li>
           <Icon name="status-failed-small" />

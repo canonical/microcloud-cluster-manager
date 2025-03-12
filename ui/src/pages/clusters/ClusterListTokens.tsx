@@ -16,12 +16,15 @@ const ClusterListTokens: FC = () => {
   const tableHeaders = [
     {
       content: "Cluster name",
+      sortKey: "clusterName",
     },
     {
       content: "Expiry",
+      sortKey: "expiry",
     },
     {
       content: "Created at",
+      sortKey: "createdAt",
     },
     {
       content: "Actions",
@@ -44,6 +47,11 @@ const ClusterListTokens: FC = () => {
           content: <RevokeTokenButton token={token} />,
         },
       ],
+      sortData: {
+        clusterName: token.cluster_name,
+        expiry: token.expiry,
+        createdAt: token.created_at,
+      },
     };
   });
 
@@ -70,8 +78,10 @@ const ClusterListTokens: FC = () => {
               <>No tokens found.</>
             )
           }
+          sortable
           headers={tableHeaders}
           rows={tableRows}
+          defaultSort="createdAt"
         />
       </TablePagination>
     </div>

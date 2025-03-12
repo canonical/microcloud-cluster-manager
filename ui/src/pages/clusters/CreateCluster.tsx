@@ -79,7 +79,7 @@ const CreateCluster: FC = () => {
 
   return (
     <BaseLayout
-      title="Create a new join Token"
+      title="Create a new join token"
       contentClassName="create-cluster"
     >
       <Form onSubmit={formik.handleSubmit} className="form">

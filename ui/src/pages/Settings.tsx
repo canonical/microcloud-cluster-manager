@@ -16,7 +16,6 @@ const Settings: FC = () => {
 
   const headers = [
     { content: "Configuration", classNames: "title" },
-    { content: "Description", classNames: "description" },
     { content: "Value", classNames: "value" },
   ];
 
@@ -33,14 +32,12 @@ const Settings: FC = () => {
           "aria-label": "Configuration",
         },
         {
-          content: config.description,
-          role: "cell",
-          title: config.description,
-          className: "u-truncate description",
-          "aria-label": "Description",
-        },
-        {
-          content: config.value,
+          content: (
+            <>
+              <div>{config.value}</div>
+              <div className="u-text--muted">{config.description}</div>
+            </>
+          ),
           role: "cell",
           title: config.value,
           className: "u-truncate value",

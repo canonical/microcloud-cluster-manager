@@ -1,6 +1,10 @@
 import { FC, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ConfirmationButton, useNotify } from "@canonical/react-components";
+import {
+  ConfirmationButton,
+  Icon,
+  useNotify,
+} from "@canonical/react-components";
 import { deleteToken } from "api/tokens";
 import { Token } from "types/token";
 import { queryKeys } from "util/queryKeys";
@@ -35,9 +39,9 @@ const RevokeTokenButton: FC<Props> = ({ token }) => {
 
   return (
     <ConfirmationButton
-      appearance="negative"
+      appearance=""
       loading={loading}
-      className="u-no-margin--bottom"
+      className="u-no-margin--bottom has-icon"
       confirmationModalProps={{
         title: "Confirm revoke",
         children: (
@@ -53,7 +57,8 @@ const RevokeTokenButton: FC<Props> = ({ token }) => {
       shiftClickEnabled
       showShiftClickHint
     >
-      Revoke
+      <Icon name="delete" />
+      <span>Revoke</span>
     </ConfirmationButton>
   );
 };

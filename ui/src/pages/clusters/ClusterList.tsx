@@ -4,7 +4,6 @@ import { useParams, useSearchParams } from "react-router-dom";
 import TabLinks from "components/TabLinks";
 import ClusterListTokens from "./ClusterListTokens";
 import ClusterListActive from "./ClusterListActive";
-import ClusterListPending from "./ClusterListPending";
 import AddClusterButton from "./AddClusterButton";
 import ClusterStatusGraph from "./metrics/ClusterStatusGraph";
 import NotificationRow from "components/NotificationRow";
@@ -35,7 +34,7 @@ const ClusterList: FC = () => {
 
   const [searchParams] = useSearchParams();
 
-  const tabs: string[] = ["Active", "Pending", "Tokens"];
+  const tabs: string[] = ["Active", "Tokens"];
 
   const { data: clusters = [], isLoading } = useQuery({
     queryKey: [queryKeys.clusters],
@@ -153,7 +152,6 @@ const ClusterList: FC = () => {
               isLoading={isLoading}
             />
           )}
-          {activeTab === "pending" && <ClusterListPending />}
           {activeTab === "tokens" && <ClusterListTokens />}
         </div>
       </Row>

@@ -103,7 +103,8 @@ func remoteClustersPost(rc types.RouteConfig) types.EndpointHandler {
 			newRemoteCluster, err := store.CreateRemoteCluster(ctx, tx, store.RemoteCluster{
 				Name:               payload.ClusterName,
 				ClusterCertificate: payload.ClusterCertificate,
-				Status:             string(models.PENDING_APPROVAL),
+				JoinedAt:           time.Now(),
+				Status:             string(models.ACTIVE),
 			})
 
 			if err != nil {
@@ -165,10 +166,6 @@ func remoteClusterStatusPost(rc types.RouteConfig) types.EndpointHandler {
 
 			if dbRemoteCluster == nil {
 				return fmt.Errorf("remote cluster not found")
-			}
-
-			if dbRemoteCluster.Status == string(models.PENDING_APPROVAL) {
-				return fmt.Errorf("remote cluster is pending approval")
 			}
 
 			dbRemoteClusterDetail, err := store.GetRemoteClusterDetail(ctx, tx, remoteClusterID)

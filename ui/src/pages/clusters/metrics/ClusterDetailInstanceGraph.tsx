@@ -20,7 +20,10 @@ const ClusterDetailInstanceGraph: FC<Props> = ({ cluster }: Props) => {
   function getPercentageString(portion: number): ReactNode {
     return (
       <>
-        <b>{portion}</b> {`(${Math.floor((portion / totalInstances) * 100)}%) `}
+        <b>{portion}</b>{" "}
+        {totalInstances > 0
+          ? `(${Math.floor((portion / totalInstances) * 100)}%) `
+          : ""}
       </>
     );
   }

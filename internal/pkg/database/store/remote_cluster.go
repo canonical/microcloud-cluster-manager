@@ -17,7 +17,7 @@ import (
 type RemoteCluster struct {
 	ID                 int       `db:"id"`                  // Primary key
 	Name               string    `db:"name"`                // Cluster name
-	Status             string    `db:"status"`              // Status (PENDING_APPROVAL, ACTIVE)
+	Status             string    `db:"status"`              // Status (ACTIVE)
 	ClusterCertificate string    `db:"cluster_certificate"` // Unique cluster certificate
 	JoinedAt           time.Time `db:"joined_at"`           // Timestamp when joined
 	CreatedAt          time.Time `db:"created_at"`          // Creation timestamp
