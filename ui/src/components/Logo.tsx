@@ -6,10 +6,10 @@ const Logo: FC = () => {
     <NavLink className="p-panel__logo" to={`/`}>
       <img
         src="/ui/assets/img/lxd-logo.svg"
-        alt="LXD-UI logo"
+        alt="Cluster manager logo"
         className="p-panel__logo-image"
       />
-      <div className="logo-text p-heading--4">LXD Manager</div>
+      <div className="logo-text p-heading--4">Cluster Manager</div>
     </NavLink>
   );
 };
