@@ -1,6 +1,7 @@
 module github.com/canonical/lxd-cluster-manager
 
 go 1.23.4
+toolchain go1.24.1
 
 require (
 	github.com/canonical/lxd v0.0.0-20250311163601-93c5ce74d203
@@ -13,11 +14,10 @@ require (
 	github.com/pressly/goose/v3 v3.24.1
 	github.com/prometheus/common v0.62.0
 	github.com/prometheus/prometheus v0.302.1
-	github.com/zitadel/oidc/v3 v3.36.0
+	github.com/zitadel/oidc/v3 v3.36.1
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.36.0
-	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	k8s.io/apimachinery v0.32.3
 	k8s.io/client-go v0.32.3
 )
