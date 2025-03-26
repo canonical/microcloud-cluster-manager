@@ -96,7 +96,7 @@ send_join_request() {
 
   local remote_cluster_certificate=$(awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/' $client_cert | sed ':a;N;$!ba;s/\n/\\n/g')
   local payload=$(printf '{"cluster_name":"%s","cluster_certificate":"%s"}' "$server_name" "$remote_cluster_certificate")
-  
+
   if [[ $? -ne 0 ]]; then
     echo "Error: Failed to create JSON payload."
     exit 1
@@ -168,7 +168,7 @@ send_status_updates() {
     "disk_total_size": 0,
     "disk_usage": 0,
     "member_statuses": [],
-    "instance_status": [],
+    "instance_statuses": [],
     "metrics": $(jq -Rs . <<< "$metrics")
 }
 EOF
@@ -212,7 +212,7 @@ while true; do
     "disk_total_size": 0,
     "disk_usage": 0,
     "member_statuses": [],
-    "instance_status": [],
+    "instance_statuses": [],
     "metrics": $(jq -Rs . <<< "$metrics")
 }
 EOF

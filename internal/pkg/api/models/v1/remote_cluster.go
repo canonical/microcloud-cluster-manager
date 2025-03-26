@@ -61,7 +61,7 @@ type RemoteClusterStatusPost struct {
 	DiskTotalSize     int                  `json:"disk_total_size"`
 	DiskUsage         int                  `json:"disk_usage"`
 	MemberStatuses    []StatusDistribution `json:"member_statuses"`
-	InstanceStatuses  []StatusDistribution `json:"instance_status"`
+	InstanceStatuses  []StatusDistribution `json:"instance_statuses"`
 	Metrics           string               `json:"metrics"`
 	UIURL             string               `json:"ui_url"`
 }
