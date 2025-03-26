@@ -2,20 +2,18 @@ package main
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/canonical/lxd-cluster-manager/internal/app/cluster-connector/core/auth"
 	"github.com/canonical/lxd-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/lxd-cluster-manager/test/helpers"
 	"github.com/canonical/lxd/shared"
 	"github.com/canonical/lxd/shared/api"
+	"github.com/canonical/lxd/shared/trust"
 )
 
 func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
@@ -193,14 +191,13 @@ func sendJoinRequest(env *helpers.Environment, tokenData models.RemoteClusterTok
 
 	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-cluster")
 	adjustHeaders := func(req *http.Request) error {
-		mac := hmac.New(sha256.New, []byte(tokenData.Secret))
-		inputBytes, err := json.Marshal(input)
+		h := trust.NewHMAC([]byte(tokenData.Secret), trust.NewDefaultHMACConf(auth.HMACClusterManager10))
+		hmacHeader, err := trust.HMACAuthorizationHeader(h, input)
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to create HMAC: %w", err)
 		}
 
-		mac.Write(inputBytes)
-		req.Header.Set("X-CLUSTER-SIGNATURE", base64.StdEncoding.EncodeToString(mac.Sum(nil)))
+		req.Header.Set("Authorization", hmacHeader)
 		return nil
 	}
 

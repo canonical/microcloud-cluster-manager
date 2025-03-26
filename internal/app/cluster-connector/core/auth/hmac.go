@@ -2,36 +2,32 @@ package auth
 
 import (
 	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/canonical/lxd-cluster-manager/internal/pkg/api/models/v1"
+	"github.com/canonical/lxd/shared/api"
+	"github.com/canonical/lxd/shared/trust"
 )
+
+const HMACClusterManager10 trust.HMACVersion = "ClusterManager-1.0"
 
 // VerifyHMAC verifies the HMAC signature of a request.
 func VerifyHMAC(payload models.RemoteClusterPost, r *http.Request, secret string) (bool, error) {
-	reqBody, err := json.Marshal(payload)
+	h := trust.NewHMAC([]byte(secret), trust.NewDefaultHMACConf(HMACClusterManager10))
+
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return false, api.NewStatusError(http.StatusBadRequest, "Authorization header is missing")
+	}
+	hFromHeader, hmacFromHeader, err := h.ParseHTTPHeader(authHeader)
 	if err != nil {
-		return false, fmt.Errorf("failed to marshal payload: %v", err)
+		return false, api.StatusErrorf(http.StatusBadRequest, "Failed to parse Authorization header: %w", err)
 	}
 
-	sig := r.Header.Get("X-CLUSTER-SIGNATURE")
-	if sig == "" {
-		return false, fmt.Errorf("missing signature header")
-	}
-
-	decodedSig, err := base64.StdEncoding.DecodeString(sig)
+	hmacFromBody, err := hFromHeader.WriteJSON(payload)
 	if err != nil {
-		return false, fmt.Errorf("failed to decode signature: %v", err)
+		return false, api.StatusErrorf(http.StatusBadRequest, "Failed to calculate HMAC from payload: %w", err)
 	}
 
-	// recompute the HMAC
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(reqBody)
-	expectedMac := mac.Sum(nil)
-
-	return hmac.Equal(decodedSig, expectedMac), nil
+	return hmac.Equal(hmacFromHeader, hmacFromBody), nil
 }
