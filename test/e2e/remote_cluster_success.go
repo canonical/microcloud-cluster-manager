@@ -50,7 +50,7 @@ func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFu
 				helpers.LogTestOutcome(t, condition, err)
 			}
 
-			if tokenData.ExpiresAt == (time.Time{}) {
+			if time.Time.Equal(tokenData.ExpiresAt, time.Time{}) {
 				err = fmt.Errorf("invalid expiry")
 				helpers.LogTestOutcome(t, condition, err)
 			}

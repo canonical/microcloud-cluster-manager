@@ -52,7 +52,7 @@ func tokenPost(rc types.RouteConfig) types.EndpointHandler {
 		}
 
 		// default expiry to 1 day if not set
-		if payload.Expiry == (time.Time{}) {
+		if time.Time.Equal(payload.Expiry, time.Time{}) {
 			payload.Expiry = time.Now().Add(time.Hour * 24)
 		}
 

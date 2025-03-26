@@ -36,7 +36,7 @@ lint-ui-js:
 
 .PHONY: update-gomod
 update-gomod:
-	go get -t -v -d -u ./...
+	go get -t -v -u ./...
 	go mod tidy
 
 .PHONY: tidy-gomod
@@ -110,7 +110,7 @@ nuke: clean-dev delete-cluster dev-clean-juju
 # ====================================================================
 # UI utilities
 .PHONY: ui
-ui: 
+ui:
 	cd ui && dotrun
 
 # ====================================================================
@@ -127,7 +127,7 @@ switch-test-mode:
 
 # Need to set TEST_MODE to true in the management-api deployment so we can by pass oidc authentication
 .PHONY: test-e2e
-test-e2e: 
+test-e2e:
 	$(MAKE) switch-test-mode IS_ON=true
 	go test -count=1 -v ./test/e2e
 	$(MAKE) switch-test-mode IS_ON=false

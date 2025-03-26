@@ -1,7 +1,6 @@
 module github.com/canonical/lxd-cluster-manager
 
 go 1.23.4
-toolchain go1.24.1
 
 require (
 	github.com/canonical/lxd v0.0.0-20250311163601-93c5ce74d203

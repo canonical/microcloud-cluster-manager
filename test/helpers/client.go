@@ -77,7 +77,7 @@ func (c *Client) Query(ctx context.Context, method string, path *api.URL, input 
 	url.URL.Host = c.url.URL.Host
 	url.URL.Scheme = c.url.URL.Scheme
 	url.URL.Path = path.URL.Path
-	url.URL.RawPath = path.URL.RawPath
+	url.RawPath = path.RawPath
 
 	if path.URL.Host != "" {
 		url.URL.Host = path.URL.Host
@@ -87,13 +87,13 @@ func (c *Client) Query(ctx context.Context, method string, path *api.URL, input 
 		url.URL.Scheme = path.URL.Scheme
 	}
 
-	localQuery := url.URL.Query()
-	clientQuery := c.url.URL.Query()
-	for q := range url.URL.Query() {
+	localQuery := url.Query()
+	clientQuery := c.url.Query()
+	for q := range url.Query() {
 		clientQuery.Set(q, localQuery.Get(q))
 	}
 
-	url.URL.RawQuery = clientQuery.Encode()
+	url.RawQuery = clientQuery.Encode()
 
 	// Make the request
 	req, err := makeRequest(ctx, method, url, input)
