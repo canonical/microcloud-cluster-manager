@@ -24,7 +24,7 @@
     "test-e2e-update": "npx playwright test --update-snapshots"
   },
   "dependencies": {
-    "@canonical/react-components": "2.1.0",
+    "@canonical/react-components": "2.2.0",
     "@tanstack/react-query": "5.63.0",
     "@use-it/event-listener": "0.1.7",
     "formik": "2.4.6",
