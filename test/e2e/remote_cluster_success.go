@@ -8,12 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/canonical/lxd-cluster-manager/internal/app/cluster-connector/core/auth"
 	"github.com/canonical/lxd-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/lxd-cluster-manager/test/helpers"
 	"github.com/canonical/lxd/shared"
 	"github.com/canonical/lxd/shared/api"
-	"github.com/canonical/lxd/shared/trust"
 )
 
 func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
@@ -181,27 +179,20 @@ func sendJoinRequest(env *helpers.Environment, tokenData models.RemoteClusterTok
 		return err
 	}
 
-	input := struct {
-		ClusterName             string `json:"cluster_name"`
-		RemotClusterCertificate string `json:"cluster_certificate"`
-	}{
-		ClusterName:             tokenData.ServerName,
-		RemotClusterCertificate: string(clientCert.PublicKey()),
+	encodedToken, err := tokenData.Encode()
+	if err != nil {
+		return err
+	}
+
+	input := models.RemoteClusterPost{
+		ClusterName:        tokenData.ServerName,
+		ClusterCertificate: string(clientCert.PublicKey()),
+		Token:              encodedToken,
 	}
 
 	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-cluster")
-	adjustHeaders := func(req *http.Request) error {
-		h := trust.NewHMAC([]byte(tokenData.Secret), trust.NewDefaultHMACConf(auth.HMACClusterManager10))
-		hmacHeader, err := trust.HMACAuthorizationHeader(h, input)
-		if err != nil {
-			return fmt.Errorf("Failed to create HMAC: %w", err)
-		}
 
-		req.Header.Set("Authorization", hmacHeader)
-		return nil
-	}
-
-	return tlsClient.Query(ctx, http.MethodPost, path, input, nil, adjustHeaders)
+	return tlsClient.Query(ctx, http.MethodPost, path, input, nil, nil)
 }
 
 // sendStatusUpdate sends a status update to the Cluster Manager with the correct client certificate.

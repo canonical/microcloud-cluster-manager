@@ -76,11 +76,11 @@ func remoteClustersPost(rc types.RouteConfig) types.EndpointHandler {
 			return response.BadRequest(fmt.Errorf("invalid certificate: %v", err)).Render(w, r)
 		}
 
-		// get token secret for HMAC verification
-		var token *store.RemoteClusterToken
+		// get tokenFromDb secret for verification
+		var tokenFromDb *store.RemoteClusterToken
 		err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
 			var err error
-			token, err = store.GetRemoteClusterToken(ctx, tx, payload.ClusterName)
+			tokenFromDb, err = store.GetRemoteClusterToken(ctx, tx, payload.ClusterName)
 			if err != nil {
 				return err
 			}
@@ -92,17 +92,17 @@ func remoteClustersPost(rc types.RouteConfig) types.EndpointHandler {
 			return response.SmartError(err).Render(w, r)
 		}
 
-		// check if token has expired
-		if time.Now().After(token.Expiry) {
-			return response.Forbidden(fmt.Errorf("token has expired")).Render(w, r)
+		// check if tokenFromDb has expired
+		if time.Now().After(tokenFromDb.Expiry) {
+			return response.Forbidden(fmt.Errorf("tokenFromDb has expired")).Render(w, r)
 		}
 
-		hmacOK, err := auth.VerifyHMAC(payload, r, token.Secret)
-		if err != nil || !hmacOK {
+		isTokenValid := strings.EqualFold(payload.Token, tokenFromDb.EncodedToken)
+		if !isTokenValid {
 			return response.Forbidden(err).Render(w, r)
 		}
 
-		// Create remote cluster entry and delete token in a single db transaction
+		// Create remote cluster entry and delete tokenFromDb in a single db transaction
 		var remoteClusterID int
 		err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
 			// create remote cluster entry
@@ -130,7 +130,7 @@ func remoteClustersPost(rc types.RouteConfig) types.EndpointHandler {
 				return err
 			}
 
-			// delete remote cluster token
+			// delete remote cluster tokenFromDb
 			return store.DeleteRemoteClusterToken(ctx, tx, payload.ClusterName)
 		})
 

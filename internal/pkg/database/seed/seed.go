@@ -101,10 +101,10 @@ func generateRemoteClusterTokens(count int) []store.RemoteClusterToken {
 
 	for i := 0; i < count; i++ {
 		tokens[i] = store.RemoteClusterToken{
-			ClusterName: fmt.Sprintf("cluster-%02d", i+1),
-			Secret:      fmt.Sprintf("secret-%02d", i+1),
-			Expiry:      time.Now().Add(30 * time.Hour),
-			CreatedAt:   time.Now(),
+			ClusterName:  fmt.Sprintf("cluster-%02d", i+1),
+			EncodedToken: fmt.Sprintf("encoded-token-%02d", i+1),
+			Expiry:       time.Now().Add(30 * time.Hour),
+			CreatedAt:    time.Now(),
 		}
 	}
 	return tokens
@@ -117,27 +117,27 @@ func seedRemoteClusterTokens(ctx context.Context, db *database.DB) error {
 	return db.Transaction(ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		for _, token := range remoteClusterTokens {
 			q := `
-				INSERT INTO remote_cluster_tokens (cluster_name, secret, expiry, created_at)
+				INSERT INTO remote_cluster_tokens (cluster_name, encoded_token, expiry, created_at)
 				VALUES ($1, $2, $3, $4)
 				ON CONFLICT (cluster_name)
 				DO UPDATE SET
 					cluster_name = $1,
-					secret = $2,
+					encoded_token = $2,
 					expiry = $3,
 					created_at = $4
-				RETURNING id, cluster_name, secret, expiry, created_at;
+				RETURNING id, cluster_name, encoded_token, expiry, created_at;
 			`
 
 			var result store.RemoteClusterToken
 			err := tx.QueryRowContext(ctx, q,
 				token.ClusterName,
-				token.Secret,
+				token.EncodedToken,
 				token.Expiry,
 				token.CreatedAt,
 			).Scan(
 				&result.ID,
 				&result.ClusterName,
-				&result.Secret,
+				&result.EncodedToken,
 				&result.Expiry,
 				&result.CreatedAt,
 			)

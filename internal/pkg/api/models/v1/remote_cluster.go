@@ -48,6 +48,7 @@ type RemoteClusterPatch struct {
 type RemoteClusterPost struct {
 	ClusterName        string `json:"cluster_name"`
 	ClusterCertificate string `json:"cluster_certificate"`
+	Token              string `json:"token" yaml:"token"`
 }
 
 // RemoteClusterStatusPost is sent by LXD with to inform about its current status.

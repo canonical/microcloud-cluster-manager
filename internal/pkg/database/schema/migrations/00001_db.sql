@@ -29,7 +29,7 @@ CREATE TRIGGER remote_clusters_updated_at_trigger
 
 CREATE TABLE IF NOT EXISTS remote_cluster_tokens (
     id SERIAL PRIMARY KEY,
-    secret TEXT NOT NULL,
+    encoded_token TEXT NOT NULL,
     expiry TIMESTAMPTZ NOT NULL DEFAULT '3000-01-01T00:00:00Z',
     cluster_name TEXT NOT NULL UNIQUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP

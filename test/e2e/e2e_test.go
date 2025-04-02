@@ -9,7 +9,7 @@ import (
 
 var tests = []types.Test{
 	testRemoteClusterSuccess,
-	testRemoteClusterJoinInvalidHMAC,
+	testRemoteClusterJoinInvalid,
 	testRemoteClusterJoinExpiredToken,
 	testRemoteClusterStatusNoCert,
 	testRemoteClusterStatusInvalidCert,
