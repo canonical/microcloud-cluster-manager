@@ -15,7 +15,7 @@ const ClusterMemoryGraph: FC<Props> = ({ clusters }) => {
 
   return (
     <PercentileChart
-      title="Memory usage"
+      title="Memory usage in %"
       barClassName="cluster-memory-bar"
       data={memoryUsagePercentages}
       width={200}

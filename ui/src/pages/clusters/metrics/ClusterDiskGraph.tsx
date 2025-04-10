@@ -15,7 +15,7 @@ const ClusterDiskGraph: FC<Props> = ({ clusters }) => {
 
   return (
     <PercentileChart
-      title="Disk usage"
+      title="Disk usage in %"
       barClassName="cluster-disk-bar"
       data={diskUsagePercentages}
       width={200}

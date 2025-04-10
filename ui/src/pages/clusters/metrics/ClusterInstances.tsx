@@ -50,6 +50,12 @@ export const ClusterInstances: FC<Props> = ({ cluster }: Props) => {
     },
   ];
 
+  const notOkCount = total - runningInstances.count;
+  const extra =
+    notOkCount > 0
+      ? `(${total - runningInstances.count} not running)`
+      : "running";
+
   return (
     <Tooltip
       message={
@@ -75,10 +81,7 @@ export const ClusterInstances: FC<Props> = ({ cluster }: Props) => {
       positionElementClassName="tooltip"
       position="btm-center"
     >
-      <MultiMeter
-        values={values}
-        text={`${total} ( ${total - runningInstances.count} not running)`}
-      />
+      <MultiMeter values={values} text={`${total} ${extra}`} />
     </Tooltip>
   );
 };

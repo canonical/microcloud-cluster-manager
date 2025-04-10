@@ -23,10 +23,6 @@ const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
       sortKey: "name",
     },
     {
-      content: "Status",
-      sortKey: "status",
-    },
-    {
       content: "Last Heartbeat",
       sortKey: "lastHeartbeat",
     },
@@ -45,6 +41,10 @@ const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
     {
       content: "Disk",
     },
+    {
+      content: "Status",
+      sortKey: "status",
+    },
   ];
 
   const tableRows = clusters.map((cluster) => {
@@ -55,7 +55,6 @@ const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
             <Link to={`/ui/cluster/${cluster.name}`}>{cluster.name}</Link>
           ),
         },
-        { content: <ClusterStatus cluster={cluster} /> },
         { content: <ClusterHeartbeat cluster={cluster} /> },
         {
           content: <ClusterMembers cluster={cluster} />,
@@ -72,6 +71,7 @@ const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
         {
           content: <ClusterDisk cluster={cluster} />,
         },
+        { content: <ClusterStatus cluster={cluster} /> },
       ],
       sortData: {
         name: cluster.name,

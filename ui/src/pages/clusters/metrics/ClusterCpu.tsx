@@ -17,24 +17,10 @@ export const ClusterCpu: FC<Props> = ({
     cluster.cpu_load_15,
   ];
 
-  const getStyle = (reading: number) => {
-    if (reading <= 0.6) {
-      return "129, 70, 186";
-    } else {
-      return "199, 22, 43";
-    }
-  };
-
   return (
     <div className={classnames("cpu-badges", containerClassname)}>
       {averageReadings.map((reading, index) => (
-        <div
-          key={index}
-          className={"cpu-badge"}
-          style={{
-            backgroundColor: `rgba(${getStyle(parseFloat(reading))}, ${parseFloat(reading)})`,
-          }}
-        >
+        <div key={index} className={"cpu-badge"}>
           {reading}
         </div>
       ))}

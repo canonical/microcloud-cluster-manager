@@ -50,6 +50,10 @@ export const ClusterMembers: FC<Props> = ({ cluster }: Props) => {
     },
   ];
 
+  const notOkCount = total - onlineMembers.count;
+  const extra =
+    notOkCount > 0 ? `(${total - onlineMembers.count} degraded)` : "online";
+
   return (
     <Tooltip
       message={
@@ -75,10 +79,7 @@ export const ClusterMembers: FC<Props> = ({ cluster }: Props) => {
       positionElementClassName="tooltip"
       position="btm-center"
     >
-      <MultiMeter
-        values={values}
-        text={`${total} ( ${total - onlineMembers.count} degraded)`}
-      />
+      <MultiMeter values={values} text={`${total} ${extra}`} />
     </Tooltip>
   );
 };

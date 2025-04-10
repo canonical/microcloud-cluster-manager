@@ -17,7 +17,6 @@ const PercentileChart: FC<Props> = ({
   height,
   barClassName,
 }) => {
-  const maxDataValue = Math.max(...data);
   const barWidth = height / data.length;
 
   return (
@@ -44,7 +43,7 @@ const PercentileChart: FC<Props> = ({
             x={0}
             // Add 0.5 to the height to prevent gaps between the bars
             height={barWidth + 0.5}
-            width={(dataPoint / maxDataValue) * width}
+            width={dataPoint * width}
             className={barClassName}
           />
         ))}

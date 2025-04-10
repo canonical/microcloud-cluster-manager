@@ -151,13 +151,33 @@ func seedRemoteClusterTokens(ctx context.Context, db *database.DB) error {
 	})
 }
 
+func generateCounts(maxCount int) (int, int, int, int) {
+	if rand.Float64() < 0.5 {
+		// 50% chance: count1 == maxCount, others are 0
+		return maxCount, 0, 0, 0
+	}
+
+	// 50% chance: count1 ~ 80% of maxCount
+	percentage := rand.Float64()*0.1 + 0.75 // random between 0.75 and 0.85
+	count1 := int(float64(maxCount) * percentage)
+	remaining := maxCount - count1
+
+	// Randomly divide remaining into 3 parts
+	r1 := rand.Float64()
+	r2 := rand.Float64()
+	r3 := rand.Float64()
+	total := r1 + r2 + r3
+
+	count2 := int(float64(remaining) * r1 / total)
+	count3 := int(float64(remaining) * r2 / total)
+	count4 := remaining - count2 - count3 // ensure total sum == maxCount
+
+	return count1, count2, count3, count4
+}
+
 // generateRandomStatuses generates a JSON array of statuses with random counts.
 func generateRandomStatuses(status1, status2, status3, status4 string, maxCount int) []byte {
-	// Generate random values for the first three statuses
-	count1 := rand.IntN(maxCount / 2) // Max is half to balance distribution
-	count2 := rand.IntN(maxCount - count1)
-	count3 := rand.IntN(maxCount - count1 - count2)
-	count4 := maxCount - count1 - count2 - count3
+	count1, count2, count3, count4 := generateCounts(maxCount)
 
 	statuses := []map[string]any{
 		{"status": status1, "count": count1},
@@ -175,12 +195,14 @@ func generateRemoteClusterDetails(count int) []store.RemoteClusterDetail {
 	clusters := make([]store.RemoteClusterDetail, count)
 
 	for i := 0; i < count; i++ {
-		totalMemory := (rand.IntN(16) + 1) * 1024 // Random memory in multiples of 1024
-		memoryUsage := rand.IntN(totalMemory + 1)
-		totalDisk := (rand.IntN(200) + 1) * 1000 // Random disk size in multiples of 1000
-		diskUsage := rand.IntN(totalDisk + 1)
-		totalInstances := rand.IntN(50) + 2
-		totalMembers := rand.IntN(20) + 2
+		totalMemory := (rand.IntN(16) + 1) * 32 * 1024 * 1024 * 1024 // Random memory in multiples of 1024
+		quarterMemory := totalMemory / 4
+		memoryUsage := quarterMemory + rand.IntN(quarterMemory+1)    // max half and minimum a quarter of memory is used
+		totalDisk := (rand.IntN(200) + 1) * 100 * 1024 * 1024 * 1024 // Random disk size in multiples of 1000
+		halfDisk := totalDisk / 2
+		diskUsage := rand.IntN(halfDisk + 1) // max half the disk is used
+		totalInstances := rand.IntN(50) + 6
+		totalMembers := rand.IntN(20) + 6
 
 		clusters[i] = store.RemoteClusterDetail{
 			RemoteClusterID:   i + 1,
