@@ -1,4 +1,6 @@
-# Required dependencies
+# Dependencies
+
+## Automatic dependency installation
 
 For convenience, a `make` target is prepared to install all required dependencies for the development environment. You may simply run the following command at the project root:
 
@@ -8,11 +10,11 @@ make install-deps
 
 **CAUTION**: The `install-deps` target has been tested only in an Ubuntu Linux environment and may not work on other operating systems. It is strongly recommended that you avoid running this directly on your host machine. Instead, use it as a convenient method for setting up a VM-based development environment.
 
-<br>
+## Manual dependency installation
 
 If you are choosing to setup the dependencies manually, in order to run the local development environment, the LXD Cluster Manager project has the following dependencies which needs to be installed and configured first:
 
-#### Make
+### Make
 
 The project is managed using the `makefile` targets located at the project root. You will need to install `make`.
 
@@ -21,11 +23,11 @@ sudo apt update
 sudo apt install make
 ```
 
-#### Golang
+### Golang
 
 You will need to [install Go](https://go.dev/dl/) on your host for developing the backend. Consult [go.mod](go.mod) for the required go version. Make sure you add the go binary to `PATH` after installation.
 
-#### Docker
+### Docker
 
 Docker is required to build and run the service containers for the Kubernetes cluster. It is highly recommended that you install the docker snap package as it does not have network inteference with `lxd` (another dependency required for building rocks).
 
@@ -42,15 +44,15 @@ sudo snap disable docker
 sudo snap enable docker
 ```
 
-#### Kubectl
+### Kubectl
 
 You will need to install `kubectl` for deploying resources to the local Kubernetes cluster. You can follow the installation instructions from the official [docs](https://kubernetes.io/docs/tasks/tools/).
 
-#### Kind
+### Kind
 
 Kind is required for setting up the local Kubernetes cluster inside a docker container. You can follow instructions from this [guide](https://kind.sigs.k8s.io/docs/user/quick-start/) to install kind.
 
-#### Skaffold
+### Skaffold
 
 We use skaffold for managing resources in the local Kubernetes cluster with hot reloading and debugging functionalities. You can install it with the following commands.
 
@@ -59,15 +61,15 @@ curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffo
 sudo install skaffold /usr/local/bin/
 ```
 
-#### Node version manager (NVM)
+### Node version manager (NVM)
 
 Nodejs is required to run the development UI. Instead of installing Nodejs directly, it is recommended that NVM should be installed for simpler management of multiple Nodejs versions. You can follow instructions from the official Github [repo](https://github.com/nvm-sh/nvm) to install NVM.
 
-#### Dotrun
+### Dotrun
 
 Dotrun is required to spin up a development container for the UI. You can install it by following the instructions [here](https://github.com/canonical/dotrun#installation).
 
-#### Juju
+### Juju
 
 Juju is required to deploy the Canonical Observability [Stack](https://charmhub.io/topics/canonical-observability-stack) to our development k8s cluster.
 To install Juju, run the following command:
@@ -76,13 +78,11 @@ To install Juju, run the following command:
 make install-juju
 ```
 
-<br><br>
-
-# Optional dependencies
+## Optional dependencies
 
 Generally, the required dependencies cover all the essentials for setting up the local development environment. Below are additional optional dependencies for more advanced tasks:
 
-#### LXD
+### LXD
 
 LXD is required to build a rock using Rockcraft. It must be installed and initialized:
 
@@ -91,7 +91,7 @@ sudo snap install lxd
 lxd init --auto
 ```
 
-#### Rockcraft
+### Rockcraft
 
 For local development, the Kubernetes cluster image is built using Docker. However, for production and CI, the image is built as a rock using Rockcraft. To install Rockcraft, simply run the following command:
 
@@ -99,14 +99,11 @@ For local development, the Kubernetes cluster image is built using Docker. Howev
 sudo snap install rockcraft --classic
 ```
 
-<br><br>
-
 # Running the local development environment
 
-Once you have all the required dependencies installed, to get the local development environment up and running, run the following commands at project root:
-<br>
+## Run the backend cluster
 
-### Run the backend cluster
+Once you have all the required dependencies installed, to get the local development environment up and running, run the following commands at project root:
 
 ```
 make dev
@@ -127,9 +124,9 @@ Watching for changes...
 ```
 
 **NOTE**: If it's your first time starting the development environment, it may take a while for all the resources and images to be pulled into the cluster.
-<br>
 
-### Run the UI in a separate terminal
+
+## Run the UI in a separate terminal
 
 First you should add the local development hosts `ma.lxd-cm.local` and `cc.lxd-cm.local` to your `/etc/hosts` file. You can do this with the following command:
 
@@ -137,7 +134,7 @@ First you should add the local development hosts `ma.lxd-cm.local` and `cc.lxd-c
 sudo make add-hosts
 ```
 
-Then to start the UI development server, run the following:
+Then start the UI development server:
 
 ```
 make ui
@@ -169,9 +166,8 @@ Re-optimizing dependencies because lockfile has changed
 ```
 
 **NOTE**: You can reach the UI in your browser at `https://ma.lxd-cm.local:8414`.
-<br>
 
-### Stop and cleanup the development cluster
+## Stop and cleanup the development cluster
 
 Unfortunately skaffold creates new images for each rebuild due to detected code changes. Those images are not automatically deleted from your local docker image registry. This can cause unbounded disk utilisation on your host machine. To prevent this from happening, you should always run the following command after you are done with development for the day to clean up un-used images:
 
@@ -179,7 +175,7 @@ Unfortunately skaffold creates new images for each rebuild due to detected code 
 make nuke
 ```
 
-### Run backend cluster with rock
+## Run backend cluster with rock
 
 If you need to work on building the image with rockcraft, you can test out the rock with the backend cluster by running the following command:
 
@@ -189,25 +185,23 @@ make dev-rock
 
 **NOTE**: You must have installed the optional dependencies for the above to work.
 
-<br><br>
-
 # End-to-end tests
 
 You can run both backend and frontend e2e tests against the running development cluster with the following command:
 
-#### Backend e2e tests
+## Backend e2e tests
 
 ```
 make test-e2e
 ```
 
-#### UI e2e tests
+## UI e2e tests
 
-The UI e2e tests steps through the OIDC authentication flow using a pre-configured auth0 account. For the tests to work locally, you will need to create a file at the path `ui/.env.local` and it should have the following variables (you can reach out to the project maintainers for the values):
+The UI e2e tests steps through the OIDC authentication flow using a pre-configured auth0 account. For the tests to work locally, you will need to create a file at the path `ui/.env.local` and it should have the following variables:
 
 ```
-OIDC_USER=
-OIDC_PASSWORD=
+OIDC_USER="lxd-site-manager-e2e-tests@example.org"
+OIDC_PASSWORD="abcDEF111"
 ```
 
 If it's the first time you are running UI e2e tests, you should first install playwright and its browsers:

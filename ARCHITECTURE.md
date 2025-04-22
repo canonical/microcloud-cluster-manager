@@ -1,27 +1,24 @@
 # Cluster Manager Architecture
 
-<br>
-
 ## System overview
 
-LXD Cluster Manager is a centralized tool for viewing and managing LXD clusters. It is a highly available web application with a browser-based UI that facilitates user interaction with the system.
+Cluster Manager is a centralized tool for viewing and managing MicroCloud deployments. It is a highly available web application with a browser-based UI that facilitates user interaction with the system.
 
-Since LXD clusters are often hosted in air-gapped environments, it is assumed that Cluster Manager cannot directly reach an LXD cluster. This implies that network communication is unidirectional, from LXD clusters to Cluster Manager only.
+Since MicroClouds are often hosted in air-gapped environments, it is assumed that Cluster Manager cannot directly reach a MicroCloud. This implies that network communication is unidirectional, from MicroCloud to Cluster Manager.
 
-The Cluster Manager requires an OIDC provider to be set up for user authentication. Once authenticated, users will be able to access the UI fully and manage registered LXD clusters.
+Cluster Manager requires an OIDC provider to be set up for user authentication. Authenticated users will be able to access the UI and manage registered MicroClouds.
 
-To connect an LXD cluster, a join token must be generated in Cluster Manager and manually sent to an LXD admin. The join token will need to be consumed by an LXD cluster to register Cluster Manager details such as available network addresses. The LXD cluster will then send a join request to Cluster Manager, with the payload signed using an HMAC key generated from the join token secret. Once Cluster Manager receives the join request, it will validate the HMAC key. If successful, it will store the LXD cluster details.
+To connect a new MicroCloud, a join token must be generated in Cluster Manager. This can be done in the UI. Connect the MicroCloud with the command `microcloud cluster-manager join [token]`.
 
-Once the LXD cluster is connected, it will send status updates to Cluster Manager at periodic intervals. The data will be stored by Cluster Manager and displayed via the browser UI. Communication between an LXD cluster and Cluster Manager after the initial join request will be authenticated using mTLS.
-
-<br>
+Once a MicroCloud is connected, it will send status updates to Cluster Manager at periodic intervals. Communication between MicroCloud and Cluster Manager will be authenticated using mutual TLS. The data sent to Cluster Manager is stored in Postgres and Prometheus databases. It can be displayed via the Cluster Manager UI, which also links to Grafana dashboards for each MicroCloud.
 
 ## Distributed architecture
-LXD Cluster Manager is a distributed web application, planned for Kubernetes cluster deployment to achieve high availability. The system architecture is presented in the image below:
+
+Cluster Manager is a distributed web application, running in a Kubernetes cluster to achieve high availability. The system architecture is presented in the image below:
 
 ![Kubernetes system architecture](doc/architecture.png)
 
-The various system components shown above are desbribed in detail below:
+The various system components shown above are described in detail below:
 
 #### 1. DNS and Static External IP
 

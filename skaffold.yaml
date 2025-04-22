@@ -74,7 +74,7 @@ profiles:
         dockerfile: deployment/docker/dockerfile.dev
         target: debug
         buildArgs:
-          BUILD_REF: "development" 
+          BUILD_REF: "development"
           DEBUG: "true"
         cliFlags:
         - "--rm=true"

@@ -1,15 +1,24 @@
-# LXD Cluster Manager
+# MicroCloud Cluster Manager
 
-The LXD Cluster Manager is a tool for viewing and managing multiple LXD installations, whether they are single-member setups or complex clusters.
+Cluster Manager is a tool for viewing and managing multiple MicroCloud deployments. It includes the [Canonical Observability Stack](https://charmhub.io/topics/canonical-observability-stack) for monitoring and alerting with Grafana and Prometheus and a web UI for viewing information of the registered MicroClouds.
 
 # Development Setup
 
-For local development, please see the [guide](HACKING.md) for:
-- Installing dependencies
-- Running backend development Kubernetes cluster
-- Running frontend UI
-- Running e2e test suites
+To start the development environment, run the commands:
+
+```bash
+make install-deps
+sudo make add-hosts
+make dev
+```
+and in a separate terminal
+
+```bash
+make ui
+```
+
+Now you can access the UI at [ma.lxd-cm.local:8414](https://ma.lxd-cm.local:8414). For more information on the local development, please see [contributing guidelines](CONTRIBUTING.md).
 
 # Architecture
 
-LXD Cluster Manager is a distributed web application with a Go backend and React (Typescript) used for the UI. The application is deployed using Kubernetes. You can get an overview of how the system works from its [architecture documentation](ARCHITECTURE.md).
+Cluster Manager is a distributed web application with a Go backend and React Typescript UI. The application is running in Kubernetes. For an overview of the system, see the [architecture documentation](ARCHITECTURE.md).

@@ -1,10 +1,10 @@
 # product metadata
 name: lxd-cluster-manager
 version: "1.0.0"
-summary: Canonical LXD Cluster Manager
+summary: Canonical MicroCloud Cluster Manager
 description: |
-  The Canonical LXD Cluster Manager is a tool that allows you to manage multiple LXD clusters from a single interface.
-  It provides a REST API for managing LXD clusters, and a web interface for interacting with the API.
+  The Canonical MicroCloud Cluster Manager is a tool that allows you to manage multiple MicroClouds from a single interface.
+  It provides a REST API for managing MicroClouds, and a web interface for interacting with the API.
 license: Apache-2.0
 
 # build metadata
