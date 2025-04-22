@@ -1,6 +1,7 @@
 module github.com/canonical/lxd-cluster-manager
 
 go 1.23.4
+toolchain go1.24.1
 
 require (
 	github.com/canonical/lxd v0.0.0-20250311163601-93c5ce74d203
@@ -13,7 +14,7 @@ require (
 	github.com/pressly/goose/v3 v3.24.2
 	github.com/prometheus/common v0.63.0
 	github.com/prometheus/prometheus v0.303.0
-	github.com/zitadel/oidc/v3 v3.36.1
+	github.com/zitadel/oidc/v3 v3.37.0
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.37.0
@@ -58,8 +59,8 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	github.com/zitadel/logging v0.6.1 // indirect
-	github.com/zitadel/schema v1.3.0 // indirect
+	github.com/zitadel/logging v0.6.2 // indirect
+	github.com/zitadel/schema v1.3.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
