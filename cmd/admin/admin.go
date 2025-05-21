@@ -25,7 +25,7 @@ func admin() (err error) {
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		logger.Log.Error("Failed to load configuration")
+		return fmt.Errorf("Failed to load configuration: %w", err)
 	}
 
 	// =========================================================================
