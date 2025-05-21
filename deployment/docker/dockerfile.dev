@@ -1,6 +1,6 @@
 # ========================================================================
 # build the GO binaries for dev and debug versions
-FROM golang:1.23.4 AS builder-backend
+FROM golang:1.23.7 AS builder-backend
 ARG BUILD_REF
 ARG DEBUG=false
 WORKDIR /usr/bin
@@ -14,12 +14,12 @@ COPY . ./
 WORKDIR /usr/bin/cmd
 
 # compile debug binary which is less optimised, only if debug is enabled
-RUN if [ "$DEBUG" = "true" ]; then \ 
+RUN if [ "$DEBUG" = "true" ]; then \
         CGO_ENABLED=0 go build -gcflags 'all=-N -l' -ldflags "-X main.build=${BUILD_REF}" -o lxd-cluster-manager; \
     fi
 
 # compile dev binary which is more optimised
-RUN if [ "$DEBUG" != "true" ]; then \ 
+RUN if [ "$DEBUG" != "true" ]; then \
         CGO_ENABLED=0 go build -ldflags "-X main.build=${BUILD_REF}" -o lxd-cluster-manager; \
     fi
 
@@ -35,7 +35,7 @@ ENTRYPOINT [ "/usr/bin/lxd-cluster-manager" ]
 
 # ========================================================================
 # debug stage to be run as debug target
-FROM golang:1.23.4 AS debug
+FROM golang:1.23.7 AS debug
 RUN apt-get update && apt-get install -y --no-install-recommends \
     protobuf-compiler
 # Install Delve for debugging go
