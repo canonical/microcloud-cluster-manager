@@ -1,24 +1,27 @@
 # MicroCloud Cluster Manager
 
-Cluster Manager is a tool for viewing and managing multiple MicroCloud deployments. It includes the [Canonical Observability Stack](https://charmhub.io/topics/canonical-observability-stack) for monitoring and alerting with Grafana and Prometheus and a web UI for viewing information of the registered MicroClouds.
+Cluster Manager is a tool for viewing and managing multiple MicroCloud deployments. It includes the [Canonical Observability Stack](https://charmhub.io/topics/canonical-observability-stack) for monitoring and alerting with Grafana and Prometheus, along with a web UI for viewing information about the registered MicroClouds.
 
-# Development Setup
+# Development setup
 
-To start the development environment, run the commands:
+**CAUTION**: The `install-deps` target has been tested only in an Ubuntu Linux environment and may not work on other operating systems. It is strongly recommended that you avoid running this directly on your host machine. Instead, use it as a convenient method for setting up a VM-based development environment.
+
+To start the development environment, run these commands:
 
 ```bash
 make install-deps
 sudo make add-hosts
 make dev
 ```
-and in a separate terminal
+
+Then in a separate terminal, run:
 
 ```bash
 make ui
 ```
 
-Now you can access the UI at [ma.lxd-cm.local:8414](https://ma.lxd-cm.local:8414). For more information on the local development, please see [contributing guidelines](CONTRIBUTING.md).
+Now you can access the UI at [ma.lxd-cm.local:8414](https://ma.lxd-cm.local:8414). For more information on local development, please see the [contributing guidelines](CONTRIBUTING.md).
 
 # Architecture
 
-Cluster Manager is a distributed web application with a Go backend and React Typescript UI. The application is running in Kubernetes. For an overview of the system, see the [architecture documentation](ARCHITECTURE.md).
+Cluster Manager is a distributed web application with a Go backend and a React Typescript UI. The application runs in Kubernetes. For an overview of the system, see the [architecture documentation](ARCHITECTURE.md).
