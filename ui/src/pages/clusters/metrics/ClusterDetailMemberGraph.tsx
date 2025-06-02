@@ -2,13 +2,13 @@ import { Icon } from "@canonical/react-components";
 import DoughnutChart from "components/DoughnutChart";
 import { FC, ReactNode } from "react";
 import { Cluster } from "types/cluster";
-import { statusCount } from "util/helpers";
+import { pluralizeWord, statusCount } from "util/helpers";
 
 interface Props {
   cluster: Cluster;
 }
 
-const ClusterDetailNodeGraph: FC<Props> = ({ cluster }: Props) => {
+const ClusterDetailMemberGraph: FC<Props> = ({ cluster }: Props) => {
   const onlineMembers = statusCount(cluster.member_statuses, "Online");
   const offlineMembers = statusCount(cluster.member_statuses, "Offline");
   const evacuatedMembers = statusCount(cluster.member_statuses, "Evacuated");
@@ -56,7 +56,7 @@ const ClusterDetailNodeGraph: FC<Props> = ({ cluster }: Props) => {
       />
       <ul className="doughnut-chart__legend u-no-margin--left">
         <li className="u-no-margin p-heading--5 u-no-padding">
-          {totalMembers} Members
+          {totalMembers} {pluralizeWord("member", totalMembers)}
         </li>
         <li>
           <Icon name="status-succeeded-small" />
@@ -82,4 +82,4 @@ const ClusterDetailNodeGraph: FC<Props> = ({ cluster }: Props) => {
   );
 };
 
-export default ClusterDetailNodeGraph;
+export default ClusterDetailMemberGraph;

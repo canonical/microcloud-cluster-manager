@@ -1,5 +1,4 @@
 import { Icon, Tooltip } from "@canonical/react-components";
-import MultiMeter from "components/MultiMeter";
 import { FC } from "react";
 import { Cluster } from "types/cluster";
 
@@ -27,33 +26,6 @@ export const ClusterMembers: FC<Props> = ({ cluster }: Props) => {
     evacuatedMembers.count +
     blockedMembers.count;
 
-  const values = [
-    {
-      amount: onlineMembers.count,
-      status: "Online",
-      color: "#0E8420",
-    },
-    {
-      amount: blockedMembers.count,
-      status: "Blocked",
-      color: "#CC7900",
-    },
-    {
-      amount: offlineMembers.count,
-      status: "Offline",
-      color: "#C7162B",
-    },
-    {
-      amount: evacuatedMembers.count,
-      status: "Evacuated",
-      color: "#000",
-    },
-  ];
-
-  const notOkCount = total - onlineMembers.count;
-  const extra =
-    notOkCount > 0 ? `(${total - onlineMembers.count} degraded)` : "online";
-
   return (
     <Tooltip
       message={
@@ -77,9 +49,9 @@ export const ClusterMembers: FC<Props> = ({ cluster }: Props) => {
         </div>
       }
       positionElementClassName="tooltip"
-      position="btm-center"
+      position="left"
     >
-      <MultiMeter values={values} text={`${total} ${extra}`} />
+      <div className="u-pointer">{total}</div>
     </Tooltip>
   );
 };

@@ -1,15 +1,13 @@
-import { FC } from "react";
+import React, { FC } from "react";
 import { MainTable, TablePagination } from "@canonical/react-components";
 import Loader from "components/Loader";
 import { Link } from "react-router-dom";
 import { ClusterInstances } from "./metrics/ClusterInstances";
-import { ClusterCpu } from "./metrics/ClusterCpu";
-import { ClusterMemory } from "./metrics/ClusterMemory";
-import { ClusterDisk } from "./metrics/ClusterDisk";
 import { ClusterMembers } from "./metrics/ClusterMembers";
 import ClusterHeartbeat from "./metrics/ClusterHeartbeat";
 import ClusterStatus from "./metrics/ClusterStatus";
 import { Cluster } from "types/cluster";
+import { ClusterWarningCount } from "pages/clusters/metrics/ClusterWarningCount";
 
 type Props = {
   clusters: Cluster[];
@@ -23,23 +21,13 @@ const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
       sortKey: "name",
     },
     {
-      content: "Last Heartbeat",
-      sortKey: "lastHeartbeat",
-    },
-    {
       content: "Members",
     },
     {
-      content: "Instances",
+      content: "Instances running",
     },
     {
-      content: "CPU",
-    },
-    {
-      content: "Memory",
-    },
-    {
-      content: "Disk",
+      content: "Warnings",
     },
     {
       content: "Status",
@@ -55,7 +43,6 @@ const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
             <Link to={`/ui/cluster/${cluster.name}`}>{cluster.name}</Link>
           ),
         },
-        { content: <ClusterHeartbeat cluster={cluster} /> },
         {
           content: <ClusterMembers cluster={cluster} />,
         },
@@ -63,15 +50,16 @@ const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
           content: <ClusterInstances cluster={cluster} />,
         },
         {
-          content: <ClusterCpu cluster={cluster} />,
+          content: <ClusterWarningCount cluster={cluster} />,
         },
         {
-          content: <ClusterMemory cluster={cluster} />,
+          content: (
+            <>
+              <ClusterStatus cluster={cluster} />
+              <ClusterHeartbeat cluster={cluster} />
+            </>
+          ),
         },
-        {
-          content: <ClusterDisk cluster={cluster} />,
-        },
-        { content: <ClusterStatus cluster={cluster} /> },
       ],
       sortData: {
         name: cluster.name,

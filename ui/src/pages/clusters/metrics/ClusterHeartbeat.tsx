@@ -12,20 +12,23 @@ const ClusterHeartbeat: FC<Props> = ({ cluster }: Props) => {
   let returnStr;
 
   if (lastHeartbeatMins <= 1) {
-    returnStr = `< 1 minute ago`;
+    returnStr = `seen 1 minute ago`;
   } else if (lastHeartbeatMins < 5) {
-    returnStr = `${lastHeartbeatMins} minutes ago`;
+    returnStr = `seen ${lastHeartbeatMins} minutes ago`;
   } else {
     returnStr =
       lastHeartbeatHrs < 1 //Displayed for "Last Seen"'s of 5-59 Minutes
-        ? `< 1 hour ago`
+        ? `seen in last hour`
         : lastHeartbeatHrs < 2
-          ? `1 hour ago`
-          : `${lastHeartbeatHrs} hours ago`;
+          ? `seen 1 hour ago`
+          : `seen ${lastHeartbeatHrs} hours ago`;
   }
 
   return (
-    <div title={isoTimeToString(cluster.last_status_update_at)}>
+    <div
+      title={isoTimeToString(cluster.last_status_update_at)}
+      className="u-text--muted"
+    >
       {returnStr}
     </div>
   );

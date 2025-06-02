@@ -32,7 +32,7 @@ const MultiMeter: FC<Props> = ({ values, text }) => {
           );
         })}
       </div>
-      <p className="p-text--small u-no-margin--bottom">{text}</p>
+      <div className="u-text--muted u-no-margin--bottom">{text}</div>
     </>
   );
 };

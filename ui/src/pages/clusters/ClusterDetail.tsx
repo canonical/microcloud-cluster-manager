@@ -6,7 +6,7 @@ import React, { FC } from "react";
 import { Link, useParams } from "react-router-dom";
 import { queryKeys } from "util/queryKeys";
 import ClusterDetailInstanceGraph from "./metrics/ClusterDetailInstanceGraph";
-import ClusterDetailNodeGraph from "./metrics/ClusterDetailNodeGraph";
+import ClusterDetailMemberGraph from "./metrics/ClusterDetailMemberGraph";
 import ClusterTimer from "./metrics/ClusterTimer";
 import ClusterDetailMetrics from "./metrics/ClusterDetailMetrics";
 import Loader from "components/Loader";
@@ -14,6 +14,7 @@ import BreadCrumbHeader from "components/BreadcrumbHeader";
 import DeleteClusterButton from "pages/clusters/DeleteClusterButton";
 import ClusterMetricsButton from "pages/clusters/ClusterMetricsButton";
 import ClusterUiButton from "pages/clusters/ClusterUiButton";
+import { ClusterWarningList } from "pages/clusters/metrics/ClusterWarningList";
 
 const ClusterDetail: FC = () => {
   const { name } = useParams<{ name: string }>();
@@ -31,6 +32,10 @@ const ClusterDetail: FC = () => {
     refetchInterval: 60000,
     refetchIntervalInBackground: true,
   });
+
+  if (isLoading) {
+    return <></>;
+  }
 
   if (!cluster) {
     return <>Unable to get details</>;
@@ -78,7 +83,7 @@ const ClusterDetail: FC = () => {
                 cluster={cluster}
                 key="cluster-detail-metrics"
               />,
-              <ClusterDetailNodeGraph
+              <ClusterDetailMemberGraph
                 cluster={cluster}
                 key="cluster-node-graph"
               />,
@@ -88,6 +93,7 @@ const ClusterDetail: FC = () => {
               />,
             ]}
           />
+          <ClusterWarningList cluster={cluster} />
         </Row>
       )}
     </BaseLayout>

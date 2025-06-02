@@ -18,7 +18,7 @@ const Meter: FC<Props> = ({
       <div className="p-meter u-no-margin--bottom">
         <div className={type} style={{ width: `${percentage}%` }} />
       </div>
-      <p className="p-text--small u-no-margin--bottom">{text}</p>
+      <div className="u-text--muted u-no-margin--bottom">{text}</div>
     </div>
   );
 };

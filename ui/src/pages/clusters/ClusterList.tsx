@@ -1,14 +1,11 @@
 import { FC } from "react";
-import { List, Row } from "@canonical/react-components";
+import { Row } from "@canonical/react-components";
 import { useParams, useSearchParams } from "react-router-dom";
 import TabLinks from "components/TabLinks";
 import ClusterListTokens from "./ClusterListTokens";
 import ClusterListActive from "./ClusterListActive";
 import AddClusterButton from "./AddClusterButton";
-import ClusterStatusGraph from "./metrics/ClusterStatusGraph";
 import NotificationRow from "components/NotificationRow";
-import ClusterDiskGraph from "./metrics/ClusterDiskGraph";
-import ClusterMemoryGraph from "./metrics/ClusterMemoryGraph";
 import ClusterSearchFilter from "pages/clusters/ClusterSearchFilter";
 import CustomLayout from "components/CustomLayout";
 import PageHeader from "components/PageHeader";
@@ -125,24 +122,6 @@ const ClusterList: FC = () => {
       }
     >
       <Row>
-        <List
-          className="cluster-graphs"
-          inline
-          items={[
-            <ClusterStatusGraph
-              key="cluster-status-graph"
-              clusters={filteredClusters}
-            />,
-            <ClusterDiskGraph
-              key="cluster-disk-graph"
-              clusters={filteredClusters}
-            />,
-            <ClusterMemoryGraph
-              key="cluster-memory-graph"
-              clusters={filteredClusters}
-            />,
-          ]}
-        />
         <TabLinks tabs={tabs} activeTab={activeTab} tabUrl="/ui/clusters" />
         <NotificationRow />
         <div>

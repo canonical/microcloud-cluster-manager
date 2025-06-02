@@ -8,12 +8,12 @@
     flex-direction: column;
 
     .meter-row {
-      align-items: center;
+      align-items: flex-start;
       display: flex;
       gap: 1rem;
 
       .meter-row__title {
-        min-width: 5rem;
+        min-width: 8rem;
         text-align: right;
       }
 

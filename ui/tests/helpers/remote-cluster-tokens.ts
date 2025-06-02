@@ -5,7 +5,7 @@ export const createRemoteClusterToken = async (
   clusterName: string,
 ) => {
   await page.goto("/ui");
-  await page.getByRole("button", { name: "Add New Cluster" }).click();
+  await page.getByRole("button", { name: "Enrol cluster" }).click();
   await page.getByPlaceholder("Enter Name").click();
   await page.getByPlaceholder("Enter Name").fill(clusterName);
   await page.getByRole("button", { name: "Create" }).click();
