@@ -68,12 +68,22 @@ delete-cluster:
 .PHONY: dev-juju-deploy
 dev-juju-deploy:
 	juju add-model cluster-manager-juju-dev
-	juju deploy ./microcloud-cluster-manager-k8s_amd64.charm --resource microcloud-cluster-manager-image=ghcr.io/edlerd/microcloud-cluster-manager:0.1
+
+	juju deploy self-signed-certificates
+	juju deploy postgresql-k8s --channel 14/stable
+	juju trust postgresql-k8s --scope=cluster
+
+	juju deploy ./microcloud-cluster-manager-k8s_amd64.charm --resource microcloud-cluster-manager-image=ghcr.io/edlerd/microcloud-cluster-manager:0.1 --debug
 	#juju deploy microcloud-cluster-manager-k8s --channel edge
+
+	juju integrate postgresql-k8s microcloud-cluster-manager-k8s
+	juju integrate self-signed-certificates:certificates microcloud-cluster-manager-k8s:certificates
 
 .PHONY: dev-juju-update
 dev-juju-update:
-	juju refresh --path="./microcloud-cluster-manager-k8s_amd64.charm" microcloud-cluster-manager-k8s --force-units --resource microcloud-cluster-manager-image=ghcr.io/edlerd/microcloud-cluster-manager:0.1
+	juju remove-relation self-signed-certificates:certificates microcloud-cluster-manager-k8s:certificates
+	juju refresh --debug --path="./microcloud-cluster-manager-k8s_amd64.charm" microcloud-cluster-manager-k8s --force-units --resource microcloud-cluster-manager-image=ghcr.io/edlerd/microcloud-cluster-manager:0.1
+	juju integrate self-signed-certificates:certificates microcloud-cluster-manager-k8s:certificates
 	#juju refresh microcloud-cluster-manager-k8s --channel edge
 
 .PHONY: dev-k8s-deploy
@@ -122,7 +132,7 @@ nuke: clean-dev delete-cluster dev-clean-juju
 start-charm: start-cluster dev-juju-setup dev-juju-deploy
 
 .PHONY: update-charm
-start-charm: dev-juju-update
+update-charm: dev-juju-update
 
 # ====================================================================
 # UI utilities

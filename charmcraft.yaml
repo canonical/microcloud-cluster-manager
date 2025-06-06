@@ -16,7 +16,12 @@ platforms:
 
 parts:
   charm:
-    build-packages: [cargo, rustc]
+    build-packages:
+      - cargo
+      - libffi-dev
+      - libssl-dev
+      - pkg-config
+      - rustc
 
 assumes:
   - juju >= 3.6
@@ -31,3 +36,11 @@ resources:
     type: oci-image
     description: OCI image for MicroCloud Cluster Manager
     upstream-source: ghcr.io/edlerd/microcloud-cluster-manager:0.1
+
+requires:
+  certificates:
+    interface: tls-certificates
+  database:
+    interface: postgresql_client
+    limit: 1
+

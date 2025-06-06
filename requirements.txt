@@ -1,1 +1,3 @@
 ops >= 2.11
+cryptography==43.0.1
+pydantic==2.9.1
