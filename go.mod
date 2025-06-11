@@ -13,7 +13,7 @@ require (
 	github.com/pressly/goose/v3 v3.24.3
 	github.com/prometheus/common v0.64.0
 	github.com/prometheus/prometheus v0.304.1
-	github.com/zitadel/oidc/v3 v3.38.1
+	github.com/zitadel/oidc/v3 v3.39.0
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.38.0
