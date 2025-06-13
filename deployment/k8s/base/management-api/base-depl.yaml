@@ -11,16 +11,6 @@ spec:
       labels:
         app: management-api
     spec:
-      initContainers:
-      - name: init
-        image: microcloud-cluster-manager
-        command: ["/usr/bin/microcloud-cluster-manager"]
-        envFrom:
-        - configMapRef:
-            name: config
-        env:
-        - name: SERVICE
-          value: "admin"
       containers:
       - name: management-api
         image: microcloud-cluster-manager

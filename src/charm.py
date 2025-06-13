@@ -208,42 +208,30 @@ class ClusterManagerCharm(ops.CharmBase):
 
     @property
     def _pebble_layer(self) -> ops.pebble.Layer:
-        management_api_environment = self.app_environment
-        management_api_environment['SERVICE'] = 'management-api'
-        management_api_environment['SERVER_PORT'] = '9100'
-        management_api_environment['STATUS_PORT'] = '11000'
-
-        cluster_connector_environment = self.app_environment
-        cluster_connector_environment['SERVICE'] = 'cluster-connector'
-
-        admin_environment = self.app_environment
-        admin_environment['SERVICE'] = 'admin'
-
         logger.info("Pebble layer initialized")
 
-        pebble_layer: ops.pebble.LayerDict = {
-            'summary': 'management api service',
-            'description': 'pebble config layer for management api service of microcloud cluster manager',
-            'services': {
-                "mcm-management-api": {
-                    'override': 'replace',
-                    'summary': 'microcloud cluster manager management-api',
-                    'command': 'microcloud-cluster-manager',
-                    'startup': 'enabled',
-                    'environment': management_api_environment,
-                },
-                "mcm-cluster-connector": {
-                    'override': 'replace',
-                    'summary': 'microcloud cluster manager cluster-connector',
-                    'command': 'microcloud-cluster-manager',
-                    'startup': 'enabled',
-                    'environment': cluster_connector_environment,
-                }
-            },
-        }
+        mgmt_environment = self.app_environment
+        mgmt_environment['SERVICE'] = 'management-api'
+        mgmt_environment['SERVER_PORT'] = '9100'
+        mgmt_environment['STATUS_PORT'] = '11000'
+        mgmt_service = ops.pebble.ServiceDict(override="replace",
+                                              summary="microcloud cluster manager management-api service",
+                                              command="microcloud-cluster-manager",
+                                              startup="enabled",
+                                              environment=mgmt_environment)
 
-        migrations = ops.pebble.ExecDict(command="microcloud-cluster-manager", environment=admin_environment)
-        ops.pebble.Check("db-migrations", ops.pebble.CheckDict(exec=migrations))
+        cluster_environment = self.app_environment
+        cluster_environment['SERVICE'] = 'cluster-connector'
+        cluster_service = ops.pebble.ServiceDict(override="replace",
+                                                 summary="microcloud cluster manager cluster-connector service",
+                                                 command="microcloud-cluster-manager",
+                                                 startup="enabled",
+                                                 environment=cluster_environment)
+
+        pebble_layer = ops.pebble.LayerDict(summary='microcloud cluster manager services',
+                                            description='cluster connector and management api services',
+                                            services={"mcm-management-api": mgmt_service,
+                                                      "mcm-cluster-connector": cluster_service})
 
         return ops.pebble.Layer(pebble_layer)
 

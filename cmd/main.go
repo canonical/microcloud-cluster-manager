@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/canonical/microcloud-cluster-manager/cmd/admin"
 	clusterconnector "github.com/canonical/microcloud-cluster-manager/cmd/cluster-connector"
 	managementapi "github.com/canonical/microcloud-cluster-manager/cmd/management-api"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
@@ -14,7 +13,6 @@ import (
 var SERVICES = []string{
 	"management-api",
 	"cluster-connector",
-	"admin",
 }
 
 func main() {
@@ -45,10 +43,6 @@ func run() error {
 
 	if service == "cluster-connector" {
 		return clusterconnector.Run()
-	}
-
-	if service == "admin" {
-		return admin.Run()
 	}
 
 	return fmt.Errorf("service name is invalid, it should be one of: %v", SERVICES)
