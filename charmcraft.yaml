@@ -43,4 +43,11 @@ requires:
   database:
     interface: postgresql_client
     limit: 1
+  send-remote-write:
+    interface: prometheus_remote_write
+    optional: true
+  grafana-metadata:
+    interface: grafana_metadata
+    optional: true
+
 

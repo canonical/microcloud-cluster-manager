@@ -299,7 +299,7 @@ func forwardMetricsToPrometheus(timeSeries []prompb.TimeSeries, rc types.RouteCo
 	// ref: https://prometheus.io/docs/specs/remote_write_spec/
 	compressedData := snappy.Encode(nil, data)
 
-	remoteWriteURL := rc.Env.PrometheusBaseURL + "/cos-prometheus-0/api/v1/write"
+	remoteWriteURL := rc.Env.PrometheusBaseURL
 	req, err := http.NewRequest("POST", remoteWriteURL, bytes.NewReader(compressedData))
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP request: %w", err)

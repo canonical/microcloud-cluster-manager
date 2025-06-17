@@ -5,9 +5,9 @@
 import logging
 import ops
 
-from typing import Optional
-from charms.data_platform_libs.v0.data_interfaces import DatabaseCreatedEvent
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
+from charms.grafana_k8s.v0.grafana_metadata import GrafanaMetadataAppData, GrafanaMetadataRequirer
+from charms.prometheus_k8s.v1.prometheus_remote_write import PrometheusRemoteWriteConsumer
 from charms.tls_certificates_interface.v4.tls_certificates import (
     Certificate,
     CertificateRequestAttributes,
@@ -15,6 +15,7 @@ from charms.tls_certificates_interface.v4.tls_certificates import (
     PrivateKey,
     TLSCertificatesRequiresV4,
 )
+from typing import Optional
 
 CERTS_DIR_PATH = "/etc/ssl/management-api"
 PRIVATE_KEY_NAME = "tls.key"
@@ -36,53 +37,26 @@ class ClusterManagerCharm(ops.CharmBase):
             certificate_requests=[self._get_certificate_request_attributes()],
             mode=Mode.UNIT,
         )
-        framework.observe(self.certificates.on.certificate_available, self._configure)
-        framework.observe(self.on.collect_unit_status, self._on_collect_status)
+        framework.observe(self.certificates.on.certificate_available, self._on_certificates_available)
 
         # Database relation
-        self.database = DatabaseRequires(self, relation_name="database", database_name="names_db")
-        framework.observe(self.database.on.database_created, self._on_database_created)
-        framework.observe(self.database.on.endpoints_changed, self._on_database_created)
+        self.database = DatabaseRequires(self, relation_name="database", database_name="cluster_manager_db")
+        framework.observe(self.database.on.database_created, self._on_database_changed)
+        framework.observe(self.database.on.endpoints_changed, self._on_database_changed)
+
+        # Prometheus remote write relation
+        self.prometheus_remote_write = PrometheusRemoteWriteConsumer(self)
+        self.framework.observe(self.prometheus_remote_write.on.endpoints_changed, self._on_endpoints_changed)
+
+        # Grafana metadata relation
+        self.grafana_metadata = GrafanaMetadataRequirer(relation_mapping=self.model.relations)
+        self.framework.observe(self.on["grafana-metadata"].relation_changed, self._on_grafana_metadata_changed)
 
         # Main service
         self.pebble_service_name = "mcm-management-api"
+        framework.observe(self.on.collect_unit_status, self._on_collect_status)
         framework.observe(self.on.microcloud_cluster_manager_pebble_ready,
                           self._on_microcloud_cluster_manager_pebble_ready)
-
-    def _on_database_created(self, event: DatabaseCreatedEvent) -> None:
-        """Event is fired when postgres database is created."""
-        if self._certificate_is_stored():
-            logger.info("Database created and certificate is available, replanning")
-            self.container.replan()
-        else:
-            logger.info("Database created but certificate is not available, setting unit to waiting status")
-            self.unit.status = ops.WaitingStatus("Waiting for TLS certificate to be available")
-
-    def fetch_postgres_relation_data(self) -> dict[str, str]:
-        """Fetch postgres relation data.
-
-        This function retrieves relation data from a postgres database using
-        the `fetch_relation_data` method of the `database` object. The retrieved data is
-        then logged for debugging purposes, and any non-empty data is processed to extract
-        endpoint information, username, and password. This processed data is then returned as
-        a dictionary. If no data is retrieved, the unit is set to waiting status and
-        the program exits with a zero status code."""
-        relations = self.database.fetch_relation_data()
-        logger.debug('Got following database data: %s', relations)
-        for data in relations.values():
-            if not data:
-                continue
-            logger.info('New PSQL database endpoint is %s', data['endpoints'])
-            host, port = data['endpoints'].split(':')
-            db_data = {
-                'db_host': host,
-                'db_port': port,
-                'db_username': data['username'],
-                'db_password': data['password'],
-                'db_name': data['database'],
-            }
-            return db_data
-        return {}
 
     def _get_certificate_request_attributes(self) -> CertificateRequestAttributes:
         return CertificateRequestAttributes(
@@ -91,7 +65,7 @@ class ClusterManagerCharm(ops.CharmBase):
         )
 
     def _on_collect_status(self, event: ops.CollectStatusEvent):
-        if not self._relation_created("certificates"):
+        if not self._is_relation_created("certificates"):
             event.add_status(
                 ops.BlockedStatus("certificates integration not created")
             )
@@ -112,19 +86,20 @@ class ClusterManagerCharm(ops.CharmBase):
         # If nothing is wrong, then the status is active.
         event.add_status(ops.ActiveStatus())
 
-    def _configure(self, _: ops.EventBase):
-        if not self._relation_created("certificates"):
+    def _on_certificates_available(self, _: ops.EventBase):
+        if not self._is_relation_created("certificates"):
             return
-        if not self._certificate_is_available():
+        if not self._is_certificate_available():
             return
         certificate_update_required = self._check_and_update_certificate()
         if certificate_update_required:
-            self.container.replan()
+            logger.info("Certificates configured.")
+            self.update_pebble_layer()
 
-    def _relation_created(self, relation_name: str) -> bool:
+    def _is_relation_created(self, relation_name: str) -> bool:
         return bool(self.model.relations.get(relation_name))
 
-    def _certificate_is_available(self) -> bool:
+    def _is_certificate_available(self) -> bool:
         cert, key = self.certificates.get_assigned_certificate(
             certificate_request=self._get_certificate_request_attributes()
         )
@@ -201,15 +176,38 @@ class ClusterManagerCharm(ops.CharmBase):
         )
         logger.info("Pushed private key to workload")
 
-    def _on_microcloud_cluster_manager_pebble_ready(self, event: ops.PebbleReadyEvent) -> None:
+    def _on_microcloud_cluster_manager_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
+        logger.info("Pebble is ready.")
+        self.update_pebble_layer()
+
+    def _on_endpoints_changed(self, _: ops.EventBase):
+        logger.info("Prometheus endpoints changed.")
+        self.update_pebble_layer()
+
+    def _on_grafana_metadata_changed(self, _: ops.EventBase):
+        logger.info("Grafana metadata changed.")
+        self.update_pebble_layer()
+
+    def _on_database_changed(self, _: ops.EventBase) -> None:
+        logger.info("Postgres database created or updated.")
+        self.update_pebble_layer()
+
+    def update_pebble_layer(self) -> None:
+        if not self._certificate_is_stored():
+            logger.info("TLS certificate is not stored, skipping Pebble layer update.")
+            self.unit.status = ops.WaitingStatus("Waiting for TLS certificate to be available")
+            return
+        if not self.get_postgres_relation_data():
+            logger.info("Postgres relation data is not available, skipping Pebble layer update.")
+            self.unit.status = ops.WaitingStatus("Waiting for database relation to be available")
+            return
+
         self.container.add_layer('microcloud_cluster_manager', self._pebble_layer, combine=True)
         self.container.replan()
         self.unit.status = ops.ActiveStatus()
 
     @property
     def _pebble_layer(self) -> ops.pebble.Layer:
-        logger.info("Pebble layer initialized")
-
         mgmt_environment = self.app_environment
         mgmt_environment['SERVICE'] = 'management-api'
         mgmt_environment['SERVER_PORT'] = '9100'
@@ -235,9 +233,61 @@ class ClusterManagerCharm(ops.CharmBase):
 
         return ops.pebble.Layer(pebble_layer)
 
+    def get_prometheus_write_endpoint(self):
+        """Return a sorted list of remote-write endpoints."""
+        if not hasattr(self, "prometheus_remote_write"):
+            return None
+
+        endpoints = getattr(self.prometheus_remote_write, "endpoints", None)
+        if not isinstance(endpoints, list) or not endpoints:
+            return None
+
+        first = endpoints[0]
+        if not isinstance(first, dict):
+            return None
+
+        return first.get("url")
+
+    def get_grafana_metadata(self) -> GrafanaMetadataAppData:
+        """Return the metadata for the related Grafana."""
+        return self.grafana_metadata.get_data()
+
+    def get_postgres_relation_data(self) -> dict[str, str]:
+        """Fetch postgres relation data."""
+        relations = self.database.fetch_relation_data()
+        logger.debug('Got following database data: %s', relations)
+        for data in relations.values():
+            if not data:
+                continue
+            logger.debug('New PSQL database endpoint is %s', data['endpoints'])
+            host, port = data['endpoints'].split(':')
+            db_data = {
+                'db_host': host,
+                'db_port': port,
+                'db_username': data['username'],
+                'db_password': data['password'],
+                'db_name': data['database'],
+            }
+            return db_data
+        return {}
+
     @property
     def app_environment(self) -> dict[str, str]:
-        db_data = self.fetch_postgres_relation_data()
+        db_data = self.get_postgres_relation_data()
+        prometheus_url = self.get_prometheus_write_endpoint()
+
+        grafana_metadata = self.get_grafana_metadata()
+        # todo this should come from grafana relation
+        grafana_url = "http://0.0.0.0:3000/d/bGY-LSB7k/lxd?orgId=1"
+        if grafana_metadata:
+            grafana_internal_url = str(grafana_metadata.direct_url)
+            grafana_external_url = str(grafana_metadata.ingress_url)
+            grafana_uid = grafana_metadata.grafana_uid
+
+            logger.info("Grafana metadata: %s", grafana_metadata)
+            logger.info("Grafana internal URL: %s", grafana_internal_url)
+            logger.info("Grafana external URL: %s", grafana_external_url)
+            logger.info("Grafana UID: %s", grafana_uid)
 
         env = {
             key: value
@@ -256,7 +306,8 @@ class ClusterManagerCharm(ops.CharmBase):
                 "OIDC_AUDIENCE": "https://lxd-ui-demo.us.auth0.com/api/v2/",
                 "OIDC_CLIENT_ID": "OZSAeCbqAXZid3LL1gRQEkLXP9KlwZtJ",
                 "OIDC_ISSUER": "https://lxd-ui-demo.us.auth0.com/",
-                # "PROMETHEUS_BASE_URL": "http://192.168.1.133",
+                "PROMETHEUS_BASE_URL": prometheus_url or "",
+                "GRAFANA_BASE_URL": grafana_url or "",
                 "SERVER_HOST": "0.0.0.0",
                 "SERVER_PORT": "9000",
                 "TEST_MODE": "false",
@@ -265,7 +316,6 @@ class ClusterManagerCharm(ops.CharmBase):
             if value is not None
         }
         return env
-
 
 if __name__ == "__main__":  # pragma: nocover
     ops.main(ClusterManagerCharm)

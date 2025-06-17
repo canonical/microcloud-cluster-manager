@@ -36,10 +36,14 @@ kubectl exec -it microcloud-cluster-manager-k8s-0 -c microcloud-cluster-manager 
 kubectl exec -it microcloud-cluster-manager-k8s-0 -c charm -n cluster-manager-juju-dev -- /bin/bash
 
 # manual port forwarding
+kubectl port-forward pod/grafana-0 3000:3000 -n cluster-manager-juju-dev
 kubectl port-forward pod/microcloud-cluster-manager-k8s-0 8414:9100 -n cluster-manager-juju-dev
 kubectl port-forward pod/microcloud-cluster-manager-k8s-0 31000:9000 -n cluster-manager-juju-dev
 sudo socat TCP-LISTEN:32000,fork TCP:localhost:31000
 
 # run migrations
 eval $(cat /proc/136/environ | tr '\0' '\n' | grep -v '^SERVICE=' | sed 's/^/export /') && export SERVICE=admin && microcloud-cluster-manager
+
+#grafana password
+juju run grafana/0 get-admin-password
 ```

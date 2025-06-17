@@ -72,12 +72,18 @@ dev-juju-deploy:
 	juju deploy self-signed-certificates
 	juju deploy postgresql-k8s --channel 14/stable
 	juju trust postgresql-k8s --scope=cluster
+	# todo: this should be a dedicated model?
+	juju deploy cos-lite --trust
 
 	juju deploy ./microcloud-cluster-manager-k8s_amd64.charm --resource microcloud-cluster-manager-image=ghcr.io/edlerd/microcloud-cluster-manager:0.1 --debug
 	#juju deploy microcloud-cluster-manager-k8s --channel edge
 
 	juju integrate postgresql-k8s microcloud-cluster-manager-k8s
 	juju integrate self-signed-certificates:certificates microcloud-cluster-manager-k8s:certificates
+
+	# todo this should be cross model?
+	juju integrate prometheus:receive-remote-write microcloud-cluster-manager-k8s:send-remote-write
+	juju integrate grafana:grafana-metadata microcloud-cluster-manager-k8s:grafana-metadata
 
 .PHONY: dev-juju-update
 dev-juju-update:
