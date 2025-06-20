@@ -1,6 +1,8 @@
-import { FC } from "react";
+import React, { FC } from "react";
 import { Cluster } from "types/cluster";
 import { getClusterWarnings } from "util/clusterWarnings";
+import { EmptyState, Icon, Notification } from "@canonical/react-components";
+import { pluralize } from "util/helpers";
 
 interface Props {
   cluster: Cluster;
@@ -8,22 +10,36 @@ interface Props {
 
 export const ClusterWarningList: FC<Props> = ({ cluster }: Props) => {
   const warnings = getClusterWarnings(cluster);
+  const isEmpty = warnings.length === 0;
 
-  return (
-    <>
-      <h5>Warnings</h5>
+  return isEmpty ? (
+    <EmptyState
+      className="empty-state"
+      image={<Icon name="success-grey" className="empty-state-icon" />}
+      title="No warnings"
+    >
+      <p>You’re doing something right!</p>
+    </EmptyState>
+  ) : (
+    <div className="warning-list">
+      <h2 className="p-heading--4">
+        {warnings.length === 0 ? (
+          <>No warnings</>
+        ) : (
+          <>
+            {warnings.length} {pluralize("warning", warnings.length)}
+          </>
+        )}
+      </h2>
       {warnings.length > 0 ? (
-        <ul className="cluster-warning-list">
-          {warnings.map((warning, index) => (
-            <li key={index}>{warning}</li>
-          ))}
-        </ul>
+        warnings.map((warning, index) => (
+          <Notification severity="caution" key={index} title={warning} />
+        ))
       ) : (
         <>
-          <div>This cluster has no warnings.</div>
           <div className="u-text--muted">You’re doing something right!</div>
         </>
       )}
-    </>
+    </div>
   );
 };

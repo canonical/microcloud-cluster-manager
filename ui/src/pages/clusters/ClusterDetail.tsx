@@ -11,7 +11,7 @@ import ClusterTimer from "./metrics/ClusterTimer";
 import ClusterDetailMetrics from "./metrics/ClusterDetailMetrics";
 import Loader from "components/Loader";
 import BreadCrumbHeader from "components/BreadcrumbHeader";
-import DeleteClusterButton from "pages/clusters/DeleteClusterButton";
+import RemoveClusterButton from "pages/clusters/RemoveClusterButton";
 import ClusterMetricsButton from "pages/clusters/ClusterMetricsButton";
 import ClusterUiButton from "pages/clusters/ClusterUiButton";
 import { ClusterWarningList } from "pages/clusters/metrics/ClusterWarningList";
@@ -58,7 +58,7 @@ const ClusterDetail: FC = () => {
           <div className="p-segmented-control__list">
             <ClusterUiButton uiUrl={cluster.ui_url} />
             <ClusterMetricsButton clusterName={cluster.name} />
-            <DeleteClusterButton clusterName={cluster.name} />
+            <RemoveClusterButton clusterName={cluster.name} />
           </div>
         </div>
       }

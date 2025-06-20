@@ -5,7 +5,30 @@
 .clusterlist-table {
   margin: 0;
 
+  th,
   td {
-    align-content: center;
+    display: table-cell;
+    vertical-align: top;
+  }
+
+  thead,
+  tbody {
+    display: block;
+    overflow: hidden auto;
+    scrollbar-gutter: stable;
+  }
+
+  thead tr,
+  tbody tr {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .members,
+  .instances,
+  .warnings {
+    text-align: right;
+    width: 8rem;
   }
 }

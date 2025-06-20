@@ -128,7 +128,7 @@ export const convertToISOFormat = (datetimeLocalString: string) => {
 };
 
 // this works only for words that form the plural by adding an "s" at the end
-export const pluralizeWord = (word: string, count: number): string => {
+export const pluralize = (word: string, count: number): string => {
   return count === 1 ? word : `${word}s`;
 };
 
@@ -137,4 +137,16 @@ export const statusCount = (
   status: string,
 ) => {
   return distribution.find((item) => item.status === status)?.count ?? 0;
+};
+
+export const handleSettledResult = (
+  results: PromiseSettledResult<unknown>[],
+): void => {
+  const error = results.find((res) => res.status === "rejected")?.reason as
+    | Error
+    | undefined;
+
+  if (error) {
+    throw error;
+  }
 };

@@ -1,6 +1,6 @@
 import { LxdApiResponse } from "types/apiResponse";
 import { Cluster } from "types/cluster";
-import { handleResponse } from "util/helpers";
+import { handleResponse, handleSettledResult } from "util/helpers";
 
 export const fetchClusters = (): Promise<Cluster[]> => {
   return new Promise((resolve, reject) => {
@@ -31,6 +31,14 @@ export const deleteCluster = (remoteClusterName: string): Promise<void> => {
       .then(() => resolve())
       .catch(reject);
   });
+};
+
+export const deleteClusterBulk = async (
+  remoteClusterNames: string[],
+): Promise<void> => {
+  return Promise.allSettled(
+    remoteClusterNames.map(async (name) => deleteCluster(name)),
+  ).then(handleSettledResult);
 };
 
 export const approveCluster = (remoteClusterName: string): Promise<void> => {

@@ -2,7 +2,7 @@ import { Icon } from "@canonical/react-components";
 import DoughnutChart from "components/DoughnutChart";
 import { FC, ReactNode } from "react";
 import { Cluster } from "types/cluster";
-import { pluralizeWord, statusCount } from "util/helpers";
+import { pluralize, statusCount } from "util/helpers";
 
 interface Props {
   cluster: Cluster;
@@ -52,7 +52,7 @@ const ClusterDetailInstanceGraph: FC<Props> = ({ cluster }: Props) => {
       />
       <ul className="doughnut-chart__legend u-no-margin--left">
         <li className="u-no-margin p-heading--5 u-no-padding">
-          {totalInstances} {pluralizeWord("instance", totalInstances)}
+          {totalInstances} {pluralize("instance", totalInstances)}
         </li>
         <li>
           <Icon name="status-succeeded-small" />

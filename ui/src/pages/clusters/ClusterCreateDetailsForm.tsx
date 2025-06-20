@@ -1,17 +1,16 @@
 import { FC } from "react";
-import { Col, Input, Row } from "@canonical/react-components";
+import { Input } from "@canonical/react-components";
 import { FormikProps } from "formik/dist/types";
-import ScrollableForm from "components/ScrollableForm";
 import { convertToISOFormat } from "util/helpers";
 
 export interface CreateClusterFormValues {
-  cluster_name?: string;
-  expiry?: string;
+  clusterName: string;
+  expiry: string;
 }
 
 export const newTokenPayload = (values: CreateClusterFormValues) => {
   const payload: Record<string, string | undefined> = {
-    cluster_name: values.cluster_name,
+    cluster_name: values.clusterName,
     expiry: convertToISOFormat(values.expiry ?? ""),
   };
 
@@ -24,36 +23,32 @@ interface Props {
 
 const ClusterCreateDetailsForm: FC<Props> = ({ formik }) => {
   return (
-    <ScrollableForm>
-      <Row>
-        <Col size={12}>
-          <Input
-            id="name"
-            name="cluster_name"
-            type="text"
-            label="Cluster name"
-            placeholder="Enter Name"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.cluster_name}
-            error={
-              formik.touched.cluster_name ? formik.errors.cluster_name : null
-            }
-          />
-          <Input
-            id="expiry"
-            name="expiry"
-            type="datetime-local"
-            label="Expiry Date"
-            placeholder="Enter Date"
-            onBlur={formik.handleBlur}
-            onChange={formik.handleChange}
-            value={formik.values.expiry}
-            error={formik.touched.expiry ? formik.errors.expiry : null}
-          />
-        </Col>
-      </Row>
-    </ScrollableForm>
+    <>
+      <Input
+        id="name"
+        name="clusterName"
+        type="text"
+        label="Cluster name"
+        help="Choose a name for the new cluster."
+        placeholder="Enter Name"
+        autoFocus
+        onBlur={formik.handleBlur}
+        onChange={formik.handleChange}
+        value={formik.values.clusterName}
+        error={formik.touched.clusterName ? formik.errors.clusterName : null}
+      />
+      <Input
+        id="expiry"
+        name="expiry"
+        type="datetime-local"
+        label="Expiry date for join token"
+        placeholder="Enter Date"
+        onBlur={formik.handleBlur}
+        onChange={formik.handleChange}
+        value={formik.values.expiry}
+        error={formik.touched.expiry ? formik.errors.expiry : null}
+      />
+    </>
   );
 };
 

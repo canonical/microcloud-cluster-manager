@@ -4,7 +4,10 @@
 @import "./breakpoints";
 @import "pattern_icon";
 @include vf-p-icons;
-@include vf-p-icon-units;
+@include vf-p-icon-cluster-host;
+@include vf-p-icon-edit;
+@include vf-p-icon-export;
+@include vf-p-icon-profile;
 @include vf-p-icon-switcher-environments;
 @include vf-p-icon-status-waiting-small;
 @include vf-p-icon-status-succeeded-small;
@@ -12,9 +15,9 @@
 @include vf-p-icon-status-queued-small;
 @include vf-p-icon-status-in-progress-small;
 @include vf-p-icon-settings;
-@include vf-p-icon-profile;
-@include vf-p-icon-export;
-@include vf-p-icon-edit;
+@include vf-p-icon-success-grey;
+@include vf-p-icon-task-outstanding;
+@include vf-p-icon-units;
 @include custom-p-icon;
 @import "breadcrumbs";
 @import "cluster_graphs";
@@ -22,12 +25,16 @@
 @import "cluster_detail";
 @import "clustercpu";
 @import "doughnut_chart";
+@import "empty_state";
 @import "forms";
 @import "meter";
 @import "page_header";
 @import "pattern_navigation";
 @import "percentile_chart";
 @import "scrollable_container";
+@import "scrollable_table";
+@import "selectable_main_table";
+@import "side_panel";
 @import "status_bar";
 
 body {
@@ -65,4 +72,14 @@ body {
 
 .u-pointer {
   cursor: pointer;
+}
+
+.u-modal-medium {
+  .p-modal__dialog {
+    max-width: 40rem;
+  }
+}
+
+.warning-list {
+  max-width: 50rem;
 }

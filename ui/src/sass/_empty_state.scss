@@ -1,0 +1,30 @@
+.empty-state {
+  margin: min(5dvh, $spv--strip-regular) auto;
+
+  .empty-state-icon {
+    height: 2.5rem;
+    margin-top: $spv--medium;
+    opacity: 0.25;
+    width: 2.5rem;
+  }
+
+  @include large {
+    width: 67%;
+  }
+
+  @include extra-large {
+    width: 50%;
+  }
+
+  &__full-width {
+    width: 100%;
+  }
+
+  p {
+    margin-bottom: $spv--medium;
+  }
+
+  .empty-state-button {
+    margin-top: $spv--medium;
+  }
+}

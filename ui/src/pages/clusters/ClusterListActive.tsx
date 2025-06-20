@@ -1,5 +1,10 @@
 import React, { FC } from "react";
-import { MainTable, TablePagination } from "@canonical/react-components";
+import {
+  EmptyState,
+  Icon,
+  TablePagination,
+  useNotify,
+} from "@canonical/react-components";
 import Loader from "components/Loader";
 import { Link } from "react-router-dom";
 import { ClusterInstances } from "./metrics/ClusterInstances";
@@ -8,49 +13,65 @@ import ClusterHeartbeat from "./metrics/ClusterHeartbeat";
 import ClusterStatus from "./metrics/ClusterStatus";
 import { Cluster } from "types/cluster";
 import { ClusterWarningCount } from "pages/clusters/metrics/ClusterWarningCount";
+import EnrolClusterButton from "pages/clusters/EnrolClusterButton";
+import SelectableMainTable from "components/SelectableMainTable";
+import SelectedTableNotification from "components/SelectedTableNotification";
+import ScrollableTable from "components/ScrollableTable";
 
 type Props = {
   clusters: Cluster[];
+  isEmptyState: boolean;
   isLoading: boolean;
+  processingNames: string[];
+  selectedNames: string[];
+  setSelectedNames: (names: string[]) => void;
 };
 
-const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
+const ClusterListActive: FC<Props> = ({
+  clusters,
+  isEmptyState,
+  isLoading,
+  processingNames,
+  selectedNames,
+  setSelectedNames,
+}) => {
+  const notify = useNotify();
+
   const tableHeaders = [
     {
       content: "Cluster Name",
       sortKey: "name",
-    },
-    {
-      content: "Members",
-    },
-    {
-      content: "Instances running",
-    },
-    {
-      content: "Warnings",
+      className: "name",
     },
     {
       content: "Status",
       sortKey: "status",
+      className: "status",
+    },
+    {
+      content: "Members",
+      className: "members",
+    },
+    {
+      content: "Running instances",
+      className: "instances",
+    },
+    {
+      content: "Warnings",
+      className: "warnings",
     },
   ];
 
   const tableRows = clusters.map((cluster) => {
     return {
+      key: cluster.name,
+      name: cluster.name,
       columns: [
         {
           content: (
             <Link to={`/ui/cluster/${cluster.name}`}>{cluster.name}</Link>
           ),
-        },
-        {
-          content: <ClusterMembers cluster={cluster} />,
-        },
-        {
-          content: <ClusterInstances cluster={cluster} />,
-        },
-        {
-          content: <ClusterWarningCount cluster={cluster} />,
+          className: "name",
         },
         {
           content: (
@@ -59,6 +80,19 @@ const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
               <ClusterHeartbeat cluster={cluster} />
             </>
           ),
+          className: "status",
+        },
+        {
+          content: <ClusterMembers cluster={cluster} />,
+          className: "members",
+        },
+        {
+          content: <ClusterInstances cluster={cluster} />,
+          className: "instances",
+        },
+        {
+          content: <ClusterWarningCount cluster={cluster} />,
+          className: "warnings",
         },
       ],
       sortData: {
@@ -75,28 +109,66 @@ const ClusterListActive: FC<Props> = ({ clusters, isLoading }) => {
       aria-labelledby="Active"
       className="clusterlist-table-container"
     >
-      <TablePagination
-        data={tableRows}
-        id="pagination"
-        itemName=" active cluster"
-        className="u-no-margin--top"
-        aria-label="Table pagination control"
-      >
-        <MainTable
-          className={"clusterlist-table"}
-          responsive={true}
-          emptyStateMsg={
-            isLoading ? (
-              <Loader text="Loading Clusters..." />
-            ) : (
-              <>No clusters found matching this search.</>
-            )
-          }
-          headers={tableHeaders}
-          rows={tableRows}
-          sortable
-        />
-      </TablePagination>
+      {isEmptyState ? (
+        <div className="u-no-margin--top">
+          <EmptyState
+            className="empty-state"
+            image={<Icon name="cluster-host" className="empty-state-icon" />}
+            title="No active clusters found"
+          >
+            <p>There are no active clusters. Enroll your first cluster!</p>
+            <EnrolClusterButton />
+          </EmptyState>
+        </div>
+      ) : (
+        <ScrollableTable
+          dependencies={[clusters, notify.notification]}
+          tableId="clusterlist-table"
+          belowIds={["status-bar"]}
+        >
+          <TablePagination
+            data={tableRows}
+            id="pagination"
+            itemName=" active cluster"
+            className="u-no-margin--top"
+            aria-label="Table pagination control"
+            description={
+              selectedNames.length > 0 && (
+                <SelectedTableNotification
+                  totalCount={clusters.length ?? 0}
+                  itemName="cluster"
+                  parentName=""
+                  selectedNames={selectedNames}
+                  setSelectedNames={setSelectedNames}
+                  filteredNames={selectedNames}
+                />
+              )
+            }
+          >
+            <SelectableMainTable
+              id="clusterlist-table"
+              className="clusterlist-table"
+              responsive
+              emptyStateMsg={
+                isLoading ? (
+                  <Loader text="Loading Clusters..." />
+                ) : (
+                  <>No clusters found matching this search.</>
+                )
+              }
+              headers={tableHeaders}
+              rows={tableRows}
+              sortable
+              selectedNames={selectedNames}
+              setSelectedNames={setSelectedNames}
+              itemName="cluster"
+              parentName=""
+              filteredNames={clusters.map((item) => item.name)}
+              disabledNames={processingNames}
+            />
+          </TablePagination>
+        </ScrollableTable>
+      )}
     </div>
   );
 };

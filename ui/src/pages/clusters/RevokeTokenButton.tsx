@@ -39,26 +39,23 @@ const RevokeTokenButton: FC<Props> = ({ token }) => {
 
   return (
     <ConfirmationButton
-      appearance=""
+      appearance="base"
       loading={loading}
       className="u-no-margin--bottom has-icon"
       confirmationModalProps={{
         title: "Confirm revoke",
         children: (
           <p>
-            This will permanently revoke the token for cluster{" "}
-            <strong>{token.cluster_name}</strong>. This action cannot be undone,
-            and can result in data loss.
+            Are you sure you want to revoke the token for cluster{" "}
+            <strong>{token.cluster_name}</strong>?
           </p>
         ),
         confirmButtonLabel: "Revoke",
         onConfirm: () => void handleDeleteToken(),
       }}
       shiftClickEnabled
-      showShiftClickHint
     >
       <Icon name="delete" />
-      <span>Revoke</span>
     </ConfirmationButton>
   );
 };

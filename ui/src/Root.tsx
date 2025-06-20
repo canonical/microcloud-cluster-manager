@@ -33,7 +33,7 @@ const Root: FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Application>
+        <Application id="l-application">
           <NotificationProvider
             state={location.state}
             pathname={location.pathname}

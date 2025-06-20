@@ -13,7 +13,7 @@ type Props = {
   clusterName: string;
 };
 
-const DeleteClusterButton: FC<Props> = ({ clusterName }) => {
+const RemoveClusterButton: FC<Props> = ({ clusterName }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
   const navigate = useNavigate();
@@ -40,24 +40,28 @@ const DeleteClusterButton: FC<Props> = ({ clusterName }) => {
       loading={isLoading}
       className="p-segmented-control__button u-no-margin--bottom has-icon"
       confirmationModalProps={{
-        title: "Confirm delete",
+        title: "Confirm remove",
         children: (
-          <p>
-            This will permanently delete the cluster{" "}
-            <strong>{clusterName}</strong>. This action cannot be undone, and
-            can result in data loss.
-          </p>
+          <>
+            <p>
+              Are you sure you want to remove the cluster{" "}
+              <strong>{clusterName}</strong>?
+            </p>
+            <p>
+              The cluster will be be unenrolled from cluster manager, but it
+              will not be deleted.
+            </p>
+          </>
         ),
-        confirmButtonLabel: "Delete",
+        confirmButtonLabel: "Confirm remove",
         onConfirm: () => void handleDelete(),
       }}
       shiftClickEnabled
-      showShiftClickHint
     >
       <Icon name="delete" />
-      <span>Delete</span>
+      <span>Remove</span>
     </ConfirmationButton>
   );
 };
 
-export default DeleteClusterButton;
+export default RemoveClusterButton;

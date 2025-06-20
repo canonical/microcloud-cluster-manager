@@ -85,10 +85,9 @@ const Navigation: FC = () => {
                   title={`Clusters List`}
                   onClick={softToggleMenu}
                 >
-                  <img
-                    src="/ui/assets/img/cluster-icon.svg"
-                    alt="cluster-icon"
-                    className="p-side-navigation__icon"
+                  <Icon
+                    className="is-light p-side-navigation__icon"
+                    name="cluster-host"
                   />
                   Clusters
                 </NavLink>
