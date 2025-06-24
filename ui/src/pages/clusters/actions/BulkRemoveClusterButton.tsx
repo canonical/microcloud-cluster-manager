@@ -30,11 +30,11 @@ const BulkRemoveClusterButton: FC<Props> = ({
         notify.success(
           <>
             {clusterNames.length} {pluralize("cluster", clusterNames.length)}{" "}
-            deleted.
+            removed.
           </>,
         );
       })
-      .catch((e) => notify.failure(`Cluster deletion failed.`, e))
+      .catch((e) => notify.failure(`Cluster removal failed.`, e))
       .finally(() => {
         void queryClient.invalidateQueries({
           queryKey: [queryKeys.clusters],

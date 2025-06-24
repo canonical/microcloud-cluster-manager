@@ -49,7 +49,7 @@ const ConfigureClusterPanel: FC = () => {
         closePanel();
       })
       .catch((e: Error) => {
-        notify.failure("Unable to create token.", e);
+        notify.failure(`Failure updating cluster ${clusterName}.`, e);
       })
       .finally(() => {
         void queryClient.invalidateQueries({
@@ -64,8 +64,8 @@ const ConfigureClusterPanel: FC = () => {
 
   const formik = useFormik<ConfigureClusterFormValues>({
     initialValues: {
-      diskThreshold: cluster?.disk_threshold ?? 0,
-      memoryThreshold: cluster?.memory_threshold ?? 0,
+      diskThreshold: cluster?.disk_threshold ?? 80,
+      memoryThreshold: cluster?.memory_threshold ?? 80,
     },
     enableReinitialize: true,
     onSubmit: handleSubmit,

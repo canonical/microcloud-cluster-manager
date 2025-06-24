@@ -48,10 +48,9 @@ export const ClusterMembers: FC<Props> = ({ cluster }: Props) => {
           </div>
         </div>
       }
-      positionElementClassName="tooltip"
-      position="left"
+      position="btm-center"
     >
-      <div className="u-pointer">{total}</div>
+      <div className="tooltip-toggle">{total}</div>
     </Tooltip>
   );
 };

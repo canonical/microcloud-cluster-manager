@@ -19,8 +19,6 @@ type RemoteCluster struct {
 	Name               string    `db:"name"`                // Cluster name
 	Status             string    `db:"status"`              // Status (ACTIVE)
 	ClusterCertificate string    `db:"cluster_certificate"` // Unique cluster certificate
-	DiskThreshold      int       `db:"disk_threshold"`      // Disk threshold for warnings
-	MemoryThreshold    int       `db:"memory_threshold"`    // Memory threshold for warnings
 	JoinedAt           time.Time `db:"joined_at"`           // Timestamp when joined
 	CreatedAt          time.Time `db:"created_at"`          // Creation timestamp
 	UpdatedAt          time.Time `db:"updated_at"`          // Update timestamp
@@ -65,7 +63,7 @@ func RemoteClusterExists(ctx context.Context, tx *sqlx.Tx, name string) (bool, e
 // GetRemoteClusters returns all remote clusters.
 func GetRemoteClusters(ctx context.Context, tx *sqlx.Tx) ([]RemoteCluster, error) {
 	q := `
-        SELECT id, name, status, cluster_certificate, disk_threshold, memory_threshold, joined_at, created_at, updated_at
+        SELECT id, name, status, cluster_certificate, joined_at, created_at, updated_at
         FROM remote_clusters;
     `
 
@@ -77,8 +75,6 @@ func GetRemoteClusters(ctx context.Context, tx *sqlx.Tx) ([]RemoteCluster, error
 			&c.Name,
 			&c.Status,
 			&c.ClusterCertificate,
-			&c.DiskThreshold,
-			&c.MemoryThreshold,
 			&c.JoinedAt,
 			&c.CreatedAt,
 			&c.UpdatedAt,
@@ -103,7 +99,7 @@ func GetRemoteClusters(ctx context.Context, tx *sqlx.Tx) ([]RemoteCluster, error
 // GetRemoteCluster returns a single remote cluster by name.
 func GetRemoteCluster(ctx context.Context, tx *sqlx.Tx, name string) (*RemoteCluster, error) {
 	q := `
-		SELECT id, name, status, cluster_certificate, disk_threshold, memory_threshold, joined_at, created_at, updated_at
+		SELECT id, name, status, cluster_certificate, joined_at, created_at, updated_at
 		FROM remote_clusters
 		WHERE name = $1;
 	`
@@ -114,8 +110,6 @@ func GetRemoteCluster(ctx context.Context, tx *sqlx.Tx, name string) (*RemoteClu
 		&result.Name,
 		&result.Status,
 		&result.ClusterCertificate,
-		&result.DiskThreshold,
-		&result.MemoryThreshold,
 		&result.JoinedAt,
 		&result.CreatedAt,
 		&result.UpdatedAt,
@@ -144,9 +138,9 @@ func CreateRemoteCluster(ctx context.Context, tx *sqlx.Tx, data RemoteCluster) (
 	}
 
 	q := `
-        INSERT INTO remote_clusters (name, status, cluster_certificate, disk_threshold, memory_threshold, joined_at, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, name, status, cluster_certificate, disk_threshold, memory_threshold, joined_at, created_at, updated_at;
+        INSERT INTO remote_clusters (name, status, cluster_certificate, joined_at, created_at)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, name, status, cluster_certificate, joined_at, created_at, updated_at;
     `
 
 	var result RemoteCluster
@@ -154,8 +148,6 @@ func CreateRemoteCluster(ctx context.Context, tx *sqlx.Tx, data RemoteCluster) (
 		data.Name,
 		data.Status,
 		data.ClusterCertificate,
-		data.DiskThreshold,
-		data.MemoryThreshold,
 		data.JoinedAt,
 		data.CreatedAt,
 	).Scan(
@@ -163,8 +155,6 @@ func CreateRemoteCluster(ctx context.Context, tx *sqlx.Tx, data RemoteCluster) (
 		&result.Name,
 		&result.Status,
 		&result.ClusterCertificate,
-		&result.DiskThreshold,
-		&result.MemoryThreshold,
 		&result.JoinedAt,
 		&result.CreatedAt,
 		&result.UpdatedAt,
@@ -212,11 +202,11 @@ func UpdateRemoteCluster(ctx context.Context, tx *sqlx.Tx, name string, data Rem
 
 	q := `
         UPDATE remote_clusters
-        SET name = $1, status = $2, joined_at = $3, cluster_certificate = $4, disk_threshold = $5, memory_threshold = $6
-        WHERE id = $7;
+        SET name = $1, status = $2, joined_at = $3, cluster_certificate = $4
+        WHERE id = $5;
     `
 
-	result, err := tx.ExecContext(ctx, q, data.Name, data.Status, data.JoinedAt, data.ClusterCertificate, data.DiskThreshold, data.MemoryThreshold, id)
+	result, err := tx.ExecContext(ctx, q, data.Name, data.Status, data.JoinedAt, data.ClusterCertificate, id)
 	if err != nil {
 		return fmt.Errorf("update remote_clusters entry failed: %w", err)
 	}

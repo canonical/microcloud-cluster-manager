@@ -18,6 +18,7 @@ import SelectedTableNotification from "components/SelectedTableNotification";
 import ScrollableTable from "components/ScrollableTable";
 import ClusterActions from "pages/clusters/ClusterActions";
 import EnrolClusterButton from "pages/clusters/actions/EnrolClusterButton";
+import usePanelParams from "context/usePanelParams";
 
 type Props = {
   clusters: Cluster[];
@@ -37,6 +38,7 @@ const ClusterListActive: FC<Props> = ({
   setSelectedNames,
 }) => {
   const notify = useNotify();
+  const panelParams = usePanelParams();
 
   const tableHeaders = [
     {
@@ -175,6 +177,7 @@ const ClusterListActive: FC<Props> = ({
               parentName=""
               filteredNames={clusters.map((item) => item.name)}
               disabledNames={processingNames}
+              disableSelect={!!panelParams.panel}
             />
           </TablePagination>
         </ScrollableTable>

@@ -150,10 +150,24 @@ func remoteClusterPatch(rc types.RouteConfig) types.EndpointHandler {
 				newRemoteCluster.Status = string(payload.Status)
 			}
 			if payload.DiskThreshold > 0 {
-				newRemoteCluster.DiskThreshold = payload.DiskThreshold
+				err = store.UpdateRemoteClusterConfig(ctx, tx, store.RemoteClusterConfig{
+					RemoteClusterID: existingRemoteCluster.ID,
+					Key:             store.DiskThresholdKey,
+					Value:           fmt.Sprintf("%d", payload.DiskThreshold),
+				})
+				if err != nil {
+					return err
+				}
 			}
 			if payload.MemoryThreshold > 0 {
-				newRemoteCluster.MemoryThreshold = payload.MemoryThreshold
+				err = store.UpdateRemoteClusterConfig(ctx, tx, store.RemoteClusterConfig{
+					RemoteClusterID: existingRemoteCluster.ID,
+					Key:             store.MemoryThresholdKey,
+					Value:           fmt.Sprintf("%d", payload.MemoryThreshold),
+				})
+				if err != nil {
+					return err
+				}
 			}
 
 			newRemoteCluster.UpdatedAt = time.Now()

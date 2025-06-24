@@ -343,11 +343,39 @@ func UpdateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID
 }
 
 var baseDetailQuery = `
-	SELECT
-		remote_clusters.id, remote_clusters.name, remote_clusters.status, remote_clusters.cluster_certificate, remote_clusters.disk_threshold, remote_clusters.memory_threshold, remote_clusters.joined_at, remote_clusters.created_at,
-		remote_cluster_details.cpu_total_count, remote_cluster_details.cpu_load_1, remote_cluster_details.cpu_load_5, remote_cluster_details.cpu_load_15, remote_cluster_details.memory_total_amount, remote_cluster_details.memory_usage, 
-		remote_cluster_details.disk_total_size, remote_cluster_details.disk_usage, remote_cluster_details.instance_count, remote_cluster_details.instance_statuses, 
-		remote_cluster_details.member_count, remote_cluster_details.member_statuses, remote_cluster_details.ui_url, remote_cluster_details.updated_at
+	SELECT DISTINCT ON (remote_clusters.name)
+		remote_clusters.id,
+		remote_clusters.name,
+		remote_clusters.status,
+		remote_clusters.cluster_certificate,
+		remote_clusters.joined_at,
+		remote_clusters.created_at,
+		remote_cluster_details.cpu_total_count,
+		remote_cluster_details.cpu_load_1,
+		remote_cluster_details.cpu_load_5,
+		remote_cluster_details.cpu_load_15,
+		remote_cluster_details.memory_total_amount,
+		remote_cluster_details.memory_usage,
+		remote_cluster_details.disk_total_size,
+		remote_cluster_details.disk_usage,
+		remote_cluster_details.instance_count,
+		remote_cluster_details.instance_statuses,
+		remote_cluster_details.member_count,
+		remote_cluster_details.member_statuses,
+		remote_cluster_details.ui_url,
+		remote_cluster_details.updated_at,
+		COALESCE(
+			(SELECT value::bigint FROM remote_cluster_config cfg
+				WHERE cfg.remote_cluster_id = remote_clusters.id AND cfg.key = 'disk_threshold'
+				LIMIT 1),
+	    	0
+	    ) AS disk_threshold,
+	    COALESCE(
+			(SELECT value::bigint FROM remote_cluster_config cfg
+				WHERE cfg.remote_cluster_id = remote_clusters.id AND cfg.key = 'memory_threshold'
+				LIMIT 1),
+	    	0
+	    ) AS memory_threshold
 	FROM remote_cluster_details
 	JOIN remote_clusters ON remote_cluster_details.remote_cluster_id = remote_clusters.id
 `
@@ -361,8 +389,6 @@ func getRemoteClusterWithDetails(ctx context.Context, tx *sqlx.Tx, sql string, a
 			&c.Name,
 			&c.Status,
 			&c.ClusterCertificate,
-			&c.DiskThreshold,
-			&c.MemoryThreshold,
 			&c.ClusterJoinedAt,
 			&c.ClusterCreatedAt,
 			&c.CPUTotalCount,
@@ -379,6 +405,8 @@ func getRemoteClusterWithDetails(ctx context.Context, tx *sqlx.Tx, sql string, a
 			&c.MemberStatuses,
 			&c.UIURL,
 			&c.ClusterUpdatedAt,
+			&c.DiskThreshold,
+			&c.MemoryThreshold,
 		)
 		if err != nil {
 			return err

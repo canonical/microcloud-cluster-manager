@@ -15,8 +15,6 @@ CREATE TABLE IF NOT EXISTS remote_clusters (
     name TEXT NOT NULL UNIQUE,
     status TEXT NOT NULL CHECK (status IN ('ACTIVE')),
     cluster_certificate TEXT NOT NULL UNIQUE,
-    disk_threshold INTEGER NOT NULL DEFAULT 80,
-    memory_threshold INTEGER NOT NULL DEFAULT 80,
     joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -63,3 +61,11 @@ DROP TRIGGER IF EXISTS remote_cluster_details_updated_at_trigger ON remote_clust
 CREATE TRIGGER remote_cluster_details_updated_at_trigger
     BEFORE UPDATE ON remote_cluster_details
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TABLE remote_cluster_config (
+    id SERIAL           PRIMARY KEY,
+    remote_cluster_id   INTEGER NOT NULL REFERENCES remote_clusters(id) ON DELETE CASCADE,
+    key                 TEXT NOT NULL,
+    value               TEXT NOT NULL,
+    UNIQUE (remote_cluster_id, key)
+);

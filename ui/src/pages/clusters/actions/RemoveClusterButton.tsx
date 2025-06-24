@@ -12,14 +12,14 @@ import classnames from "classnames";
 
 type Props = {
   clusterName: string;
-  appearance?: string;
   className?: string;
+  onClose?: () => void;
 };
 
 const RemoveClusterButton: FC<Props> = ({
   clusterName,
-  appearance = "",
   className,
+  onClose,
 }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
@@ -34,16 +34,16 @@ const RemoveClusterButton: FC<Props> = ({
       await queryClient.invalidateQueries({
         queryKey: [queryKeys.clusters],
       });
-      notify.success(`Successfully deleted cluster ${clusterName}.`);
+      notify.success(`Successfully removed cluster ${clusterName}.`);
     } catch (error) {
-      notify.failure(`Unable to delete cluster ${clusterName}.`, error);
+      notify.failure(`Unable to remove cluster ${clusterName}.`, error);
     }
     setLoading(false);
+    onClose?.();
   };
 
   return (
     <ConfirmationButton
-      appearance={appearance}
       className={classnames("u-no-margin--bottom has-icon", className)}
       loading={isLoading}
       confirmationModalProps={{

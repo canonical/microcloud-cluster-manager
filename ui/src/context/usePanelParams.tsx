@@ -3,14 +3,17 @@ import { useSearchParams } from "react-router-dom";
 export interface PanelHelper {
   panel: string | null;
   cluster: string | null;
+  clusters: string | null;
   clear: () => void;
   openEnrolCluster: () => void;
   openConfigureCluster: (cluster?: string) => void;
+  openBulkConfigureCluster: (clusterNames: string[]) => void;
 }
 
 export const panels = {
   enrolCluster: "enrol-cluster",
   configureCluster: "configure-cluster",
+  bulkConfigureCluster: "configure-cluster-bulk",
 };
 
 type ParamMap = Record<string, string>;
@@ -40,6 +43,7 @@ const usePanelParams = (): PanelHelper => {
     // pre-existing search params should be kept e.g. params from the search bar
     newParams.delete("panel");
     newParams.delete("cluster");
+    newParams.delete("clusters");
     setParams(newParams);
     craftResizeEvent();
   };
@@ -47,6 +51,7 @@ const usePanelParams = (): PanelHelper => {
   return {
     panel: params.get("panel"),
     cluster: params.get("cluster"),
+    clusters: params.get("clusters"),
 
     clear: () => {
       clearParams();
@@ -62,6 +67,12 @@ const usePanelParams = (): PanelHelper => {
         params.cluster = cluster;
       }
       setPanelParams(panels.configureCluster, params);
+    },
+
+    openBulkConfigureCluster: (clusterNames: string[]) => {
+      setPanelParams(panels.bulkConfigureCluster, {
+        clusters: clusterNames.join(","),
+      });
     },
   };
 };

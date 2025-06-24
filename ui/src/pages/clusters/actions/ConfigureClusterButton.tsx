@@ -6,25 +6,23 @@ import classnames from "classnames";
 
 interface Props {
   cluster: Cluster;
-  appearance?: string;
   className?: string;
+  onClose?: () => void;
 }
 
-const ConfigureClusterButton: FC<Props> = ({
-  cluster,
-  appearance = "",
-  className,
-}) => {
+const ConfigureClusterButton: FC<Props> = ({ cluster, className, onClose }) => {
   const panelParams = usePanelParams();
 
   return (
     <Button
-      appearance={appearance}
       className={classnames("u-no-margin--bottom", className)}
       hasIcon
-      onClick={() => panelParams.openConfigureCluster(cluster.name)}
+      onClick={() => {
+        panelParams.openConfigureCluster(cluster.name);
+        onClose?.();
+      }}
     >
-      <Icon name="external-link" />
+      <Icon name="settings" />
       <span>Configure</span>
     </Button>
   );

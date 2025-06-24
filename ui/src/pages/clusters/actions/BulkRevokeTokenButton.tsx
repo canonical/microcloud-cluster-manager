@@ -29,12 +29,12 @@ const BulkDeleteClusterButton: FC<Props> = ({
       .then(() => {
         notify.success(
           <>
-            {clusterNames.length} {pluralize("Token", clusterNames.length)}{" "}
+            {clusterNames.length} {pluralize("token", clusterNames.length)}{" "}
             revoked.
           </>,
         );
       })
-      .catch((e) => notify.failure(`Token revokation failed.`, e))
+      .catch((e) => notify.failure(`Token revoke failed.`, e))
       .finally(() => {
         void queryClient.invalidateQueries({
           queryKey: [queryKeys.tokens],

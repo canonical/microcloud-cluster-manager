@@ -8,9 +8,14 @@ import classnames from "classnames";
 type Props = {
   clusterName: string;
   className?: string;
+  onClose?: () => void;
 };
 
-const ClusterMetricsButton: FC<Props> = ({ clusterName, className }) => {
+const ClusterMetricsButton: FC<Props> = ({
+  clusterName,
+  className,
+  onClose,
+}) => {
   const { data: configurations } = useQuery({
     queryKey: [queryKeys.configuration],
     queryFn: fetchConfigurations,
@@ -25,6 +30,7 @@ const ClusterMetricsButton: FC<Props> = ({ clusterName, className }) => {
   return (
     <a
       className={classnames("p-button u-no-margin--bottom has-icon", className)}
+      onClick={onClose}
       href={`${baseUrl}/lxd?orgId=1&var-job=${clusterName}`}
       target="_blank"
       rel="noopener noreferrer"

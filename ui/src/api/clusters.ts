@@ -55,3 +55,12 @@ export const updateCluster = (
       .catch(reject);
   });
 };
+
+export const updateClusterBulk = async (
+  remoteClusterNames: string[],
+  payload: string,
+): Promise<void> => {
+  return Promise.allSettled(
+    remoteClusterNames.map(async (name) => updateCluster(name, payload)),
+  ).then(handleSettledResult);
+};

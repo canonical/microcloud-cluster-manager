@@ -31,6 +31,8 @@ import BulkRemoveClusterButton from "pages/clusters/actions/BulkRemoveClusterBut
 import BulkRevokeTokenButton from "pages/clusters/actions/BulkRevokeTokenButton";
 import EnrolClusterButton from "pages/clusters/actions/EnrolClusterButton";
 import ConfigureClusterPanel from "pages/clusters/ConfigureClusterPanel";
+import BulkConfigureClusterButton from "pages/clusters/actions/BulkConfigureClusterButton";
+import BulkConfigureClusterPanel from "pages/clusters/BulkConfigureClusterPanel";
 
 interface ClusterToken {
   name: string;
@@ -173,15 +175,28 @@ const ClusterList: FC = () => {
               <PageHeader.Search>
                 {hasSearchInput && <ClusterSearchFilter />}
                 {hasSelectedClusters && (
-                  <BulkRemoveClusterButton
-                    clusterNames={selectedNames}
-                    onStart={() => {
-                      setProcessingNames(selectedNames);
-                    }}
-                    onFinish={() => {
-                      setProcessingNames([]);
-                    }}
-                  />
+                  <>
+                    <BulkConfigureClusterButton
+                      key="configure"
+                      clusterNames={selectedNames}
+                      onStart={() => {
+                        setProcessingNames(selectedNames);
+                      }}
+                      onFinish={() => {
+                        setProcessingNames([]);
+                      }}
+                    />
+                    <BulkRemoveClusterButton
+                      key="remove"
+                      clusterNames={selectedNames}
+                      onStart={() => {
+                        setProcessingNames(selectedNames);
+                      }}
+                      onFinish={() => {
+                        setProcessingNames([]);
+                      }}
+                    />
+                  </>
                 )}
                 {hasSelectedTokens && (
                   <BulkRevokeTokenButton
@@ -233,6 +248,9 @@ const ClusterList: FC = () => {
       {panelParams.panel === panels.enrolCluster && <EnrolClusterPanel />}
       {panelParams.panel === panels.configureCluster && (
         <ConfigureClusterPanel />
+      )}
+      {panelParams.panel === panels.bulkConfigureCluster && (
+        <BulkConfigureClusterPanel />
       )}
 
       {isOpen && createdCluster && (
