@@ -108,6 +108,7 @@ func remoteClustersPost(rc types.RouteConfig) types.EndpointHandler {
 			// create remote cluster entry
 			newRemoteCluster, err := store.CreateRemoteCluster(ctx, tx, store.RemoteCluster{
 				Name:               payload.ClusterName,
+				Description:        tokenFromDb.Description,
 				ClusterCertificate: payload.ClusterCertificate,
 				JoinedAt:           time.Now(),
 				Status:             string(models.ACTIVE),
@@ -205,6 +206,7 @@ func remoteClusterStatusPost(rc types.RouteConfig) types.EndpointHandler {
 
 			newCluster := store.RemoteCluster{
 				Name:               dbRemoteCluster.Name,
+				Description:        dbRemoteCluster.Description,
 				Status:             string(models.ACTIVE),
 				JoinedAt:           time.Now(),
 				ClusterCertificate: dbRemoteCluster.ClusterCertificate,

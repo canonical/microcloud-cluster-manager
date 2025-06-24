@@ -27,10 +27,28 @@
 
   .members,
   .instances,
-  .warnings,
+  .warnings {
+    text-align: right;
+    width: 7rem;
+  }
+
   .actions {
     text-align: right;
-    width: 8rem;
+    width: 4rem;
+  }
+
+  @media screen and (max-width: $breakpoint-large) {
+    .members,
+    .instances,
+    .warnings {
+      text-align: inherit;
+    }
+  }
+
+  @media screen and (1500px >= width >= #{$breakpoint-large}) {
+    .description {
+      display: none;
+    }
   }
 
   .tooltip-toggle {

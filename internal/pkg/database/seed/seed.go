@@ -16,6 +16,15 @@ import (
 
 // SeedDatabase seeds the database with sample data.
 func SeedDatabase(ctx context.Context, db *database.DB) error {
+	isEmpty, err := isDatabaseEmpty(ctx, db)
+	if err != nil {
+		return err
+	}
+
+	if !isEmpty {
+		return nil
+	}
+
 	// Seed remote clusters
 	if err := seedRemoteClusters(ctx, db); err != nil {
 		return fmt.Errorf("failed to seed remote clusters: %w", err)
@@ -32,6 +41,35 @@ func SeedDatabase(ctx context.Context, db *database.DB) error {
 	}
 
 	return nil
+}
+
+func isDatabaseEmpty(ctx context.Context, db *database.DB) (bool, error) {
+	count := 0
+	err := db.Transaction(ctx, func(ctx context.Context, tx *sqlx.Tx) error {
+		q := "SELECT count(1) FROM remote_clusters"
+		err := tx.QueryRowContext(ctx, q).Scan(&count)
+		if err != nil {
+			return err
+		}
+
+		if count > 0 {
+			return nil
+		}
+
+		q = "SELECT count(1) FROM remote_cluster_tokens"
+		err = tx.QueryRowContext(ctx, q).Scan(&count)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	return count == 0, nil
 }
 
 // generateRemoteClusters generates a slice of remote clusters with the given count.

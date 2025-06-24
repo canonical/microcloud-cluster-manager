@@ -19,6 +19,7 @@ type StatusDistribution struct {
 // RemoteCluster is a standalone or clustered LXD cluster.
 type RemoteCluster struct {
 	Name               string               `json:"name"`
+	Description        string               `json:"description"`
 	ClusterCertificate string               `json:"cluster_certificate"`
 	DiskThreshold      int                  `json:"disk_threshold"`
 	MemoryThreshold    int                  `json:"memory_threshold"`
@@ -44,6 +45,7 @@ type RemoteCluster struct {
 // RemoteClusterPatch represents the payload for the PATCH /1.0/remote-clusters/{remoteClusterName} endpoint.
 type RemoteClusterPatch struct {
 	Status          RemoteClusterStatus `json:"status"`
+	Description     string              `json:"description,omitempty"`
 	DiskThreshold   int                 `json:"disk_threshold,omitempty"`
 	MemoryThreshold int                 `json:"memory_threshold,omitempty"`
 }

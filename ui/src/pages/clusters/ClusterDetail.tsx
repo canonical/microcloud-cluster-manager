@@ -1,4 +1,4 @@
-import { Notification, List, Row, Strip } from "@canonical/react-components";
+import { List, Notification, Row, Strip } from "@canonical/react-components";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCluster } from "api/clusters";
 import BaseLayout from "components/BaseLayout";
@@ -18,6 +18,7 @@ import ClusterUiButton from "pages/clusters/actions/ClusterUiButton";
 import ClusterMetricsButton from "pages/clusters/actions/ClusterMetricsButton";
 import RemoveClusterButton from "pages/clusters/actions/RemoveClusterButton";
 import ConfigureClusterButton from "pages/clusters/actions/ConfigureClusterButton";
+import ClusterEditDescriptionBtn from "pages/clusters/actions/ClusterEditDescriptionBtn";
 
 const ClusterDetail: FC = () => {
   const panelParams = usePanelParams();
@@ -111,6 +112,26 @@ const ClusterDetail: FC = () => {
                 />,
               ]}
             />
+            {cluster.description ? (
+              <>
+                <h2 className="p-heading--4">Description</h2>
+                <p>
+                  {cluster.description}{" "}
+                  <ClusterEditDescriptionBtn
+                    appearance="base"
+                    clusterName={cluster.name}
+                  />
+                </p>
+              </>
+            ) : (
+              <div>
+                <ClusterEditDescriptionBtn
+                  appearance=""
+                  label="Add description"
+                  clusterName={cluster.name}
+                />
+              </div>
+            )}
             <ClusterWarningList cluster={cluster} />
           </Row>
         )}

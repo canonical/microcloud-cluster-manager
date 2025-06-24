@@ -30,7 +30,5 @@ export const revokeRemoteClusterToken = async (
     .getByRole("dialog", { name: "Confirm revoke" })
     .getByRole("button", { name: "Revoke" })
     .click();
-  await page.waitForSelector(
-    `text=Successfully revoked token for cluster ${clusterName}.`,
-  );
+  await page.waitForSelector(`text=Revoked token ${clusterName}.`);
 };

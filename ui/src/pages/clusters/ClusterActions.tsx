@@ -17,7 +17,11 @@ const ClusterActions: FC<Props> = ({ cluster }) => {
       className="p-contextual-menu__link"
       key="configure"
     />,
-    <ClusterUiButton uiUrl={cluster.ui_url} key="ui" />,
+    <ClusterUiButton
+      uiUrl={cluster.ui_url}
+      className="p-contextual-menu__link"
+      key="ui"
+    />,
     <ClusterMetricsButton
       clusterName={cluster.name}
       className="p-contextual-menu__link"
@@ -33,7 +37,7 @@ const ClusterActions: FC<Props> = ({ cluster }) => {
   return (
     <ContextualMenu
       closeOnOutsideClick={false}
-      toggleLabel="Actions"
+      toggleLabel=""
       position="left"
       hasToggleIcon
       title="actions"

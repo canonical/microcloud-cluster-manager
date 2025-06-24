@@ -5,6 +5,7 @@ import {
   Application,
   NotificationProvider,
   QueuedNotification,
+  ToastNotificationProvider,
 } from "@canonical/react-components";
 import Navigation from "./components/Navigation";
 import { AuthProvider } from "context/auth";
@@ -34,14 +35,16 @@ const Root: FC = () => {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Application id="l-application">
-          <NotificationProvider
-            state={location.state}
-            pathname={location.pathname}
-          >
-            <Navigation />
-            <App />
-            <StatusBar />
-          </NotificationProvider>
+          <ToastNotificationProvider>
+            <NotificationProvider
+              state={location.state}
+              pathname={location.pathname}
+            >
+              <Navigation />
+              <App />
+              <StatusBar />
+            </NotificationProvider>
+          </ToastNotificationProvider>
         </Application>
       </AuthProvider>
     </QueryClientProvider>

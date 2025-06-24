@@ -4,6 +4,7 @@ import { getClusterWarnings } from "util/clusterWarnings";
 import { EmptyState, Icon, Notification } from "@canonical/react-components";
 import { pluralize } from "util/helpers";
 import usePanelParams from "context/usePanelParams";
+import { FIELD_MEMORY_THRESHOLD } from "pages/clusters/ConfigureClusterPanel";
 
 interface Props {
   cluster: Cluster;
@@ -35,15 +36,19 @@ export const ClusterWarningList: FC<Props> = ({ cluster }: Props) => {
       </h2>
       {warnings.length > 0 ? (
         warnings.map((warning, index) => {
-          const canConfigure =
-            warning.startsWith("Memory usage") ||
-            warning.startsWith("Disk usage");
+          const isMemoryUsage = warning.startsWith("Memory usage");
+          const isDiskUsage = warning.startsWith("Disk usage");
+          const canConfigure = isMemoryUsage || isDiskUsage;
 
           const actions = [];
           if (canConfigure) {
+            const focusField = isMemoryUsage
+              ? FIELD_MEMORY_THRESHOLD
+              : undefined;
             actions.push({
               label: "Configure threshold",
-              onClick: () => panelParams.openConfigureCluster(cluster.name),
+              onClick: () =>
+                panelParams.openConfigureCluster(cluster.name, focusField),
             });
           }
 

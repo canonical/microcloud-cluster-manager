@@ -10,6 +10,7 @@ import (
 type RemoteClusterTokenPost struct {
 	Expiry      time.Time `json:"expiry"`
 	ClusterName string    `json:"cluster_name"`
+	Description string    `json:"description,omitempty"`
 }
 
 // RemoteClusterTokenPostResponse is the response body for creating a new remote cluster token.
@@ -21,6 +22,7 @@ type RemoteClusterTokenPostResponse struct {
 type RemoteClusterToken struct {
 	Expiry      time.Time `json:"expiry"`
 	ClusterName string    `json:"cluster_name"`
+	Description string    `json:"description"`
 	CreateAt    time.Time `json:"created_at"`
 }
 

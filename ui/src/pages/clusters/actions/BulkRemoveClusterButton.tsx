@@ -2,6 +2,7 @@ import {
   ConfirmationButton,
   Icon,
   useNotify,
+  useToastNotification,
 } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
 import { deleteClusterBulk } from "api/clusters";
@@ -22,15 +23,19 @@ const BulkRemoveClusterButton: FC<Props> = ({
 }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
+  const toastNotification = useToastNotification();
 
   const handleDelete = () => {
     onStart();
     deleteClusterBulk(clusterNames)
       .then(() => {
-        notify.success(
+        toastNotification.success(
           <>
-            {clusterNames.length} {pluralize("cluster", clusterNames.length)}{" "}
-            removed.
+            Removed{" "}
+            <strong>
+              {clusterNames.length} {pluralize("cluster", clusterNames.length)}
+            </strong>
+            .
           </>,
         );
       })

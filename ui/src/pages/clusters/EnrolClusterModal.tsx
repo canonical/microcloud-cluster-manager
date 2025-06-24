@@ -76,7 +76,8 @@ const EnrolClusterModal: FC<Props> = ({ onClose, token, name, expiry }) => {
       <>
         <p>
           To finish the enrollment, run the command below on any member of the
-          MicroCloud.
+          MicroCloud. The command is valid until{" "}
+          {isoTimeToString(convertToISOFormat(expiry))}.
         </p>
         <CodeSnippet
           className="adb-connect-wrapper"
@@ -93,10 +94,6 @@ const EnrolClusterModal: FC<Props> = ({ onClose, token, name, expiry }) => {
             },
           ]}
         />
-        <p>
-          The command is valid until{" "}
-          {isoTimeToString(convertToISOFormat(expiry))}.
-        </p>
         <p>
           <b>
             Once this modal is closed, the command can&rsquo;t be viewed again.

@@ -4,9 +4,10 @@ export interface PanelHelper {
   panel: string | null;
   cluster: string | null;
   clusters: string | null;
+  focusField: string | null;
   clear: () => void;
   openEnrolCluster: () => void;
-  openConfigureCluster: (cluster?: string) => void;
+  openConfigureCluster: (cluster?: string, focusField?: string) => void;
   openBulkConfigureCluster: (clusterNames: string[]) => void;
 }
 
@@ -44,6 +45,7 @@ const usePanelParams = (): PanelHelper => {
     newParams.delete("panel");
     newParams.delete("cluster");
     newParams.delete("clusters");
+    newParams.delete("focusField");
     setParams(newParams);
     craftResizeEvent();
   };
@@ -52,6 +54,7 @@ const usePanelParams = (): PanelHelper => {
     panel: params.get("panel"),
     cluster: params.get("cluster"),
     clusters: params.get("clusters"),
+    focusField: params.get("focusField"),
 
     clear: () => {
       clearParams();
@@ -61,11 +64,8 @@ const usePanelParams = (): PanelHelper => {
       setPanelParams(panels.enrolCluster);
     },
 
-    openConfigureCluster: (cluster?: string) => {
-      const params = { cluster: cluster || "" };
-      if (cluster) {
-        params.cluster = cluster;
-      }
+    openConfigureCluster: (cluster?: string, focusField?: string) => {
+      const params = { cluster: cluster || "", focusField: focusField || "" };
       setPanelParams(panels.configureCluster, params);
     },
 

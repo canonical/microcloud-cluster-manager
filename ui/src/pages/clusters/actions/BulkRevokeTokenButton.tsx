@@ -2,6 +2,7 @@ import {
   ConfirmationButton,
   Icon,
   useNotify,
+  useToastNotification,
 } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
 import { FC } from "react";
@@ -22,15 +23,19 @@ const BulkDeleteClusterButton: FC<Props> = ({
 }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
+  const toastNotification = useToastNotification();
 
   const handleDelete = () => {
     onStart();
     deleteTokenBulk(clusterNames)
       .then(() => {
-        notify.success(
+        toastNotification.success(
           <>
-            {clusterNames.length} {pluralize("token", clusterNames.length)}{" "}
-            revoked.
+            Revoked{" "}
+            <strong>
+              {clusterNames.length} {pluralize("token", clusterNames.length)}
+            </strong>
+            .
           </>,
         );
       })
@@ -48,7 +53,7 @@ const BulkDeleteClusterButton: FC<Props> = ({
       appearance=""
       className="p-segmented-control__button u-no-margin--bottom has-icon"
       confirmationModalProps={{
-        title: "Confirm remove",
+        title: "Confirm revoke",
         children: (
           <>
             <p>
@@ -60,7 +65,7 @@ const BulkDeleteClusterButton: FC<Props> = ({
             </p>
           </>
         ),
-        confirmButtonLabel: "Remove",
+        confirmButtonLabel: "Revoke",
         onConfirm: () => void handleDelete(),
       }}
       shiftClickEnabled

@@ -56,6 +56,7 @@ func (r *RemoteClusterDetail) Put(payload models.RemoteClusterStatusPost) {
 type RemoteClusterWithDetail struct {
 	ID                 int             `db:"id"`
 	Name               string          `db:"name"`
+	Description        string          `db:"description"`
 	ClusterCertificate string          `db:"cluster_certificate"`
 	DiskThreshold      int             `db:"disk_threshold"`
 	MemoryThreshold    int             `db:"memory_threshold"`
@@ -346,6 +347,7 @@ var baseDetailQuery = `
 	SELECT DISTINCT ON (remote_clusters.name)
 		remote_clusters.id,
 		remote_clusters.name,
+		remote_clusters.description,
 		remote_clusters.status,
 		remote_clusters.cluster_certificate,
 		remote_clusters.joined_at,
@@ -387,6 +389,7 @@ func getRemoteClusterWithDetails(ctx context.Context, tx *sqlx.Tx, sql string, a
 		err := scan(
 			&c.ID,
 			&c.Name,
+			&c.Description,
 			&c.Status,
 			&c.ClusterCertificate,
 			&c.ClusterJoinedAt,

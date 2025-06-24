@@ -17,6 +17,7 @@ import (
 type RemoteClusterToken struct {
 	ID           int       `db:"id"`            // Primary key
 	ClusterName  string    `db:"cluster_name"`  // Name of the associated cluster
+	Description  string    `db:"description"`   // Description of the token (optional)
 	EncodedToken string    `db:"encoded_token"` // EncodedToken token
 	Expiry       time.Time `db:"expiry"`        // Expiration timestamp
 	CreatedAt    time.Time `db:"created_at"`    // Creation timestamp
@@ -61,7 +62,7 @@ func RemoteClusterTokenExists(ctx context.Context, tx *sqlx.Tx, name string) (bo
 // GetRemoteClusterTokens returns all remote cluster tokens.
 func GetRemoteClusterTokens(ctx context.Context, tx *sqlx.Tx) ([]RemoteClusterToken, error) {
 	q := `
-        SELECT id, cluster_name, encoded_token, expiry, created_at
+        SELECT id, cluster_name, description, encoded_token, expiry, created_at
         FROM remote_cluster_tokens;
     `
 
@@ -71,6 +72,7 @@ func GetRemoteClusterTokens(ctx context.Context, tx *sqlx.Tx) ([]RemoteClusterTo
 		err := scan(
 			&c.ID,
 			&c.ClusterName,
+			&c.Description,
 			&c.EncodedToken,
 			&c.Expiry,
 			&c.CreatedAt,
@@ -95,7 +97,7 @@ func GetRemoteClusterTokens(ctx context.Context, tx *sqlx.Tx) ([]RemoteClusterTo
 // GetRemoteClusterToken returns a single remote cluster token by name.
 func GetRemoteClusterToken(ctx context.Context, tx *sqlx.Tx, name string) (*RemoteClusterToken, error) {
 	q := `
-		SELECT id, cluster_name, encoded_token, expiry, created_at
+		SELECT id, cluster_name, description, encoded_token, expiry, created_at
         FROM remote_cluster_tokens
 		WHERE cluster_name = $1;
 	`
@@ -104,6 +106,7 @@ func GetRemoteClusterToken(ctx context.Context, tx *sqlx.Tx, name string) (*Remo
 	err := tx.QueryRowContext(ctx, q, name).Scan(
 		&result.ID,
 		&result.ClusterName,
+		&result.Description,
 		&result.EncodedToken,
 		&result.Expiry,
 		&result.CreatedAt,
@@ -132,20 +135,22 @@ func CreateRemoteClusterToken(ctx context.Context, tx *sqlx.Tx, data RemoteClust
 	}
 
 	q := `
-        INSERT INTO remote_cluster_tokens (cluster_name, encoded_token, expiry, created_at)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, cluster_name, encoded_token, expiry, created_at;
+        INSERT INTO remote_cluster_tokens (cluster_name, description, encoded_token, expiry, created_at)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, cluster_name, description, encoded_token, expiry, created_at;
     `
 
 	var result RemoteClusterToken
 	err = tx.QueryRowContext(ctx, q,
 		data.ClusterName,
+		data.Description,
 		data.EncodedToken,
 		data.Expiry,
 		data.CreatedAt,
 	).Scan(
 		&result.ID,
 		&result.ClusterName,
+		&result.Description,
 		&result.EncodedToken,
 		&result.Expiry,
 		&result.CreatedAt,
@@ -193,11 +198,11 @@ func UpdateCoreRemoteClusterToken(ctx context.Context, tx *sqlx.Tx, name string,
 
 	q := `
         UPDATE remote_cluster_tokens
-        SET cluster_name = $1, encoded_token = $2, expiry = $3
-        WHERE id = $4;
+        SET cluster_name = $1, description = $2, encoded_token = $3, expiry = $4
+        WHERE id = $5;
     `
 
-	result, err := tx.ExecContext(ctx, q, data.ClusterName, data.EncodedToken, data.Expiry, id)
+	result, err := tx.ExecContext(ctx, q, data.ClusterName, data.Description, data.EncodedToken, data.Expiry, id)
 	if err != nil {
 		return fmt.Errorf("update remote_cluster_tokens entry failed: %w", err)
 	}

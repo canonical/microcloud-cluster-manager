@@ -20,9 +20,10 @@
 @include vf-p-icon-units;
 @include custom-p-icon;
 @import "breadcrumbs";
+@import "cluster_detail";
 @import "cluster_graphs";
 @import "cluster_list";
-@import "cluster_detail";
+@import "cluster_token_list";
 @import "clustercpu";
 @import "doughnut_chart";
 @import "empty_state";

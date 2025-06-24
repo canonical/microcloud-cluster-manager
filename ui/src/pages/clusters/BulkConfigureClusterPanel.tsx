@@ -4,6 +4,7 @@ import {
   Form,
   Input,
   useNotify,
+  useToastNotification,
 } from "@canonical/react-components";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { FC } from "react";
@@ -21,6 +22,7 @@ const BulkConfigureClusterPanel: FC = () => {
   const panelParams = usePanelParams();
   const queryClient = useQueryClient();
   const notify = useNotify();
+  const toastNotification = useToastNotification();
 
   const { data: allClusters = [] } = useQuery({
     queryKey: [queryKeys.clusters],
@@ -49,8 +51,13 @@ const BulkConfigureClusterPanel: FC = () => {
 
     updateClusterBulk(clusterNames, JSON.stringify(payload))
       .then(() => {
-        notify.success(
-          `Successfully updated ${clusterNames.length} ${pluralize("cluster", clusterNames.length)}`,
+        toastNotification.success(
+          <>
+            Updated{" "}
+            <strong>
+              {clusterNames.length} {pluralize("cluster", clusterNames.length)}
+            </strong>
+          </>,
         );
         closePanel();
       })

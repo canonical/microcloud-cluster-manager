@@ -2,6 +2,7 @@ import {
   ConfirmationButton,
   Icon,
   useNotify,
+  useToastNotification,
 } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
 import { deleteCluster } from "api/clusters";
@@ -23,6 +24,7 @@ const RemoveClusterButton: FC<Props> = ({
 }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
+  const toastNotification = useToastNotification();
   const navigate = useNavigate();
   const [isLoading, setLoading] = useState(false);
 
@@ -34,7 +36,11 @@ const RemoveClusterButton: FC<Props> = ({
       await queryClient.invalidateQueries({
         queryKey: [queryKeys.clusters],
       });
-      notify.success(`Successfully removed cluster ${clusterName}.`);
+      toastNotification.success(
+        <>
+          Removed cluster <strong>{clusterName}</strong>.
+        </>,
+      );
     } catch (error) {
       notify.failure(`Unable to remove cluster ${clusterName}.`, error);
     }

@@ -86,6 +86,7 @@ const EnrolClusterPanel: FC = () => {
   const formik = useFormik<CreateClusterFormValues>({
     initialValues: {
       clusterName: "",
+      description: "",
       expiry: getDefaultExpiryDate(),
     },
     validationSchema: ClusterSchema,

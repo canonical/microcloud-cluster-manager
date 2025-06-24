@@ -17,6 +17,7 @@ import (
 type RemoteCluster struct {
 	ID                 int       `db:"id"`                  // Primary key
 	Name               string    `db:"name"`                // Cluster name
+	Description        string    `db:"description"`         // Description of the cluster (optional)
 	Status             string    `db:"status"`              // Status (ACTIVE)
 	ClusterCertificate string    `db:"cluster_certificate"` // Unique cluster certificate
 	JoinedAt           time.Time `db:"joined_at"`           // Timestamp when joined
@@ -63,7 +64,7 @@ func RemoteClusterExists(ctx context.Context, tx *sqlx.Tx, name string) (bool, e
 // GetRemoteClusters returns all remote clusters.
 func GetRemoteClusters(ctx context.Context, tx *sqlx.Tx) ([]RemoteCluster, error) {
 	q := `
-        SELECT id, name, status, cluster_certificate, joined_at, created_at, updated_at
+        SELECT id, name, description, status, cluster_certificate, joined_at, created_at, updated_at
         FROM remote_clusters;
     `
 
@@ -73,6 +74,7 @@ func GetRemoteClusters(ctx context.Context, tx *sqlx.Tx) ([]RemoteCluster, error
 		err := scan(
 			&c.ID,
 			&c.Name,
+			&c.Description,
 			&c.Status,
 			&c.ClusterCertificate,
 			&c.JoinedAt,
@@ -99,7 +101,7 @@ func GetRemoteClusters(ctx context.Context, tx *sqlx.Tx) ([]RemoteCluster, error
 // GetRemoteCluster returns a single remote cluster by name.
 func GetRemoteCluster(ctx context.Context, tx *sqlx.Tx, name string) (*RemoteCluster, error) {
 	q := `
-		SELECT id, name, status, cluster_certificate, joined_at, created_at, updated_at
+		SELECT id, name, description, status, cluster_certificate, joined_at, created_at, updated_at
 		FROM remote_clusters
 		WHERE name = $1;
 	`
@@ -108,6 +110,7 @@ func GetRemoteCluster(ctx context.Context, tx *sqlx.Tx, name string) (*RemoteClu
 	err := tx.QueryRowContext(ctx, q, name).Scan(
 		&result.ID,
 		&result.Name,
+		&result.Description,
 		&result.Status,
 		&result.ClusterCertificate,
 		&result.JoinedAt,
@@ -138,14 +141,15 @@ func CreateRemoteCluster(ctx context.Context, tx *sqlx.Tx, data RemoteCluster) (
 	}
 
 	q := `
-        INSERT INTO remote_clusters (name, status, cluster_certificate, joined_at, created_at)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, name, status, cluster_certificate, joined_at, created_at, updated_at;
+        INSERT INTO remote_clusters (name, description, status, cluster_certificate, joined_at, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id, name, description, status, cluster_certificate, joined_at, created_at, updated_at;
     `
 
 	var result RemoteCluster
 	err = tx.QueryRowContext(ctx, q,
 		data.Name,
+		data.Description,
 		data.Status,
 		data.ClusterCertificate,
 		data.JoinedAt,
@@ -153,6 +157,7 @@ func CreateRemoteCluster(ctx context.Context, tx *sqlx.Tx, data RemoteCluster) (
 	).Scan(
 		&result.ID,
 		&result.Name,
+		&result.Description,
 		&result.Status,
 		&result.ClusterCertificate,
 		&result.JoinedAt,
@@ -202,11 +207,11 @@ func UpdateRemoteCluster(ctx context.Context, tx *sqlx.Tx, name string, data Rem
 
 	q := `
         UPDATE remote_clusters
-        SET name = $1, status = $2, joined_at = $3, cluster_certificate = $4
-        WHERE id = $5;
+        SET name = $1, description = $2, status = $3, joined_at = $4, cluster_certificate = $5
+        WHERE id = $6;
     `
 
-	result, err := tx.ExecContext(ctx, q, data.Name, data.Status, data.JoinedAt, data.ClusterCertificate, id)
+	result, err := tx.ExecContext(ctx, q, data.Name, data.Description, data.Status, data.JoinedAt, data.ClusterCertificate, id)
 	if err != nil {
 		return fmt.Errorf("update remote_clusters entry failed: %w", err)
 	}

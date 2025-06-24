@@ -48,19 +48,27 @@ const ClusterListTokens: FC<Props> = ({
     {
       content: "Cluster name",
       sortKey: "clusterName",
+      className: "name",
+    },
+    {
+      content: "Description",
+      sortKey: "description",
+      className: "description",
     },
     {
       content: "Expiry",
       sortKey: "expiry",
+      className: "expiry",
     },
     {
       content: "Created at",
       sortKey: "createdAt",
+      className: "createdAt",
     },
     {
       content: "",
       "aria-label": "Actions",
-      className: "u-align--right",
+      className: "u-align--right actions",
     },
   ];
 
@@ -70,21 +78,34 @@ const ClusterListTokens: FC<Props> = ({
       name: token.cluster_name,
       columns: [
         {
-          content: `${token.cluster_name}`,
+          content: token.cluster_name,
+          className: "name",
+          role: "rowheader",
+        },
+        {
+          content: token.description,
+          className: "description",
+          role: "cell",
         },
         {
           content: `${isoTimeToString(token.expiry)}`,
+          className: "expiry",
+          role: "cell",
         },
         {
           content: `${isoTimeToString(token.created_at)}`,
+          className: "createdAt",
+          role: "cell",
         },
         {
           content: <RevokeTokenButton token={token} />,
-          className: "u-align--right",
+          className: "u-align--right actions",
+          role: "cell",
         },
       ],
       sortData: {
         clusterName: token.cluster_name,
+        description: token.description.toLowerCase(),
         expiry: token.expiry,
         createdAt: token.created_at,
       },
@@ -137,7 +158,7 @@ const ClusterListTokens: FC<Props> = ({
           >
             <SelectableMainTable
               id="cluster-token-table"
-              className={"clusterlist-table"}
+              className="cluster-token-table"
               responsive={true}
               emptyStateMsg={
                 isLoading ? (

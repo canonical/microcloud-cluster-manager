@@ -13,6 +13,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS remote_clusters (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL CHECK (status IN ('ACTIVE')),
     cluster_certificate TEXT NOT NULL UNIQUE,
     joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS remote_cluster_tokens (
     encoded_token TEXT NOT NULL,
     expiry TIMESTAMPTZ NOT NULL DEFAULT '3000-01-01T00:00:00Z',
     cluster_name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_remote_cluster_tokens_name ON remote_cluster_tokens (cluster_name);

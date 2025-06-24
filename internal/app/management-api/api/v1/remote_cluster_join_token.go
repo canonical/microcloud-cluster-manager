@@ -103,6 +103,7 @@ func tokenPost(rc types.RouteConfig) types.EndpointHandler {
 
 			tokenData := store.RemoteClusterToken{
 				ClusterName:  payload.ClusterName,
+				Description:  payload.Description,
 				EncodedToken: encodedToken,
 				Expiry:       payload.Expiry,
 				CreatedAt:    time.Now(),
@@ -142,6 +143,7 @@ func tokensGet(rc types.RouteConfig) types.EndpointHandler {
 			responseTokens = append(responseTokens, models.RemoteClusterToken{
 				Expiry:      token.Expiry,
 				ClusterName: token.ClusterName,
+				Description: token.Description,
 				CreateAt:    token.CreatedAt,
 			})
 		}

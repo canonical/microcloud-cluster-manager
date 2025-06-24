@@ -47,6 +47,11 @@ const ClusterListActive: FC<Props> = ({
       className: "name",
     },
     {
+      content: "Description",
+      sortKey: "description",
+      className: "description",
+    },
+    {
       content: "Status",
       sortKey: "status",
       className: "status",
@@ -80,6 +85,12 @@ const ClusterListActive: FC<Props> = ({
             <Link to={`/ui/cluster/${cluster.name}`}>{cluster.name}</Link>
           ),
           className: "name",
+          role: "rowheader",
+        },
+        {
+          content: cluster.description,
+          className: "description",
+          role: "cell",
         },
         {
           content: (
@@ -89,26 +100,32 @@ const ClusterListActive: FC<Props> = ({
             </>
           ),
           className: "status",
+          role: "cell",
         },
         {
           content: <ClusterMembers cluster={cluster} />,
           className: "members",
+          role: "cell",
         },
         {
           content: <ClusterInstances cluster={cluster} />,
           className: "instances",
+          role: "cell",
         },
         {
           content: <ClusterWarningCount cluster={cluster} />,
           className: "warnings",
+          role: "cell",
         },
         {
           content: <ClusterActions cluster={cluster} />,
           className: "actions",
+          role: "cell",
         },
       ],
       sortData: {
         name: cluster.name,
+        description: cluster.description.toLowerCase(),
         status: cluster.last_status_update_at,
         lastHeartbeat: cluster.last_status_update_at,
       },

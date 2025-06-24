@@ -4,6 +4,7 @@ import {
   ConfirmationButton,
   Icon,
   useNotify,
+  useToastNotification,
 } from "@canonical/react-components";
 import { deleteToken } from "api/tokens";
 import { Token } from "types/token";
@@ -16,6 +17,7 @@ interface Props {
 const RevokeTokenButton: FC<Props> = ({ token }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
+  const toastNotification = useToastNotification();
   const [loading, setLoading] = useState(false);
 
   const handleDeleteToken = async () => {
@@ -25,8 +27,10 @@ const RevokeTokenButton: FC<Props> = ({ token }) => {
         void queryClient.invalidateQueries({
           queryKey: [queryKeys.tokens],
         });
-        notify.success(
-          `Successfully revoked token for cluster ${token.cluster_name}.`,
+        toastNotification.success(
+          <>
+            Revoked token <strong>{token.cluster_name}</strong>.
+          </>,
         );
       })
       .catch((e: Error) => {
