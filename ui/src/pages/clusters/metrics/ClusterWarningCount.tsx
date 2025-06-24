@@ -18,10 +18,9 @@ export const ClusterWarningCount: FC<Props> = ({ cluster }: Props) => {
       message={warnings.map((warning, index) => (
         <div key={index}>{warning}</div>
       ))}
-      positionElementClassName="tooltip"
-      position="left"
+      position="btm-center"
     >
-      <div className="u-pointer">
+      <div className="tooltip-toggle">
         {warningCount}
         {warningCount > 0 && (
           <>

@@ -5,6 +5,8 @@ export interface StatusDistribution {
 
 export interface Cluster {
   name: string;
+  disk_threshold: number;
+  memory_threshold: number;
   cpu_total_count: number;
   cpu_load_1: string;
   cpu_load_5: string;

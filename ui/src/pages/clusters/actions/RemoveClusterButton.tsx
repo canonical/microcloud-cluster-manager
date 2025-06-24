@@ -8,12 +8,19 @@ import { deleteCluster } from "api/clusters";
 import { FC, useState } from "react";
 import { queryKeys } from "util/queryKeys";
 import { useNavigate } from "react-router-dom";
+import classnames from "classnames";
 
 type Props = {
   clusterName: string;
+  className?: string;
+  onClose?: () => void;
 };
 
-const RemoveClusterButton: FC<Props> = ({ clusterName }) => {
+const RemoveClusterButton: FC<Props> = ({
+  clusterName,
+  className,
+  onClose,
+}) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
   const navigate = useNavigate();
@@ -27,18 +34,18 @@ const RemoveClusterButton: FC<Props> = ({ clusterName }) => {
       await queryClient.invalidateQueries({
         queryKey: [queryKeys.clusters],
       });
-      notify.success(`Successfully deleted cluster ${clusterName}.`);
+      notify.success(`Successfully removed cluster ${clusterName}.`);
     } catch (error) {
-      notify.failure(`Unable to delete cluster ${clusterName}.`, error);
+      notify.failure(`Unable to remove cluster ${clusterName}.`, error);
     }
     setLoading(false);
+    onClose?.();
   };
 
   return (
     <ConfirmationButton
-      appearance=""
+      className={classnames("u-no-margin--bottom has-icon", className)}
       loading={isLoading}
-      className="p-segmented-control__button u-no-margin--bottom has-icon"
       confirmationModalProps={{
         title: "Confirm remove",
         children: (

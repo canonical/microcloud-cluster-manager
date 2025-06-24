@@ -70,10 +70,6 @@ body {
   word-break: break-word;
 }
 
-.u-pointer {
-  cursor: pointer;
-}
-
 .u-modal-medium {
   .p-modal__dialog {
     max-width: 40rem;
@@ -82,4 +78,16 @@ body {
 
 .warning-list {
   max-width: 50rem;
+}
+
+.u-flex {
+  display: flex;
+}
+
+.u-flex-grow {
+  flex-grow: 1;
+}
+
+.u-padding-top {
+  padding-top: $spv--x-small;
 }

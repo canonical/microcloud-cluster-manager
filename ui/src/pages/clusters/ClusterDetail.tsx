@@ -11,12 +11,16 @@ import ClusterTimer from "./metrics/ClusterTimer";
 import ClusterDetailMetrics from "./metrics/ClusterDetailMetrics";
 import Loader from "components/Loader";
 import BreadCrumbHeader from "components/BreadcrumbHeader";
-import RemoveClusterButton from "pages/clusters/RemoveClusterButton";
-import ClusterMetricsButton from "pages/clusters/ClusterMetricsButton";
-import ClusterUiButton from "pages/clusters/ClusterUiButton";
 import { ClusterWarningList } from "pages/clusters/metrics/ClusterWarningList";
+import usePanelParams, { panels } from "context/usePanelParams";
+import ConfigureClusterPanel from "pages/clusters/ConfigureClusterPanel";
+import ClusterUiButton from "pages/clusters/actions/ClusterUiButton";
+import ClusterMetricsButton from "pages/clusters/actions/ClusterMetricsButton";
+import RemoveClusterButton from "pages/clusters/actions/RemoveClusterButton";
+import ConfigureClusterButton from "pages/clusters/actions/ConfigureClusterButton";
 
 const ClusterDetail: FC = () => {
+  const panelParams = usePanelParams();
   const { name } = useParams<{ name: string }>();
   if (!name) {
     return <>Missing name</>;
@@ -42,61 +46,79 @@ const ClusterDetail: FC = () => {
   }
 
   return (
-    <BaseLayout
-      title={
-        <BreadCrumbHeader
-          name={cluster.name}
-          parentItems={[
-            <Link to="/ui/clusters" key="clusters">
-              Clusters
-            </Link>,
-          ]}
-        />
-      }
-      controls={
-        <div className="p-segmented-control">
-          <div className="p-segmented-control__list">
-            <ClusterUiButton uiUrl={cluster.ui_url} />
-            <ClusterMetricsButton clusterName={cluster.name} />
-            <RemoveClusterButton clusterName={cluster.name} />
-          </div>
-        </div>
-      }
-    >
-      {isLoading && <Loader text="Loading cluster details..." />}
-      {!isLoading && !cluster && !error && <>Loading cluster failed</>}
-      {error && (
-        <Strip>
-          <Notification severity="negative" title="Error">
-            {error.message}
-          </Notification>
-        </Strip>
-      )}
-      {!isLoading && cluster && (
-        <Row>
-          <List
-            className="cluster-detail-graphs"
-            inline
-            items={[
-              <ClusterTimer cluster={cluster} key="cluster-timer" />,
-              <ClusterDetailMetrics
-                cluster={cluster}
-                key="cluster-detail-metrics"
-              />,
-              <ClusterDetailMemberGraph
-                cluster={cluster}
-                key="cluster-node-graph"
-              />,
-              <ClusterDetailInstanceGraph
-                cluster={cluster}
-                key="cluster-instance-graph"
-              />,
+    <>
+      <BaseLayout
+        title={
+          <BreadCrumbHeader
+            name={cluster.name}
+            parentItems={[
+              <Link to="/ui/clusters" key="clusters">
+                Clusters
+              </Link>,
             ]}
           />
-          <ClusterWarningList cluster={cluster} />
-        </Row>
+        }
+        controls={
+          <div className="p-segmented-control">
+            <div className="p-segmented-control__list">
+              <ConfigureClusterButton
+                cluster={cluster}
+                className="p-segmented-control__button"
+              />
+              <ClusterUiButton
+                uiUrl={cluster.ui_url}
+                className="p-segmented-control__button"
+              />
+              <ClusterMetricsButton
+                clusterName={cluster.name}
+                className="p-segmented-control__button"
+              />
+              <RemoveClusterButton
+                clusterName={cluster.name}
+                className="p-segmented-control__button"
+              />
+            </div>
+          </div>
+        }
+      >
+        {isLoading && <Loader text="Loading cluster details..." />}
+        {!isLoading && !cluster && !error && <>Loading cluster failed</>}
+        {error && (
+          <Strip>
+            <Notification severity="negative" title="Error">
+              {error.message}
+            </Notification>
+          </Strip>
+        )}
+        {!isLoading && cluster && (
+          <Row>
+            <List
+              className="cluster-detail-graphs"
+              inline
+              items={[
+                <ClusterTimer cluster={cluster} key="cluster-timer" />,
+                <ClusterDetailMetrics
+                  cluster={cluster}
+                  key="cluster-detail-metrics"
+                />,
+                <ClusterDetailMemberGraph
+                  cluster={cluster}
+                  key="cluster-node-graph"
+                />,
+                <ClusterDetailInstanceGraph
+                  cluster={cluster}
+                  key="cluster-instance-graph"
+                />,
+              ]}
+            />
+            <ClusterWarningList cluster={cluster} />
+          </Row>
+        )}
+      </BaseLayout>
+      {panelParams.panel === panels.configureCluster && (
+        <ConfigureClusterPanel />
       )}
-    </BaseLayout>
+    </>
   );
 };
 

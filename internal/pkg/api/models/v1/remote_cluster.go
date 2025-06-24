@@ -20,6 +20,8 @@ type StatusDistribution struct {
 type RemoteCluster struct {
 	Name               string               `json:"name"`
 	ClusterCertificate string               `json:"cluster_certificate"`
+	DiskThreshold      int                  `json:"disk_threshold"`
+	MemoryThreshold    int                  `json:"memory_threshold"`
 	Status             string               `json:"status"`
 	CPUTotalCount      int                  `json:"cpu_total_count"`
 	CPULoad1           string               `json:"cpu_load_1"`
@@ -41,7 +43,9 @@ type RemoteCluster struct {
 
 // RemoteClusterPatch represents the payload for the PATCH /1.0/remote-clusters/{remoteClusterName} endpoint.
 type RemoteClusterPatch struct {
-	Status RemoteClusterStatus `json:"status"`
+	Status          RemoteClusterStatus `json:"status"`
+	DiskThreshold   int                 `json:"disk_threshold,omitempty"`
+	MemoryThreshold int                 `json:"memory_threshold,omitempty"`
 }
 
 // RemoteClusterPost represents the fields required to create a new cluster.

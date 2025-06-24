@@ -149,6 +149,26 @@ func remoteClusterPatch(rc types.RouteConfig) types.EndpointHandler {
 			if payload.Status != "" {
 				newRemoteCluster.Status = string(payload.Status)
 			}
+			if payload.DiskThreshold > 0 {
+				err = store.UpdateRemoteClusterConfig(ctx, tx, store.RemoteClusterConfig{
+					RemoteClusterID: existingRemoteCluster.ID,
+					Key:             store.DiskThresholdKey,
+					Value:           fmt.Sprintf("%d", payload.DiskThreshold),
+				})
+				if err != nil {
+					return err
+				}
+			}
+			if payload.MemoryThreshold > 0 {
+				err = store.UpdateRemoteClusterConfig(ctx, tx, store.RemoteClusterConfig{
+					RemoteClusterID: existingRemoteCluster.ID,
+					Key:             store.MemoryThresholdKey,
+					Value:           fmt.Sprintf("%d", payload.MemoryThreshold),
+				})
+				if err != nil {
+					return err
+				}
+			}
 
 			newRemoteCluster.UpdatedAt = time.Now()
 
@@ -182,6 +202,8 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 		remoteClusters = append(remoteClusters, models.RemoteCluster{
 			Name:               e.Name,
 			ClusterCertificate: e.ClusterCertificate,
+			DiskThreshold:      e.DiskThreshold,
+			MemoryThreshold:    e.MemoryThreshold,
 			Status:             e.Status,
 			CPUTotalCount:      e.CPUTotalCount,
 			CPULoad1:           e.CPULoad1,

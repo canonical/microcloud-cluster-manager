@@ -130,6 +130,24 @@ func remoteClustersPost(rc types.RouteConfig) types.EndpointHandler {
 				return err
 			}
 
+			_, err = store.CreateRemoteClusterConfig(ctx, tx, store.RemoteClusterConfig{
+				RemoteClusterID: newRemoteCluster.ID,
+				Key:             store.DiskThresholdKey,
+				Value:           store.DiskThresholdDefault,
+			})
+			if err != nil {
+				return err
+			}
+
+			_, err = store.CreateRemoteClusterConfig(ctx, tx, store.RemoteClusterConfig{
+				RemoteClusterID: newRemoteCluster.ID,
+				Key:             store.MemoryThresholdKey,
+				Value:           store.MemoryThresholdDefault,
+			})
+			if err != nil {
+				return err
+			}
+
 			// delete remote cluster tokenFromDb
 			return store.DeleteRemoteClusterToken(ctx, tx, payload.ClusterName)
 		})

@@ -42,10 +42,9 @@ export const ClusterInstances: FC<Props> = ({ cluster }: Props) => {
           </div>
         </div>
       }
-      positionElementClassName="tooltip"
-      position="left"
+      position="btm-center"
     >
-      <div className="u-pointer">{runningInstances.count}</div>
+      <div className="tooltip-toggle">{runningInstances.count}</div>
     </Tooltip>
   );
 };

@@ -10,11 +10,11 @@ import Loader from "components/Loader";
 import React, { FC, useEffect } from "react";
 import { isoTimeToString } from "util/helpers";
 import { queryKeys } from "util/queryKeys";
-import RevokeTokenButton from "./RevokeTokenButton";
 import ScrollableTable from "components/ScrollableTable";
-import EnrolClusterButton from "pages/clusters/EnrolClusterButton";
 import SelectedTableNotification from "components/SelectedTableNotification";
 import SelectableMainTable from "components/SelectableMainTable";
+import RevokeTokenButton from "pages/clusters/actions/RevokeTokenButton";
+import EnrolClusterButton from "pages/clusters/actions/EnrolClusterButton";
 
 type Props = {
   processingNames: string[];

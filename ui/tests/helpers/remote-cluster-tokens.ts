@@ -9,9 +9,11 @@ export const createRemoteClusterToken = async (
   await page.getByPlaceholder("Enter Name").click();
   await page.getByPlaceholder("Enter Name").fill(clusterName);
   await page.getByRole("button", { name: "Create" }).click();
-  await expect(page.getByTestId("notification-title")).toContainText(
-    "The token has been created and will be displayed only once. Please save it now:",
-  );
+  await expect(
+    page.getByText(
+      "To finish the enrollment, run the command below on any member of the MicroCloud.",
+    ),
+  ).toBeVisible();
 };
 
 export const revokeRemoteClusterToken = async (

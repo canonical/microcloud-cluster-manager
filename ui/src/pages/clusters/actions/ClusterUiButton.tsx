@@ -1,18 +1,22 @@
 import { Icon } from "@canonical/react-components";
 import React, { FC } from "react";
+import classnames from "classnames";
 
 type Props = {
   uiUrl: string;
+  className?: string;
+  onClose?: () => void;
 };
 
-const ClusterUiButton: FC<Props> = ({ uiUrl }) => {
+const ClusterUiButton: FC<Props> = ({ uiUrl, className, onClose }) => {
   if (!uiUrl) {
     return null;
   }
 
   return (
     <a
-      className="p-segmented-control__button p-button u-no-margin--bottom has-icon"
+      className={classnames("p-button u-no-margin--bottom has-icon", className)}
+      onClick={onClose}
       href={uiUrl}
       target="_blank"
       rel="noopener noreferrer"

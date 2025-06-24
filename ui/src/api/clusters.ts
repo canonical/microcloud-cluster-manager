@@ -41,14 +41,26 @@ export const deleteClusterBulk = async (
   ).then(handleSettledResult);
 };
 
-export const approveCluster = (remoteClusterName: string): Promise<void> => {
+export const updateCluster = (
+  remoteClusterName: string,
+  payload: string,
+): Promise<void> => {
   return new Promise((resolve, reject) => {
     fetch(`/1.0/remote-cluster/${remoteClusterName}`, {
       method: "PATCH",
-      body: JSON.stringify({ status: "ACTIVE" }),
+      body: payload,
     })
       .then(handleResponse)
       .then(() => resolve())
       .catch(reject);
   });
+};
+
+export const updateClusterBulk = async (
+  remoteClusterNames: string[],
+  payload: string,
+): Promise<void> => {
+  return Promise.allSettled(
+    remoteClusterNames.map(async (name) => updateCluster(name, payload)),
+  ).then(handleSettledResult);
 };

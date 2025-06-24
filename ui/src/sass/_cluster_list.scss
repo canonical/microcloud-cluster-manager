@@ -27,8 +27,15 @@
 
   .members,
   .instances,
-  .warnings {
+  .warnings,
+  .actions {
     text-align: right;
     width: 8rem;
+  }
+
+  .tooltip-toggle {
+    cursor: pointer;
+    padding-left: $sph--small;
+    width: fit-content;
   }
 }

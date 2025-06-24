@@ -1,21 +1,18 @@
 import { Cluster } from "types/cluster";
 import { getMinutesSinceLastHeartbeat, pluralize } from "util/helpers";
 
-const DISK_USAGE_PERCENTAGE_THRESHOLD = 90;
-const MEMORY_USAGE_PERCENTAGE_THRESHOLD = 90;
-
 export const getClusterWarnings = (cluster: Cluster): string[] => {
   const result: string[] = [];
 
   const diskUsagePercent =
     (100 / cluster.disk_total_size) * cluster.disk_usage || 0;
-  if (diskUsagePercent > DISK_USAGE_PERCENTAGE_THRESHOLD) {
+  if (diskUsagePercent > cluster.disk_threshold) {
     result.push(`Disk usage is at ${Math.ceil(diskUsagePercent)}%`);
   }
 
   const memoryUsagePercent =
     (100 / cluster.memory_total_amount) * cluster.memory_usage || 0;
-  if (memoryUsagePercent > MEMORY_USAGE_PERCENTAGE_THRESHOLD) {
+  if (memoryUsagePercent > cluster.memory_threshold) {
     result.push(`Memory usage is at ${Math.ceil(memoryUsagePercent)}%`);
   }
 

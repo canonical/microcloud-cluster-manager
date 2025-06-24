@@ -3,12 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import React, { FC } from "react";
 import { queryKeys } from "util/queryKeys";
 import { fetchConfigurations } from "api/settings";
+import classnames from "classnames";
 
 type Props = {
   clusterName: string;
+  className?: string;
+  onClose?: () => void;
 };
 
-const ClusterMetricsButton: FC<Props> = ({ clusterName }) => {
+const ClusterMetricsButton: FC<Props> = ({
+  clusterName,
+  className,
+  onClose,
+}) => {
   const { data: configurations } = useQuery({
     queryKey: [queryKeys.configuration],
     queryFn: fetchConfigurations,
@@ -22,7 +29,8 @@ const ClusterMetricsButton: FC<Props> = ({ clusterName }) => {
 
   return (
     <a
-      className="p-segmented-control__button p-button u-no-margin--bottom has-icon"
+      className={classnames("p-button u-no-margin--bottom has-icon", className)}
+      onClick={onClose}
       href={`${baseUrl}/lxd?orgId=1&var-job=${clusterName}`}
       target="_blank"
       rel="noopener noreferrer"

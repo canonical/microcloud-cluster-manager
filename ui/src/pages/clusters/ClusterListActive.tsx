@@ -13,10 +13,12 @@ import ClusterHeartbeat from "./metrics/ClusterHeartbeat";
 import ClusterStatus from "./metrics/ClusterStatus";
 import { Cluster } from "types/cluster";
 import { ClusterWarningCount } from "pages/clusters/metrics/ClusterWarningCount";
-import EnrolClusterButton from "pages/clusters/EnrolClusterButton";
 import SelectableMainTable from "components/SelectableMainTable";
 import SelectedTableNotification from "components/SelectedTableNotification";
 import ScrollableTable from "components/ScrollableTable";
+import ClusterActions from "pages/clusters/ClusterActions";
+import EnrolClusterButton from "pages/clusters/actions/EnrolClusterButton";
+import usePanelParams from "context/usePanelParams";
 
 type Props = {
   clusters: Cluster[];
@@ -36,6 +38,7 @@ const ClusterListActive: FC<Props> = ({
   setSelectedNames,
 }) => {
   const notify = useNotify();
+  const panelParams = usePanelParams();
 
   const tableHeaders = [
     {
@@ -59,6 +62,11 @@ const ClusterListActive: FC<Props> = ({
     {
       content: "Warnings",
       className: "warnings",
+    },
+    {
+      content: "",
+      "aria-label": "Actions",
+      className: "actions",
     },
   ];
 
@@ -93,6 +101,10 @@ const ClusterListActive: FC<Props> = ({
         {
           content: <ClusterWarningCount cluster={cluster} />,
           className: "warnings",
+        },
+        {
+          content: <ClusterActions cluster={cluster} />,
+          className: "actions",
         },
       ],
       sortData: {
@@ -165,6 +177,7 @@ const ClusterListActive: FC<Props> = ({
               parentName=""
               filteredNames={clusters.map((item) => item.name)}
               disabledNames={processingNames}
+              disableSelect={!!panelParams.panel}
             />
           </TablePagination>
         </ScrollableTable>

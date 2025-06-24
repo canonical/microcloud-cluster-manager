@@ -4,10 +4,10 @@ import {
   useNotify,
 } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
-import { deleteClusterBulk } from "api/clusters";
 import { FC } from "react";
 import { queryKeys } from "util/queryKeys";
 import { pluralize } from "util/helpers";
+import { deleteTokenBulk } from "api/tokens";
 
 type Props = {
   clusterNames: string[];
@@ -15,7 +15,7 @@ type Props = {
   onFinish: () => void;
 };
 
-const BulkRemoveClusterButton: FC<Props> = ({
+const BulkDeleteClusterButton: FC<Props> = ({
   clusterNames,
   onStart,
   onFinish,
@@ -25,19 +25,19 @@ const BulkRemoveClusterButton: FC<Props> = ({
 
   const handleDelete = () => {
     onStart();
-    deleteClusterBulk(clusterNames)
+    deleteTokenBulk(clusterNames)
       .then(() => {
         notify.success(
           <>
-            {clusterNames.length} {pluralize("cluster", clusterNames.length)}{" "}
-            deleted.
+            {clusterNames.length} {pluralize("token", clusterNames.length)}{" "}
+            revoked.
           </>,
         );
       })
-      .catch((e) => notify.failure(`Cluster deletion failed.`, e))
+      .catch((e) => notify.failure(`Token revoke failed.`, e))
       .finally(() => {
         void queryClient.invalidateQueries({
-          queryKey: [queryKeys.clusters],
+          queryKey: [queryKeys.tokens],
         });
         onFinish();
       });
@@ -52,16 +52,11 @@ const BulkRemoveClusterButton: FC<Props> = ({
         children: (
           <>
             <p>
-              Are you sure you want to remove{" "}
+              Are you sure you want to revoke{" "}
               <strong>
-                {clusterNames.length}{" "}
-                {pluralize("cluster", clusterNames.length)}
+                {clusterNames.length} {pluralize("token", clusterNames.length)}
               </strong>
               ?
-            </p>
-            <p>
-              The {pluralize("cluster", clusterNames.length)} will be be
-              unenrolled from cluster manager, but will not be deleted.
             </p>
           </>
         ),
@@ -71,9 +66,9 @@ const BulkRemoveClusterButton: FC<Props> = ({
       shiftClickEnabled
     >
       <Icon name="delete" />
-      <span>Remove {pluralize("cluster", clusterNames.length)}</span>
+      <span>Revoke {pluralize("token", clusterNames.length)}</span>
     </ConfirmationButton>
   );
 };
 
-export default BulkRemoveClusterButton;
+export default BulkDeleteClusterButton;
