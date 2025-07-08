@@ -1,6 +1,6 @@
 # ========================================================================
 # build the GO binaries for dev and debug versions
-FROM golang:1.23.7 AS builder-backend
+FROM golang:1.24.4 AS builder-backend
 ARG BUILD_REF
 ARG DEBUG=false
 WORKDIR /usr/bin
