@@ -2,6 +2,7 @@ import {
   ActionButton,
   Button,
   Form,
+  SidePanel,
   useNotify,
 } from "@canonical/react-components";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,7 +20,6 @@ import { useNavigate } from "react-router-dom";
 import { createToken, fetchTokens } from "api/tokens";
 import { TokenState } from "pages/clusters/ClusterList";
 import { getDefaultExpiryDate } from "util/createCluster";
-import SidePanel from "components/SidePanel";
 import usePanelParams from "context/usePanelParams";
 import { fetchClusters } from "api/clusters";
 
@@ -95,7 +95,7 @@ const EnrollClusterPanel: FC = () => {
 
   return (
     <>
-      <SidePanel isOverlay loading={false} hasError={false}>
+      <SidePanel>
         <SidePanel.Header>
           <SidePanel.HeaderTitle>Enroll cluster</SidePanel.HeaderTitle>
         </SidePanel.Header>

@@ -3,6 +3,7 @@ import {
   Button,
   Form,
   Input,
+  SidePanel,
   useNotify,
   useToastNotification,
 } from "@canonical/react-components";
@@ -12,7 +13,6 @@ import { useFormik } from "formik";
 import { queryKeys } from "util/queryKeys";
 import NotificationRow from "components/NotificationRow";
 import ScrollableContainer from "components/ScrollableContainer";
-import SidePanel from "components/SidePanel";
 import usePanelParams from "context/usePanelParams";
 import { fetchCluster, updateCluster } from "api/clusters";
 
@@ -91,7 +91,7 @@ const ConfigureClusterPanel: FC = () => {
 
   return (
     <>
-      <SidePanel isOverlay loading={false} hasError={false}>
+      <SidePanel>
         <SidePanel.Header>
           <SidePanel.HeaderTitle>
             Configure cluster {cluster.name}
