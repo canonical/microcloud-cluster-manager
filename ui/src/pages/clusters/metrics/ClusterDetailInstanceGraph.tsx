@@ -1,5 +1,4 @@
-import { Icon } from "@canonical/react-components";
-import DoughnutChart from "components/DoughnutChart";
+import { DoughnutChart, Icon } from "@canonical/react-components";
 import { FC, ReactNode } from "react";
 import { Cluster } from "types/cluster";
 import { pluralize, statusCount } from "util/helpers";
@@ -33,7 +32,7 @@ const ClusterDetailInstanceGraph: FC<Props> = ({ cluster }: Props) => {
       <DoughnutChart
         chartID="clusterInstance"
         segmentHoverWidth={45}
-        segmentWidth={40}
+        segmentThickness={40}
         segments={[
           {
             color: "#0E8420",
