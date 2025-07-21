@@ -1,5 +1,4 @@
-import { Icon } from "@canonical/react-components";
-import DoughnutChart from "components/DoughnutChart";
+import { DoughnutChart, Icon } from "@canonical/react-components";
 import { FC, ReactNode } from "react";
 import { Cluster } from "types/cluster";
 import { getMinutesSinceLastHeartbeat } from "util/helpers";
@@ -32,7 +31,7 @@ const ClusterStatusGraph: FC<Props> = ({ clusters }) => {
       <DoughnutChart
         chartID="clusterStatus"
         segmentHoverWidth={45}
-        segmentWidth={40}
+        segmentThickness={40}
         segments={[
           { color: "#0E8420", tooltip: "Active", value: activeClusters },
           { color: "#C7162B", tooltip: "Degraded", value: degradedClusters },

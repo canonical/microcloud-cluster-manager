@@ -1,6 +1,6 @@
 import { useState } from "react";
-import useEventListener from "@use-it/event-listener";
 import { isWidthBelow } from "util/helpers";
+import { useListener } from "@canonical/react-components";
 
 const isSmallScreen = () => isWidthBelow(620);
 const isMediumScreen = () => isWidthBelow(820);
@@ -16,7 +16,7 @@ export const useMenuCollapsed = () => {
     setMenuCollapsed(isMediumScreen());
   };
 
-  useEventListener("resize", collapseOnMediumScreen);
+  useListener(window, collapseOnMediumScreen, "resize", true);
 
   return { menuCollapsed, setMenuCollapsed };
 };
