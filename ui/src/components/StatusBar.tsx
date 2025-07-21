@@ -3,12 +3,12 @@ import {
   Button,
   Icon,
   ICONS,
+  useListener,
   useToastNotification,
 } from "@canonical/react-components";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "util/queryKeys";
 import { fetchConfigurations } from "api/settings";
-import useEventListener from "@use-it/event-listener";
 import {
   iconLookup,
   severityOrder,
@@ -30,12 +30,16 @@ const StatusBar: FC<Props> = () => {
   const { toggleListView, notifications, countBySeverity, isListView } =
     useToastNotification();
 
-  useEventListener("keydown", (e: KeyboardEvent) => {
-    // Close notifications list if Escape pressed
-    if (e.code === "Escape" && isListView) {
-      toggleListView();
-    }
-  });
+  useListener(
+    window,
+    (e: KeyboardEvent) => {
+      // Close notifications list if Escape pressed
+      if (e.code === "Escape" && isListView) {
+        toggleListView();
+      }
+    },
+    "keydown",
+  );
 
   const notificationIcons = severityOrder.map((severity) => {
     if (countBySeverity[severity]) {

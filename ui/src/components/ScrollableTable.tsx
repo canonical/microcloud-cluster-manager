@@ -1,11 +1,11 @@
 import type { DependencyList, FC, ReactNode } from "react";
 import { useEffect } from "react";
-import useEventListener from "util/useEventListener";
 import {
   getAbsoluteHeightBelowById,
   getParentsBottomSpacing,
 } from "util/helpers";
 import classnames from "classnames";
+import { useListener } from "@canonical/react-components";
 
 interface Props {
   children: ReactNode;
@@ -40,7 +40,7 @@ const ScrollableTable: FC<Props> = ({
     tBody.setAttribute("style", style);
   };
 
-  useEventListener("resize", updateTBodyHeight);
+  useListener(window, updateTBodyHeight, "resize", true);
   useEffect(updateTBodyHeight, [...dependencies]);
 
   return (
