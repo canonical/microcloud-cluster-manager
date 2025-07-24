@@ -1,12 +1,12 @@
 # MicroCloud Cluster Manager
 
-Cluster Manager is the entry point for all your MicroClouds. It can be extended with the [Canonical Observability Stack](https://charmhub.io/topics/canonical-observability-stack) for monitoring and alerting.
+Cluster Manager is the entry point for all your MicroClouds. It can be extended for monitoring and alerting.
 
 # Get started
 
-This is an early version of cluster manager. Glad you want to try it as an early adopter!
+This is an early version of cluster manager. Get started as an early adopter today!
 
-You need to have a juju k8s environment ready. Deploy MicroCloud Cluster Manager along with its dependencies:
+You need to a [juju controlled k8s environment](https://juju.is/). Deploy MicroCloud Cluster Manager along with its dependencies:
 
 ```
 juju add-model cluster-manager
@@ -21,7 +21,7 @@ juju integrate self-signed-certificates:certificates microcloud-cluster-manager-
 juju integrate traefik-k8s:traefik-route microcloud-cluster-manager-k8s
 ```
 
-For authentication you need an OIDC provider, you can use [Auth0](https://documentation.ubuntu.com/lxd/latest/howto/oidc_auth0/), [ory hydra](https://documentation.ubuntu.com/lxd/latest/howto/oidc_ory/), [Keycloak](https://documentation.ubuntu.com/lxd/latest/howto/oidc_keycloak/), [Microsoft Entra](https://documentation.ubuntu.com/lxd/latest/howto/oidc_entra_id/) or others. Configure the cluster manager charm with your auth provider:
+For authentication you need an OIDC provider, you can use [Auth0](https://documentation.ubuntu.com/lxd/latest/howto/oidc_auth0/), [Ory Hydra](https://documentation.ubuntu.com/lxd/latest/howto/oidc_ory/), [Keycloak](https://documentation.ubuntu.com/lxd/latest/howto/oidc_keycloak/), [Microsoft Entra](https://documentation.ubuntu.com/lxd/latest/howto/oidc_entra_id/) among others. Configure the cluster manager charm with your auth provider:
 
 ```
 juju config microcloud-cluster-manager-k8s oidc-issuer=https://example.com/
@@ -38,15 +38,17 @@ Now you can access the web ui via https://example.com
 
 <img width="1434" height="701" alt="image" src="https://github.com/user-attachments/assets/18ddfef1-db66-4971-bbcf-5af7067f3581" />
 
-After login through your OIDC provider, you can enroll your first cluster
+## Enroll your first cluster
 
 <img width="1435" height="745" alt="image" src="https://github.com/user-attachments/assets/987942d6-d53f-470e-b1a9-081b171a23f7" />
 
-You can now explore your first cluster
+## Explore your first clusters details
 
 <img width="1435" height="745" alt="image" src="https://github.com/user-attachments/assets/e1998f49-2c6d-42f1-9042-9a37cdab05ce" />
 
-You can extend with the observability charm to have grafana and prometheus integrated:
+## Extending with observability
+
+You can extend Cluster Manager with the [Canonical Observability Stack](https://charmhub.io/topics/canonical-observability-stack) to have Grafana and Prometheus integrated:
 
 ```
 juju add-model cos
@@ -54,7 +56,7 @@ juju deploy cos-lite --trust
 juju offer prometheus:receive-remote-write
 juju offer grafana:grafana-dashboard grafana-db
 juju offer grafana:grafana-metadata
-juju switch cluster-manager-juju-dev
+juju switch cluster-manager
 juju integrate microcloud-cluster-manager-k8s:send-remote-write admin/cos.prometheus
 juju integrate microcloud-cluster-manager-k8s:grafana-dashboard admin/cos.grafana-db
 juju integrate microcloud-cluster-manager-k8s:grafana-metadata admin/cos.grafana
