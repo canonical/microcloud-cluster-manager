@@ -1,6 +1,6 @@
 # MicroCloud Cluster Manager
 
-Cluster Manager is a web UI for viewing and managing multiple MicroCloud deployments. It can be extended with the [Canonical Observability Stack](https://charmhub.io/topics/canonical-observability-stack) for monitoring and alerting.
+Cluster Manager is the entry point for all your MicroClouds. It can be extended with the [Canonical Observability Stack](https://charmhub.io/topics/canonical-observability-stack) for monitoring and alerting.
 
 # Get started
 
