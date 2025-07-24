@@ -7,8 +7,8 @@ const Login: FC = () => {
 
   return (
     <BaseLayout title="">
-      <LoginPageLayout title="LXD Cluster Manager">
-        <p>Access your dashboard to manage LXD clusters</p>
+      <LoginPageLayout title="MicroCloud Cluster Manager">
+        <p>Access your dashboard to manage MicroCloud clusters</p>
         <Link
           href={`/oidc/login?next=${postLoginPath}`}
           className="p-button--positive"
