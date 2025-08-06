@@ -6112,10 +6112,10 @@ util-deprecate@^1.0.2:
   resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
   integrity sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==
 
-vanilla-framework@4.27.0:
-  version "4.27.0"
-  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.27.0.tgz#9d3da0f7df8a359b6eb5c81a94f5483817e4b35c"
-  integrity sha512-UX0k1W9YJJyosyy+mW/0WzInI8VZWPSIIh6Z6O6KFiFQvk23Nv9zSqbgqweoa3vm+JanwSQWXkIYldfxmh1xnA==
+vanilla-framework@4.28.0:
+  version "4.28.0"
+  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.28.0.tgz#001b65abc38e9a1e4ed012841bab233517aacd87"
+  integrity sha512-2IQk3T5Z3PgJrpdg1BlcLS07ZcDcREIfWKUxVAnwV6Yq8N0l7/37es1EHL0/N7JjMOX7oEeC0JyuSCR7wENNtg==
 
 vite-node@3.0.9:
   version "3.0.9"
