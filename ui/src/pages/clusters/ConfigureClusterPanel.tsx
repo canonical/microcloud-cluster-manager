@@ -3,6 +3,7 @@ import {
   Button,
   Form,
   Input,
+  ScrollableContainer,
   SidePanel,
   useNotify,
   useToastNotification,
@@ -12,7 +13,6 @@ import type { FC } from "react";
 import { useFormik } from "formik";
 import { queryKeys } from "util/queryKeys";
 import NotificationRow from "components/NotificationRow";
-import ScrollableContainer from "components/ScrollableContainer";
 import usePanelParams from "context/usePanelParams";
 import { fetchCluster, updateCluster } from "api/clusters";
 
