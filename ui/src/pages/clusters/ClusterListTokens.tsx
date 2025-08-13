@@ -1,4 +1,6 @@
 import {
+  ScrollableTable,
+  Spinner,
   TablePagination,
   useNotify,
   EmptyState,
@@ -6,11 +8,9 @@ import {
 } from "@canonical/react-components";
 import { useQuery } from "@tanstack/react-query";
 import { fetchTokens } from "api/tokens";
-import Loader from "components/Loader";
 import React, { FC, useEffect } from "react";
 import { isoTimeToString } from "util/helpers";
 import { queryKeys } from "util/queryKeys";
-import ScrollableTable from "components/ScrollableTable";
 import SelectedTableNotification from "components/SelectedTableNotification";
 import SelectableMainTable from "components/SelectableMainTable";
 import RevokeTokenButton from "pages/clusters/actions/RevokeTokenButton";
@@ -162,7 +162,7 @@ const ClusterListTokens: FC<Props> = ({
               responsive={true}
               emptyStateMsg={
                 isLoading ? (
-                  <Loader text="Loading Tokens..." />
+                  <Spinner className="u-loader" text="Loading Tokens..." />
                 ) : (
                   <>No tokens found.</>
                 )

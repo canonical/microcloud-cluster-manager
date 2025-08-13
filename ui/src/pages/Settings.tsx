@@ -1,10 +1,9 @@
 import { FC } from "react";
-import { MainTable, Row } from "@canonical/react-components";
+import { MainTable, Row, Spinner } from "@canonical/react-components";
 import BaseLayout from "components/BaseLayout";
 import { queryKeys } from "util/queryKeys";
 import { useQuery } from "@tanstack/react-query";
 import NotificationRow from "components/NotificationRow";
-import Loader from "components/Loader";
 import { fetchConfigurations } from "api/settings";
 import { ConfigData } from "types/config";
 
@@ -48,7 +47,7 @@ const Settings: FC = () => {
   });
 
   if (isLoading) {
-    return <Loader />;
+    return <Spinner className="u-loader" text="Loading..." />;
   }
 
   return (

@@ -2,6 +2,7 @@ import {
   ActionButton,
   Button,
   Form,
+  ScrollableContainer,
   SidePanel,
   useNotify,
 } from "@canonical/react-components";
@@ -11,7 +12,6 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 import { queryKeys } from "util/queryKeys";
 import NotificationRow from "components/NotificationRow";
-import ScrollableContainer from "components/ScrollableContainer";
 import ClusterCreateDetailsForm, {
   CreateClusterFormValues,
   newTokenPayload,

@@ -1,4 +1,10 @@
-import { List, Notification, Row, Strip } from "@canonical/react-components";
+import {
+  List,
+  Notification,
+  Row,
+  Spinner,
+  Strip,
+} from "@canonical/react-components";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCluster } from "api/clusters";
 import BaseLayout from "components/BaseLayout";
@@ -9,7 +15,6 @@ import ClusterDetailInstanceGraph from "./metrics/ClusterDetailInstanceGraph";
 import ClusterDetailMemberGraph from "./metrics/ClusterDetailMemberGraph";
 import ClusterTimer from "./metrics/ClusterTimer";
 import ClusterDetailMetrics from "./metrics/ClusterDetailMetrics";
-import Loader from "components/Loader";
 import BreadCrumbHeader from "components/BreadcrumbHeader";
 import { ClusterWarningList } from "pages/clusters/metrics/ClusterWarningList";
 import usePanelParams, { panels } from "context/usePanelParams";
@@ -82,7 +87,9 @@ const ClusterDetail: FC = () => {
           </div>
         }
       >
-        {isLoading && <Loader text="Loading cluster details..." />}
+        {isLoading && (
+          <Spinner className="u-loader" text="Loading cluster details..." />
+        )}
         {!isLoading && !cluster && !error && <>Loading cluster failed</>}
         {error && (
           <Strip>

@@ -2,10 +2,11 @@ import React, { FC } from "react";
 import {
   EmptyState,
   Icon,
+  ScrollableTable,
+  Spinner,
   TablePagination,
   useNotify,
 } from "@canonical/react-components";
-import Loader from "components/Loader";
 import { Link } from "react-router-dom";
 import { ClusterInstances } from "./metrics/ClusterInstances";
 import { ClusterMembers } from "./metrics/ClusterMembers";
@@ -15,7 +16,6 @@ import { Cluster } from "types/cluster";
 import { ClusterWarningCount } from "pages/clusters/metrics/ClusterWarningCount";
 import SelectableMainTable from "components/SelectableMainTable";
 import SelectedTableNotification from "components/SelectedTableNotification";
-import ScrollableTable from "components/ScrollableTable";
 import ClusterActions from "pages/clusters/ClusterActions";
 import EnrollClusterButton from "pages/clusters/actions/EnrollClusterButton";
 import usePanelParams from "context/usePanelParams";
@@ -180,7 +180,7 @@ const ClusterListActive: FC<Props> = ({
               responsive
               emptyStateMsg={
                 isLoading ? (
-                  <Loader text="Loading Clusters..." />
+                  <Spinner className="u-loader" text="Loading Clusters..." />
                 ) : (
                   <>No clusters found matching this search.</>
                 )
