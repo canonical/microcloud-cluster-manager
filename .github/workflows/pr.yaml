@@ -52,7 +52,7 @@ jobs:
         uses: actions/checkout@v5
       
       - name: Install Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
       
@@ -167,7 +167,7 @@ jobs:
         run: deployment/k8s/cicd/deploy-cos-on-microk8s.sh ${{ needs.build-rock.outputs.image-name }}
       
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
       
@@ -209,7 +209,7 @@ jobs:
         uses: actions/checkout@v5
       
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
