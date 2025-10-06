@@ -11,8 +11,8 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/pressly/goose/v3 v3.26.0
-	github.com/prometheus/common v0.65.0
-	github.com/prometheus/prometheus v0.305.0
+	github.com/prometheus/common v0.65.1-0.20250703115700-7f8b2a0d32d3
+	github.com/prometheus/prometheus v0.306.0
 	github.com/spf13/cobra v1.10.1
 	github.com/zitadel/oidc/v3 v3.45.0
 	go.uber.org/automaxprocs v1.6.0
@@ -76,6 +76,7 @@ require (
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.34.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
