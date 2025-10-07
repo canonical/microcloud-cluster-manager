@@ -211,14 +211,14 @@ func (o *Verifier) Login(w http.ResponseWriter, r *http.Request, stateTokenStr s
 }
 
 // Logout deletes the ID and refresh token cookies and redirects the user to the login page.
-func (o *Verifier) Logout(w http.ResponseWriter, r *http.Request, redirectURL string) {
+func (o *Verifier) Logout(w http.ResponseWriter, r *http.Request) {
 	err := o.setCookies(w, nil, uuid.UUID{}, "", "", true)
 	if err != nil {
 		_ = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to delete login information: %w", err).Error()).Render(w, r)
 		return
 	}
 
-	http.Redirect(w, r, redirectURL, http.StatusFound)
+	http.Redirect(w, r, "/ui/login", http.StatusFound)
 }
 
 // Callback is a http.HandlerFunc which implements the code exchange required on the /oidc/callback endpoint.
