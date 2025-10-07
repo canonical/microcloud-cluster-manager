@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -30,8 +31,10 @@ func testRemoteClusterStatusNoCert(env *helpers.Environment) (testName string, t
 			}
 
 			err = sendStatusUpdateNoCert(env, tokenData)
-			if err != nil && err.Error() == "not authorized" {
+			if err != nil && err.Error() == "Forbidden" {
 				err = nil
+			} else {
+				err = errors.New("expected forbidden error not received")
 			}
 
 			helpers.LogTestOutcome(t, condition, err)
@@ -61,8 +64,10 @@ func testRemoteClusterStatusInvalidCert(env *helpers.Environment) (testName stri
 			}
 
 			err = sendStatusUpdateInvalidCert(env, tokenData)
-			if err != nil && err.Error() == "not found" {
+			if err != nil && err.Error() == "Not Found" {
 				err = nil
+			} else {
+				err = errors.New("expected not found error not received")
 			}
 
 			helpers.LogTestOutcome(t, condition, err)

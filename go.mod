@@ -3,7 +3,7 @@ module github.com/canonical/microcloud-cluster-manager
 go 1.24.4
 
 require (
-	github.com/canonical/lxd v0.0.0-20250311163601-93c5ce74d203
+	github.com/canonical/lxd v0.0.0-20250801102235-fec3cc832ca7
 	github.com/golang/snappy v1.0.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
@@ -29,7 +29,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/flosch/pongo2 v0.0.0-20200913210552-0d938eb266f3 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
@@ -50,8 +50,8 @@ require (
 	github.com/muhlemmer/gu v0.3.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pkg/sftp v1.13.7 // indirect
-	github.com/pkg/xattr v0.4.10 // indirect
+	github.com/pkg/sftp v1.13.9 // indirect
+	github.com/pkg/xattr v0.4.12 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect

@@ -59,8 +59,7 @@ func (ma *MtlsAuthenticator) Auth(ctx context.Context, w http.ResponseWriter, r 
 	}
 
 	remoteClusterCert, _ := ma.cache.GetCertificateEntry(fingerprint)
-	request.SetCtxValue(r, request.CtxUsername, fingerprint)
-	request.SetCtxValue(r, CtxRemoteClusterID, remoteClusterCert.ClusterID)
+	request.SetContextValue(r, CtxRemoteClusterID, remoteClusterCert.ClusterID)
 
 	return true, nil
 }
