@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"strings"
 	"syscall"
 
 	"github.com/canonical/lxd/lxd/response"
@@ -123,4 +124,10 @@ func (a *API) GetStatusServer(port string) *http.Server {
 	}
 
 	return statusServer
+}
+
+// isBrowserClient checks if the request is coming from a browser client.
+func isBrowserClient(r *http.Request) bool {
+	// Check if the User-Agent starts with "Mozilla" which is common for browsers.
+	return strings.HasPrefix(r.Header.Get("User-Agent"), "Mozilla")
 }

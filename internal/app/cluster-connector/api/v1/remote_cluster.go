@@ -178,7 +178,7 @@ func remoteClusterStatusPost(rc types.RouteConfig) types.EndpointHandler {
 			return response.BadRequest(err).Render(w, r)
 		}
 
-		remoteClusterID, err := request.GetCtxValue[int](r.Context(), auth.CtxRemoteClusterID)
+		remoteClusterID, err := request.GetContextValue[int](r.Context(), auth.CtxRemoteClusterID)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -346,7 +346,7 @@ func forwardMetricsToPrometheus(timeSeries []prompb.TimeSeries, rc types.RouteCo
 
 func remoteClusterDelete(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterID, err := request.GetCtxValue[int](r.Context(), auth.CtxRemoteClusterID)
+		remoteClusterID, err := request.GetContextValue[int](r.Context(), auth.CtxRemoteClusterID)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}

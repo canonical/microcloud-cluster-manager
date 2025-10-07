@@ -3,10 +3,7 @@ import { Server } from "types/server";
 import { handleResponse } from "util/helpers";
 
 export const fetchServer = (): Promise<Server> => {
-  return new Promise((resolve, reject) => {
-    fetch("/1.0")
-      .then(handleResponse)
-      .then((data) => resolve((data as LxdApiResponse<Server>).metadata))
-      .catch(reject);
-  });
+  return fetch("/1.0")
+    .then(handleResponse)
+    .then((data) => (data as LxdApiResponse<Server>).metadata);
 };

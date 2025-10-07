@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -22,8 +23,10 @@ func testRemoteClusterJoinInvalid(env *helpers.Environment) (testName string, te
 
 			tokenData.Secret = "invalid_secret"
 			err = sendJoinRequest(env, tokenData)
-			if err != nil && err.Error() == "not authorized" {
+			if err != nil && err.Error() == "Forbidden" {
 				err = nil
+			} else {
+				err = errors.New("expected forbidden error not received")
 			}
 
 			helpers.LogTestOutcome(t, condition, err)
@@ -53,6 +56,8 @@ func testRemoteClusterJoinExpiredToken(env *helpers.Environment) (testName strin
 			err = sendJoinRequest(env, tokenData)
 			if err != nil && err.Error() == "tokenFromDb has expired" {
 				err = nil
+			} else {
+				err = errors.New("expected token expired error not received")
 			}
 
 			helpers.LogTestOutcome(t, condition, err)
