@@ -40,10 +40,8 @@ func login(rc types.RouteConfig) types.EndpointHandler {
 			return response.InternalError(fmt.Errorf("oidc authenticator missing")).Render(w, r)
 		}
 
-		redirectURL := r.URL.Query().Get("next")
-
 		stateToken := auth.StateToken{
-			RedirectURL: redirectURL,
+			RedirectURL: "/ui",
 			ID:          uuid.New().String(),
 		}
 
@@ -90,10 +88,8 @@ func logout(rc types.RouteConfig) types.EndpointHandler {
 			return response.InternalError(fmt.Errorf("oidc authenticator missing")).Render(w, r)
 		}
 
-		redirectURL := r.URL.Query().Get("next")
-
 		logoutHandler := func(w http.ResponseWriter) error {
-			verifier.Logout(w, r, redirectURL)
+			verifier.Logout(w, r)
 			return nil
 		}
 
