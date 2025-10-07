@@ -8,23 +8,48 @@ interface Props {
 }
 
 const ClusterDetailMemberGraph: FC<Props> = ({ cluster }: Props) => {
-  const onlineMembers = statusCount(cluster.member_statuses, "Online");
-  const offlineMembers = statusCount(cluster.member_statuses, "Offline");
-  const evacuatedMembers = statusCount(cluster.member_statuses, "Evacuated");
-  const blockedMembers = statusCount(cluster.member_statuses, "Blocked");
+  const online = statusCount(cluster.member_statuses, "Online");
+  const offline = statusCount(cluster.member_statuses, "Offline");
+  const evacuated = statusCount(cluster.member_statuses, "Evacuated");
+  const blocked = statusCount(cluster.member_statuses, "Blocked");
 
-  const totalMembers =
-    onlineMembers + offlineMembers + evacuatedMembers + blockedMembers;
+  const total = online + offline + evacuated + blocked;
 
-  function getPercentageString(portion: number): ReactNode {
-    return (
-      <>
-        <b>{portion}</b>{" "}
-        {totalMembers > 0
-          ? `(${Math.floor((portion / totalMembers) * 100)}%) `
-          : ""}
-      </>
-    );
+  const getPercentage = (portion: number): ReactNode => (
+    <>
+      <b>{portion}</b>{" "}
+      {total > 0 ? `(${Math.floor((portion / total) * 100)}%) ` : ""}
+    </>
+  );
+
+  const segments = [{ color: "#D3E4ED", tooltip: "", value: 0 }];
+  if (online > 0) {
+    segments.push({
+      color: "#0E8420",
+      tooltip: "Online",
+      value: online,
+    });
+  }
+  if (offline > 0) {
+    segments.push({
+      color: "#CC7900",
+      tooltip: "Offline",
+      value: offline,
+    });
+  }
+  if (blocked > 0) {
+    segments.push({
+      color: "#C7162B",
+      tooltip: "Blocked",
+      value: blocked,
+    });
+  }
+  if (evacuated > 0) {
+    segments.push({
+      color: "#24598f",
+      tooltip: "Evacuated",
+      value: evacuated,
+    });
   }
 
   return (
@@ -33,48 +58,30 @@ const ClusterDetailMemberGraph: FC<Props> = ({ cluster }: Props) => {
         chartID="clusterNode"
         segmentHoverWidth={45}
         segmentThickness={40}
-        segments={[
-          {
-            color: "#0E8420",
-            tooltip: "Online",
-            value: onlineMembers,
-          },
-          {
-            color: "#CC7900",
-            tooltip: "Offline",
-            value: offlineMembers,
-          },
-          {
-            color: "#24598f",
-            tooltip: "Evacuated",
-            value: evacuatedMembers,
-          },
-          { color: "#C7162B", tooltip: "Blocked", value: blockedMembers },
-          { color: "#D3E4ED", tooltip: "", value: 0 },
-        ]}
+        segments={segments}
         size={150}
       />
       <ul className="doughnut-chart__legend u-no-margin--left">
         <li className="u-no-margin p-heading--5 u-no-padding">
-          {totalMembers} {pluralize("member", totalMembers)}
+          {total} {pluralize("member", total)}
         </li>
         <li>
           <Icon name="status-succeeded-small" />
-          {getPercentageString(onlineMembers)} Online
+          {getPercentage(online)} Online
         </li>
         <li>
           <Icon name="status-waiting-small" />
-          {getPercentageString(offlineMembers)}
+          {getPercentage(offline)}
           Offline
         </li>
         <li>
           <Icon name="status-in-progress-small" />
-          {getPercentageString(evacuatedMembers)}
+          {getPercentage(evacuated)}
           Evacuated
         </li>
         <li>
           <Icon name="status-failed-small" />
-          {getPercentageString(blockedMembers)}
+          {getPercentage(blocked)}
           Blocked
         </li>
       </ul>
