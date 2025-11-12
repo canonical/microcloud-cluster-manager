@@ -1,0 +1,96 @@
+name: Vulnerability Scanning with Trivy
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'  # Test Trivy daily at midnight
+
+permissions:
+  contents: read
+  security-events: write # for uploading SARIF results to the security tab
+  actions: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  trivy-repo:
+    name: Trivy - Repository
+    runs-on: ubuntu-24.04
+    if: ${{ ( github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' ) && github.ref_name == 'main' && github.repository == 'canonical/microcloud-cluster-manager' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Install Trivy
+        uses: ./.github/actions/install-trivy
+
+      - name: Download Trivy DB
+        id: db_download
+        run: trivy fs --download-db-only --cache-dir /home/runner/vuln-cache
+        continue-on-error: true
+
+      - name: Use previously downloaded database
+        if: ${{ steps.db_download.outcome == 'failure' }}
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: /home/runner/vuln-cache
+          key: download-failed # Use a non existing key to fallback to restore-keys
+          restore-keys: |
+            trivy-cache-
+
+      - name: Run Trivy vulnerability scanner
+        run: |
+          trivy fs --skip-db-update \
+          --scanners vuln,secret,misconfig \
+          --format sarif \
+          --cache-dir /home/runner/vuln-cache \
+          --severity LOW,MEDIUM,HIGH,CRITICAL \
+          --output trivy-microcloud-cluster-manager-repo-scan-results.sarif .
+
+      - name: Cache Trivy vulnerability database
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: /home/runner/vuln-cache
+          key: trivy-cache-${{ github.run_id }}
+
+      - name: Tag KEV alerts
+        run: |
+            cd /home/runner
+            curl -s --compressed -o kev.json https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+            kev_ids="$(jq -r '.vulnerabilities[].cveID' kev.json)"
+            jq --arg ids "$kev_ids" '($ids | split("\n")) as $id_list | .runs[].tool.driver.rules[] |= (
+              if (.id as $id | $id_list | index($id)) then
+                .shortDescription.text |= . + " (KEV)"
+              else
+                .
+              end
+            )' "$GITHUB_WORKSPACE/trivy-microcloud-cluster-manager-repo-scan-results.sarif" > trivy-modified.sarif
+            mv trivy-modified.sarif "$GITHUB_WORKSPACE/trivy-microcloud-cluster-manager-repo-scan-results.sarif"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@0499de31b99561a6d14a36a5f662c2a54f91beee # v3
+        with:
+          sarif_file: "trivy-microcloud-cluster-manager-repo-scan-results.sarif"
+          sha: ${{ github.sha }}
+          ref: refs/heads/main
+
+      - name: Generate SBOM for source code
+        run: |
+          trivy repository . \
+            --format=spdx-json \
+            --output=microcloud-cluster-manager-sbom.json
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: sbom-amd64
+          path: "microcloud-cluster-manager-sbom.json"
+          retention-days: 30
