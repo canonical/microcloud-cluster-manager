@@ -21,7 +21,7 @@ juju integrate self-signed-certificates:certificates microcloud-cluster-manager-
 juju integrate traefik-k8s:traefik-route microcloud-cluster-manager-k8s
 ```
 
-For authentication you need an OIDC provider, you can use [Auth0](https://documentation.ubuntu.com/lxd/latest/howto/oidc_auth0/), [Ory Hydra](https://documentation.ubuntu.com/lxd/latest/howto/oidc_ory/), [Keycloak](https://documentation.ubuntu.com/lxd/latest/howto/oidc_keycloak/), [Microsoft Entra](https://documentation.ubuntu.com/lxd/latest/howto/oidc_entra_id/) among others. Configure the cluster manager charm with your auth provider:
+For authentication you need an OIDC provider, you can use Auth0 Ory Hydra, Keycloak, Microsoft Entra among others. See [LXD documentation on OIDC](https://documentation.ubuntu.com/lxd/latest/howto/oidc/) for how to configure the provider side. Then configure the cluster manager charm with your auth provider:
 
 ```
 juju config microcloud-cluster-manager-k8s oidc-issuer=https://example.com/
@@ -29,11 +29,11 @@ juju config microcloud-cluster-manager-k8s oidc-client-id=ababab
 juju config microcloud-cluster-manager-k8s oidc-audience=https://example.com/api/v2/
 ```
 
-Configure the domain for the management api and the cluster connector:
+Configure the domain for the management api and the cluster connector, this can also be exposed IP addresses but using domains is recommended:
 
 ```
-juju config microcloud-cluster-manager-k8s management-api-domain=ma.lxd-cm.local
-juju config microcloud-cluster-manager-k8s cluster-connector-domain=cc.lxd-cm.local
+juju config microcloud-cluster-manager-k8s management-api-domain=ma.microcloud-cm-example.local
+juju config microcloud-cluster-manager-k8s cluster-connector-domain=cc.microcloud-cm-example.local
 ```
 
 You might want to set a domain for your traefic controller
@@ -87,7 +87,7 @@ Then in a separate terminal, run:
 make ui
 ```
 
-Now you can access the UI at [ma.lxd-cm.local:8414](https://ma.lxd-cm.local:8414). For more information on local development, please see the [contributing guidelines](CONTRIBUTING.md).
+Now you can access the UI at [ma.microcloud-cm-example.local:8414](https://ma.microcloud-cm-example.local:8414). For more information on local development, please see the [contributing guidelines](CONTRIBUTING.md).
 
 # Architecture
 
