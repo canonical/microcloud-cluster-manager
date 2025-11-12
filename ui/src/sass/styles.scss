@@ -64,7 +64,7 @@ body {
 }
 
 .p-notification__message {
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .u-modal-medium {

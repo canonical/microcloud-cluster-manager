@@ -6,7 +6,6 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        api: "modern-compiler",
         silenceDeprecations: ["mixed-decls", "global-builtin", "import"],
       },
     },

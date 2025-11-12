@@ -32,7 +32,7 @@ const RemoveClusterButton: FC<Props> = ({
     setLoading(true);
     try {
       await deleteCluster(clusterName);
-      navigate("/ui/clusters");
+      void navigate("/ui/clusters");
       await queryClient.invalidateQueries({
         queryKey: [queryKeys.clusters],
       });
