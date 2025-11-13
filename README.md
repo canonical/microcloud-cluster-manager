@@ -21,7 +21,9 @@ juju integrate self-signed-certificates:certificates microcloud-cluster-manager-
 juju integrate traefik-k8s:traefik-route microcloud-cluster-manager-k8s
 ```
 
-For authentication you need an OIDC provider, you can use Auth0 Ory Hydra, Keycloak, Microsoft Entra among others. See [LXD documentation on OIDC](https://documentation.ubuntu.com/lxd/latest/howto/oidc/) for how to configure the provider side. Then configure the cluster manager charm with your auth provider:
+For authentication you need an OIDC provider. You can use Auth0, Ory Hydra, Keycloak, Microsoft Entra among others. See [LXD documentation on OIDC](https://documentation.ubuntu.com/lxd/latest/howto/oidc/) for how to configure the provider side. The callback path is `/oidc/callback`, but in contrast to LXD it must be without the port 8443 as cluster manager listens on the default port 443.
+
+Configure the cluster manager charm with your auth provider:
 
 ```
 juju config microcloud-cluster-manager-k8s oidc-issuer=https://example.com/
