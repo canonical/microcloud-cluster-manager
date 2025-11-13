@@ -1,0 +1,60 @@
+name: TICS code scan
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tics
+  cancel-in-progress: false
+
+jobs:
+  tics-scan:
+    name: TICS scan
+    if: ${{ github.repository_owner == 'canonical' }}
+    runs-on: [self-hosted, linux, amd64, tiobe, jammy]
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Install Node for frontend dependencies
+      uses: actions/setup-node@v6
+      with:
+        node-version: 22
+
+    - name: Install frontend dependencies
+      run: cd ui && yarn install --immutable
+
+    - name: Install Go for backend dependencies
+      uses: actions/setup-go@v6
+      with:
+        go-version: 1.25.x
+
+    - name: Install backend dependencies
+      run: go mod download
+
+    - name: Run tests with coverage
+      run: test/run-coverage.sh
+
+    - name: Upload coverage data
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: coverage
+        path: test/coverage
+        retention-days: 1
+
+    - name: Produce TICS report
+      shell: bash
+      run: |
+        set -x
+        export TICSAUTHTOKEN=${{ secrets.TICSAUTHTOKEN }}
+        # need to source .profile, or TICSQServer command won't be found
+        source ~/.profile
+        TICSQServer -project microcloud-cluster-manager -tmpdir /tmp/tics -branchdir .

@@ -180,6 +180,10 @@ copy-ui:
 build: build-ui copy-ui
 	$(GO) build -C cmd -o $(GO_BIN) ./
 
+.PHONY: build-coverage
+build-coverage: build-ui copy-ui
+	$(GO) build -C cmd -cover -o app-coverage ./
+
 # ====================================================================
 # CI k8s deployment utilities
 

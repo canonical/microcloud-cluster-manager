@@ -27,5 +27,8 @@ tmp
 # build artefacts
 vendor
 cmd/app
+cmd/app-coverage
 internal/app/management-api/api/v1/static/ui
 .coverage
+test/keys
+test/coverage

@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/canonical/lxd/shared"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,12 +30,12 @@ type Environment struct {
 	testDir              string
 	certDir              string
 	processIDs           []int
-	kClient              *kubernetes.Clientset
 	managementAPICert    *shared.CertInfo
 	clusterConnectorCert *shared.CertInfo
 	managementAPIHost    string
+	managementApiPort    int
 	clusterConnectorHost string
-	ingressPort          int
+	clusterConnectorPort int
 	remoteClusters       []string
 	remoteClusterTokens  []string
 }
@@ -45,9 +46,10 @@ func NewEnv() *Environment {
 		rootDir:              getProjectRoot(),
 		testDir:              "",
 		certDir:              "",
-		ingressPort:          30000,
 		managementAPIHost:    "ma.lxd-cm.local",
+		managementApiPort:    30000,
 		clusterConnectorHost: "cc.lxd-cm.local",
+		clusterConnectorPort: getClusterConnectorPort(),
 	}
 }
 
@@ -93,12 +95,7 @@ func (e *Environment) Init() error {
 		return err
 	}
 
-	err := e.setKubeClient()
-	if err != nil {
-		return err
-	}
-
-	err = e.setCertificates()
+	err := e.setCertificates()
 	if err != nil {
 		return err
 	}
@@ -158,38 +155,51 @@ func (e *Environment) ClusterConnectorHost() string {
 	return e.clusterConnectorHost
 }
 
-// IngressPort returns the ingress port.
-func (e *Environment) IngressPort() int {
-	return e.ingressPort
-}
-
 // ManagementAPIHostPort returns the management-api host and port.
 func (e *Environment) ManagementAPIHostPort() string {
-	return fmt.Sprintf("%s:%d", e.managementAPIHost, e.ingressPort)
+	return fmt.Sprintf("%s:%d", e.managementAPIHost, e.managementApiPort)
 }
 
 // ClusterConnectorHostPort returns the cluster-connector host and port.
 func (e *Environment) ClusterConnectorHostPort() string {
-	return fmt.Sprintf("%s:%d", e.clusterConnectorHost, e.ingressPort)
+	return fmt.Sprintf("%s:%d", e.clusterConnectorHost, e.clusterConnectorPort)
 }
 
 func (e *Environment) setCertificates() error {
 	// Helper function to retrieve and validate certificate data from a secret
 	getCertificateData := func(secretName string) (cert, key, ca []byte, err error) {
-		secret, err := e.kClient.CoreV1().Secrets("default").Get(context.TODO(), secretName, metav1.GetOptions{})
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("could not get secret %q: %w", secretName, err)
+		secretPathEnvVar := strings.ReplaceAll(secretName, "-", "_")
+		secretPath := os.Getenv(secretPathEnvVar)
+		if secretPath != "" {
+			cert, certErr := os.ReadFile(filepath.Join(secretPath, "tls.crt"))
+			key, keyErr := os.ReadFile(filepath.Join(secretPath, "tls.key"))
+			ca, caErr := os.ReadFile(filepath.Join(secretPath, "ca.crt"))
+
+			if certErr != nil || keyErr != nil || caErr != nil {
+				return nil, nil, nil, fmt.Errorf("secret path %q for secret name %q does not contain all required keys", secretPath, secretName)
+			}
+
+			return cert, key, ca, nil
+		} else {
+			kClient, err := e.getKubeClient()
+			if err != nil {
+				return nil, nil, nil, err
+			}
+
+			secret, err := kClient.CoreV1().Secrets("default").Get(context.TODO(), secretName, metav1.GetOptions{})
+			if err != nil {
+				return nil, nil, nil, fmt.Errorf("could not get secret %q: %w", secretName, err)
+			}
+
+			cert, certExist := secret.Data["tls.crt"]
+			key, keyExist := secret.Data["tls.key"]
+			ca, caExist := secret.Data["ca.crt"]
+
+			if !certExist || !keyExist || !caExist {
+				return nil, nil, nil, fmt.Errorf("secret %q does not contain all required keys", secretName)
+			}
+			return cert, key, ca, nil
 		}
-
-		cert, certExist := secret.Data["tls.crt"]
-		key, keyExist := secret.Data["tls.key"]
-		ca, caExist := secret.Data["ca.crt"]
-
-		if !certExist || !keyExist || !caExist {
-			return nil, nil, nil, fmt.Errorf("secret %q does not contain all required keys", secretName)
-		}
-
-		return cert, key, ca, nil
 	}
 
 	// Helper function to write a file and handle errors
@@ -232,25 +242,24 @@ func (e *Environment) setCertificates() error {
 	return nil
 }
 
-func (e *Environment) setKubeClient() error {
+func (e *Environment) getKubeClient() (*kubernetes.Clientset, error) {
 	home := homedir.HomeDir()
 	if home == "" {
-		return fmt.Errorf("could not find home directory for kubeconfig")
+		return nil, fmt.Errorf("could not find home directory for kubeconfig")
 	}
 
 	kubeconfig := filepath.Join(home, ".kube", "config")
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		return fmt.Errorf("could not build kubeconfig: %v", err)
+		return nil, fmt.Errorf("could not build kubeconfig: %v", err)
 	}
 
 	kClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return fmt.Errorf("could not create kubernetes client: %v", err)
+		return nil, fmt.Errorf("could not create kubernetes client: %v", err)
 	}
 
-	e.kClient = kClient
-	return nil
+	return kClient, nil
 }
 
 func getProjectRoot() string {
@@ -275,4 +284,15 @@ func getProjectRoot() string {
 	}
 
 	panic("could not find go.mod")
+}
+
+func getClusterConnectorPort() int {
+	value := os.Getenv("CLUSTER_CONNECTOR_PORT")
+	if value != "" {
+		i, err := strconv.Atoi(value)
+		if err == nil {
+			return i
+		}
+	}
+	return 30000
 }
