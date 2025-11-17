@@ -65,7 +65,7 @@ const BulkConfigureClusterPanel: FC = () => {
         notify.failure("Failed to update clusters.", e);
       })
       .finally(() => {
-        void queryClient.invalidateQueries({
+        queryClient.invalidateQueries({
           queryKey: [queryKeys.clusters],
         });
         formik.setSubmitting(false);
@@ -112,7 +112,7 @@ const BulkConfigureClusterPanel: FC = () => {
               <BulkConfigurePanelInput
                 areAllValuesEqual={areDiskThresholdsEqual}
                 setValue={(value) => {
-                  void formik.setFieldValue("diskThreshold", value);
+                  formik.setFieldValue("diskThreshold", value);
                 }}
                 firstValue={clusters[0]?.disk_threshold}
                 defaultValue={80}

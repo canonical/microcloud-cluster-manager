@@ -65,10 +65,10 @@ const ConfigureClusterPanel: FC = () => {
         notify.failure(`Failure updating cluster ${clusterName}.`, e);
       })
       .finally(() => {
-        void queryClient.invalidateQueries({
+        queryClient.invalidateQueries({
           queryKey: [queryKeys.clusters, cluster?.name],
         });
-        void queryClient.invalidateQueries({
+        queryClient.invalidateQueries({
           queryKey: [queryKeys.clusters],
         });
         formik.setSubmitting(false);

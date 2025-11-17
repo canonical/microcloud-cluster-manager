@@ -76,7 +76,7 @@ const EnrollClusterPanel: FC = () => {
         notify.failure("Unable to create token.", e);
       })
       .finally(() => {
-        void queryClient.invalidateQueries({
+        queryClient.invalidateQueries({
           queryKey: [queryKeys.tokens],
         });
         formik.setSubmitting(false);

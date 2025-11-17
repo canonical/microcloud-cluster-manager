@@ -41,7 +41,7 @@ const BulkRemoveClusterButton: FC<Props> = ({
       })
       .catch((e) => notify.failure(`Cluster removal failed.`, e))
       .finally(() => {
-        void queryClient.invalidateQueries({
+        queryClient.invalidateQueries({
           queryKey: [queryKeys.clusters],
         });
         onFinish();

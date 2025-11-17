@@ -25,7 +25,7 @@ const RevokeTokenButton: FC<Props> = ({ token }) => {
     setLoading(true);
     await deleteToken(token.cluster_name)
       .then(() => {
-        void queryClient.invalidateQueries({
+        queryClient.invalidateQueries({
           queryKey: [queryKeys.tokens],
         });
         toastNotification.success(

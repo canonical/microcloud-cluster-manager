@@ -41,7 +41,7 @@ const BulkDeleteClusterButton: FC<Props> = ({
       })
       .catch((e) => notify.failure(`Token revoke failed.`, e))
       .finally(() => {
-        void queryClient.invalidateQueries({
+        queryClient.invalidateQueries({
           queryKey: [queryKeys.tokens],
         });
         onFinish();

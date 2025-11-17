@@ -28,12 +28,6 @@ export interface Cluster {
   ui_url: string;
 }
 
-export interface MultiMeterValue {
-  amount: number;
-  status: string;
-  color: string;
-}
-
 export type ClusterInstanceStatus = "Running" | "Frozen" | "Error" | "Stopped";
 
 export type ClusterNodeStatus = "Online" | "Blocked" | "Offline" | "Evacuated";
