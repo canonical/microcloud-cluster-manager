@@ -125,9 +125,9 @@ go tool covdata textfmt -i="${GOCOVERDIR}" -o "${GOCOVERDIR}"/coverage.out
 gocover-cobertura < "${GOCOVERDIR}"/coverage.out > "${GOCOVERDIR}"/coverage-go.xml
 
 # move coverage reports to .coverage folder for TICS
-rm -rf .coverage
-mkdir -p .coverage
-cp test/coverage/coverage-go.xml .coverage/coverage-go.xml
-cp test/coverage/coverage-ui.xml .coverage/coverage-ui.xml
+rm -rf .cover
+mkdir -p .cover
+cp test/coverage/coverage-go.xml .cover/coverage-go.xml
+cp test/coverage/coverage-ui.xml .cover/coverage-ui.xml
 
 echo "done."
