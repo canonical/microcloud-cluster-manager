@@ -12,13 +12,13 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 import { queryKeys } from "util/queryKeys";
 import NotificationRow from "components/NotificationRow";
+import type { CreateClusterFormValues } from "pages/clusters/ClusterCreateDetailsForm";
 import ClusterCreateDetailsForm, {
-  CreateClusterFormValues,
   newTokenPayload,
 } from "pages/clusters/ClusterCreateDetailsForm";
 import { useNavigate } from "react-router-dom";
 import { createToken, fetchTokens } from "api/tokens";
-import { TokenState } from "pages/clusters/ClusterList";
+import type { TokenState } from "pages/clusters/ClusterList";
 import { getDefaultExpiryDate } from "util/createCluster";
 import usePanelParams from "context/usePanelParams";
 import { fetchClusters } from "api/clusters";
@@ -70,7 +70,7 @@ const EnrollClusterPanel: FC = () => {
           },
         };
 
-        void navigate("/ui/clusters/tokens", { state });
+        navigate("/ui/clusters/tokens", { state });
       })
       .catch((e: Error) => {
         notify.failure("Unable to create token.", e);

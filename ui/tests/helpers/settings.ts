@@ -1,10 +1,5 @@
-import type { Locator, Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { expect } from "../fixtures/test-extension";
-import { randomNameSuffix } from "./name";
-
-export const randomClusterName = (): string => {
-  return `playwright-token-${randomNameSuffix()}`;
-};
 
 export const goToSettingsPage = async (page: Page) => {
   await page.goto("/ui");
@@ -13,47 +8,11 @@ export const goToSettingsPage = async (page: Page) => {
 };
 
 export const validateSettingValue = async (
-  settingRow: Locator,
+  page: Page,
+  setting: string,
   value: string,
 ) => {
-  const readModeValue = settingRow.locator(".readmode-value");
-  await expect(readModeValue).toHaveText(value);
-};
-
-export const updateManagerSetting = async (
-  page: Page,
-  settingName: string,
-  content: string,
-): Promise<Locator> => {
-  const settingRow = page.locator("css=tr", { hasText: settingName });
-  await settingRow.getByRole("button").click();
-
-  const settingInput = settingRow.getByRole("textbox");
-  await settingInput.fill(content);
-  await settingRow.getByRole("button", { name: "Save", exact: true }).click();
-  await page.waitForSelector(`text=Setting ${settingName} updated.`);
-  await page.getByRole("button", { name: "Close notification" }).click();
-  return settingRow;
-};
-
-export const updateMemberSetting = async (
-  page: Page,
-  member: string,
-  settingName: string,
-  content: string,
-): Promise<Locator> => {
-  const memberSettingRow = page
-    .getByRole("row")
-    .filter({ hasText: `${member}.${settingName}` });
-  await memberSettingRow.getByRole("button").click();
-
-  const settingInput = memberSettingRow.getByRole("textbox");
-  await settingInput.fill(content);
-  await memberSettingRow
-    .getByRole("button", { name: "Save", exact: true })
-    .click();
-  await page.waitForSelector(`text=Setting ${settingName} updated.`);
-  await page.getByRole("button", { name: "Close notification" }).click();
-
-  return memberSettingRow;
+  const text = setting + value;
+  const settingRow = page.getByRole("row").filter({ hasText: text });
+  await expect(settingRow).toBeVisible();
 };

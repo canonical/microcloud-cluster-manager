@@ -1,5 +1,5 @@
 import { ActionButton, Icon } from "@canonical/react-components";
-import { FC } from "react";
+import type { FC } from "react";
 import classnames from "classnames";
 import usePanelParams from "context/usePanelParams";
 

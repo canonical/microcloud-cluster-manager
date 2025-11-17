@@ -1,10 +1,10 @@
-import { FC } from "react";
+import type { FC } from "react";
 import App from "./App";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { QueuedNotification } from "@canonical/react-components";
 import {
   Application,
   NotificationProvider,
-  QueuedNotification,
   ToastNotificationProvider,
 } from "@canonical/react-components";
 import Navigation from "./components/Navigation";

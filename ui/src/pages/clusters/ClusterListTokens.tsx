@@ -8,7 +8,8 @@ import {
 } from "@canonical/react-components";
 import { useQuery } from "@tanstack/react-query";
 import { fetchTokens } from "api/tokens";
-import React, { FC, useEffect } from "react";
+import type { FC } from "react";
+import { useEffect } from "react";
 import { isoTimeToString } from "util/helpers";
 import { queryKeys } from "util/queryKeys";
 import SelectedTableNotification from "components/SelectedTableNotification";
@@ -16,11 +17,11 @@ import SelectableMainTable from "components/SelectableMainTable";
 import RevokeTokenButton from "pages/clusters/actions/RevokeTokenButton";
 import EnrollClusterButton from "pages/clusters/actions/EnrollClusterButton";
 
-type Props = {
+interface Props {
   processingNames: string[];
   selectedNames: string[];
   setSelectedNames: (names: string[]) => void;
-};
+}
 
 const ClusterListTokens: FC<Props> = ({
   processingNames,

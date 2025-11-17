@@ -11,7 +11,5 @@ export const getDefaultExpiryDate = (): string => {
   const formattedMinutes = String(now.getMinutes()).padStart(2, "0");
 
   // Combine the components into the desired format
-  const formattedDate = `${year}-${month}-${day}T${formattedHours}:${formattedMinutes}`;
-
-  return formattedDate;
+  return `${year}-${month}-${day}T${formattedHours}:${formattedMinutes}`;
 };

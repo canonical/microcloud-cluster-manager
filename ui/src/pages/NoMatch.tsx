@@ -1,4 +1,4 @@
-import { FC } from "react";
+import type { FC } from "react";
 import { Link, LoginPageLayout } from "@canonical/react-components";
 
 const NoMatch: FC = () => {

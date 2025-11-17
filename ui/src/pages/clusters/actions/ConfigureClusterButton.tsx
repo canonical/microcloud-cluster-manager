@@ -1,7 +1,7 @@
 import { Button, Icon } from "@canonical/react-components";
-import React, { FC } from "react";
+import type { FC } from "react";
 import usePanelParams from "context/usePanelParams";
-import { Cluster } from "types/cluster";
+import type { Cluster } from "types/cluster";
 import classnames from "classnames";
 
 interface Props {

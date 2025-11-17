@@ -1,6 +1,6 @@
-import { FC } from "react";
+import type { FC } from "react";
 import { Input } from "@canonical/react-components";
-import { FormikProps } from "formik/dist/types";
+import type { FormikProps } from "formik/dist/types";
 import { convertToISOFormat } from "util/helpers";
 
 export interface CreateClusterFormValues {

@@ -5,16 +5,16 @@ import {
   useToastNotification,
 } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
-import { FC } from "react";
+import type { FC } from "react";
 import { queryKeys } from "util/queryKeys";
 import { pluralize } from "util/helpers";
 import { deleteTokenBulk } from "api/tokens";
 
-type Props = {
+interface Props {
   clusterNames: string[];
   onStart: () => void;
   onFinish: () => void;
-};
+}
 
 const BulkDeleteClusterButton: FC<Props> = ({
   clusterNames,
@@ -66,7 +66,9 @@ const BulkDeleteClusterButton: FC<Props> = ({
           </>
         ),
         confirmButtonLabel: "Revoke",
-        onConfirm: () => void handleDelete(),
+        onConfirm: () => {
+          handleDelete();
+        },
       }}
       shiftClickEnabled
     >

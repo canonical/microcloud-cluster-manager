@@ -1,4 +1,4 @@
-import { Cluster } from "types/cluster";
+import type { Cluster } from "types/cluster";
 import { getMinutesSinceLastHeartbeat, pluralize } from "util/helpers";
 
 export const getClusterWarnings = (cluster: Cluster): string[] => {

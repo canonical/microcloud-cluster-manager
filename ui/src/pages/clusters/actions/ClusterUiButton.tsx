@@ -1,12 +1,12 @@
 import { Icon } from "@canonical/react-components";
-import React, { FC } from "react";
+import type { FC } from "react";
 import classnames from "classnames";
 
-type Props = {
+interface Props {
   uiUrl: string;
   className?: string;
   onClose?: () => void;
-};
+}
 
 const ClusterUiButton: FC<Props> = ({ uiUrl, className, onClose }) => {
   if (!uiUrl) {

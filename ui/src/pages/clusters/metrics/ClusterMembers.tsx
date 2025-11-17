@@ -1,6 +1,6 @@
 import { Icon, Tooltip } from "@canonical/react-components";
-import { FC } from "react";
-import { Cluster } from "types/cluster";
+import type { FC } from "react";
+import type { Cluster } from "types/cluster";
 
 interface Props {
   cluster: Cluster;

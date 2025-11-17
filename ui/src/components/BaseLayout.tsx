@@ -1,4 +1,4 @@
-import { ElementType, FC, ReactNode } from "react";
+import type { ElementType, FC, ReactNode } from "react";
 import { AppMain, Panel } from "@canonical/react-components";
 
 interface Props {

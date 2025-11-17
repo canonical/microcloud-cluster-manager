@@ -1,14 +1,14 @@
-import { LxdApiResponse } from "types/apiResponse";
-import { Token, TokenPostResponse } from "types/token";
+import type { LxdApiResponse } from "types/apiResponse";
+import type { Token, TokenPostResponse } from "types/token";
 import { handleResponse, handleSettledResult } from "util/helpers";
 
-export const fetchTokens = (): Promise<Token[]> => {
+export const fetchTokens = async (): Promise<Token[]> => {
   return fetch("/1.0/remote-cluster-join-token")
     .then(handleResponse)
     .then((data) => (data as LxdApiResponse<Token[]>).metadata ?? []);
 };
 
-export const createToken = (body: string): Promise<TokenPostResponse> => {
+export const createToken = async (body: string): Promise<TokenPostResponse> => {
   return fetch("/1.0/remote-cluster-join-token", {
     method: "POST",
     headers: {

@@ -1,8 +1,8 @@
-import { FC } from "react";
+import type { FC } from "react";
 import { Tabs } from "@canonical/react-components";
 import { useNotify } from "@canonical/react-components";
 import { useNavigate } from "react-router-dom";
-import { TabLink } from "@canonical/react-components/dist/components/Tabs/Tabs";
+import type { TabLink } from "@canonical/react-components/dist/components/Tabs/Tabs";
 
 interface Props {
   tabs: (string | TabLink)[];
@@ -35,7 +35,7 @@ const TabLinks: FC<Props> = ({ tabs, activeTab, tabUrl }) => {
           onClick: (e) => {
             e.preventDefault();
             notify.clear();
-            void navigate(href);
+            navigate(href);
           },
           href,
         };

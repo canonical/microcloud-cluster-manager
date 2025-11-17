@@ -1,6 +1,6 @@
 import { DoughnutChart, Icon } from "@canonical/react-components";
-import { FC, ReactNode } from "react";
-import { Cluster } from "types/cluster";
+import type { FC, ReactNode } from "react";
+import type { Cluster } from "types/cluster";
 import { pluralize, statusCount } from "util/helpers";
 
 interface Props {

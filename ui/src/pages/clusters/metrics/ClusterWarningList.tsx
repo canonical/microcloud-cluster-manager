@@ -1,5 +1,5 @@
-import React, { FC } from "react";
-import { Cluster } from "types/cluster";
+import type { FC } from "react";
+import type { Cluster } from "types/cluster";
 import { getClusterWarnings } from "util/clusterWarnings";
 import { EmptyState, Icon, Notification } from "@canonical/react-components";
 import { pluralize } from "util/helpers";
@@ -47,8 +47,9 @@ export const ClusterWarningList: FC<Props> = ({ cluster }: Props) => {
               : undefined;
             actions.push({
               label: "Configure threshold",
-              onClick: () =>
-                panelParams.openConfigureCluster(cluster.name, focusField),
+              onClick: () => {
+                panelParams.openConfigureCluster(cluster.name, focusField);
+              },
             });
           }
 

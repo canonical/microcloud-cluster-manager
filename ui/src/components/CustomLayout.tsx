@@ -1,4 +1,4 @@
-import { FC, ReactNode } from "react";
+import type { FC, ReactNode } from "react";
 import classnames from "classnames";
 import { AppMain } from "@canonical/react-components";
 

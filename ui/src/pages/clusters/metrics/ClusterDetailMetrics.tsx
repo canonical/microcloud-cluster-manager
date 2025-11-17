@@ -1,7 +1,7 @@
-import { Cluster } from "types/cluster";
+import type { Cluster } from "types/cluster";
 import { ClusterMemory } from "./ClusterMemory";
 import { ClusterDisk } from "./ClusterDisk";
-import { FC } from "react";
+import type { FC } from "react";
 
 interface Props {
   cluster: Cluster;

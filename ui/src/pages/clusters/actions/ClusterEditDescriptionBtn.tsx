@@ -1,5 +1,5 @@
 import { Button, Icon } from "@canonical/react-components";
-import React, { FC } from "react";
+import type { FC } from "react";
 import usePanelParams from "context/usePanelParams";
 import { FIELD_DESCRIPTION } from "pages/clusters/ConfigureClusterPanel";
 
@@ -19,9 +19,9 @@ const ClusterEditDescriptionBtn: FC<Props> = ({
   return (
     <Button
       appearance={appearance}
-      onClick={() =>
-        panelParams.openConfigureCluster(clusterName, FIELD_DESCRIPTION)
-      }
+      onClick={() => {
+        panelParams.openConfigureCluster(clusterName, FIELD_DESCRIPTION);
+      }}
       hasIcon
     >
       <Icon name="edit" />

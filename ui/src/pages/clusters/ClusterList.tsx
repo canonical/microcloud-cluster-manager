@@ -1,4 +1,5 @@
-import React, { FC, useEffect, useState } from "react";
+import type { FC } from "react";
+import { useEffect, useState } from "react";
 import { Row, usePortal } from "@canonical/react-components";
 import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import TabLinks from "components/TabLinks";
@@ -11,13 +12,13 @@ import PageHeader from "components/PageHeader";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "util/queryKeys";
 import { fetchClusters } from "api/clusters";
+import type { ClusterFilters } from "util/clusterFilter";
 import {
-  ClusterFilters,
   toNumericUsagePercentiles,
   hasAllMatchingStatuses,
   hasAllUsagePercentileBands,
 } from "util/clusterFilter";
-import {
+import type {
   ClusterInstanceStatus,
   ClusterNodeStatus,
   ClusterPercentiles,

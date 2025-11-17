@@ -1,12 +1,12 @@
-import { FC } from "react";
+import type { FC } from "react";
 
-type Props = {
+interface Props {
   data: number[];
   title: string;
   width: number;
   height: number;
   barClassName?: string;
-};
+}
 
 const X_GRID_LINE_RATIOS = [0.2, 0.4, 0.6, 0.8];
 

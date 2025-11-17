@@ -1,5 +1,5 @@
-import { FC } from "react";
-import { MultiMeterValue } from "types/cluster";
+import type { FC } from "react";
+import type { MultiMeterValue } from "types/cluster";
 
 interface Props {
   values: MultiMeterValue[];

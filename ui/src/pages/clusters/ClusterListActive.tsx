@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import type { FC } from "react";
 import {
   EmptyState,
   Icon,
@@ -12,7 +12,7 @@ import { ClusterInstances } from "./metrics/ClusterInstances";
 import { ClusterMembers } from "./metrics/ClusterMembers";
 import ClusterHeartbeat from "./metrics/ClusterHeartbeat";
 import ClusterStatus from "./metrics/ClusterStatus";
-import { Cluster } from "types/cluster";
+import type { Cluster } from "types/cluster";
 import { ClusterWarningCount } from "pages/clusters/metrics/ClusterWarningCount";
 import SelectableMainTable from "components/SelectableMainTable";
 import SelectedTableNotification from "components/SelectedTableNotification";
@@ -20,14 +20,14 @@ import ClusterActions from "pages/clusters/ClusterActions";
 import EnrollClusterButton from "pages/clusters/actions/EnrollClusterButton";
 import usePanelParams from "context/usePanelParams";
 
-type Props = {
+interface Props {
   clusters: Cluster[];
   isEmptyState: boolean;
   isLoading: boolean;
   processingNames: string[];
   selectedNames: string[];
   setSelectedNames: (names: string[]) => void;
-};
+}
 
 const ClusterListActive: FC<Props> = ({
   clusters,

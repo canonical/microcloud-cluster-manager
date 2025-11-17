@@ -31,7 +31,7 @@ const ConfigureClusterPanel: FC = () => {
 
   const { data: cluster } = useQuery({
     queryKey: [queryKeys.clusters, clusterName],
-    queryFn: () => fetchCluster(clusterName),
+    queryFn: async () => fetchCluster(clusterName),
   });
 
   const closePanel = () => {

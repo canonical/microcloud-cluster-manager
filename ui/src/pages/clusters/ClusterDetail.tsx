@@ -1,14 +1,8 @@
-import {
-  List,
-  Notification,
-  Row,
-  Spinner,
-  Strip,
-} from "@canonical/react-components";
+import { List, Notification, Row, Strip } from "@canonical/react-components";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCluster } from "api/clusters";
 import BaseLayout from "components/BaseLayout";
-import React, { FC } from "react";
+import type { FC } from "react";
 import { Link, useParams } from "react-router-dom";
 import { queryKeys } from "util/queryKeys";
 import ClusterDetailInstanceGraph from "./metrics/ClusterDetailInstanceGraph";
@@ -38,7 +32,7 @@ const ClusterDetail: FC = () => {
     isLoading,
   } = useQuery({
     queryKey: [queryKeys.clusters, name],
-    queryFn: () => fetchCluster(name),
+    queryFn: async () => fetchCluster(name),
     refetchInterval: 60000,
     refetchIntervalInBackground: true,
   });
@@ -87,10 +81,7 @@ const ClusterDetail: FC = () => {
           </div>
         }
       >
-        {isLoading && (
-          <Spinner className="u-loader" text="Loading cluster details..." />
-        )}
-        {!isLoading && !cluster && !error && <>Loading cluster failed</>}
+        {!cluster && !error && <>Loading cluster failed</>}
         {error && (
           <Strip>
             <Notification severity="negative" title="Error">
@@ -98,7 +89,7 @@ const ClusterDetail: FC = () => {
             </Notification>
           </Strip>
         )}
-        {!isLoading && cluster && (
+        {cluster && (
           <Row>
             <List
               className="cluster-detail-graphs"

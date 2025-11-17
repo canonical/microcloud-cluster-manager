@@ -1,14 +1,15 @@
-import React, { cloneElement, FC } from "react";
-import { Cluster } from "types/cluster";
+import type { FC } from "react";
+import { cloneElement } from "react";
+import type { Cluster } from "types/cluster";
 import ConfigureClusterButton from "pages/clusters/actions/ConfigureClusterButton";
 import RemoveClusterButton from "pages/clusters/actions/RemoveClusterButton";
 import ClusterUiButton from "pages/clusters/actions/ClusterUiButton";
 import ClusterMetricsButton from "pages/clusters/actions/ClusterMetricsButton";
 import { ContextualMenu } from "@canonical/react-components";
 
-type Props = {
+interface Props {
   cluster: Cluster;
-};
+}
 
 const ClusterActions: FC<Props> = ({ cluster }) => {
   const menuElements = [

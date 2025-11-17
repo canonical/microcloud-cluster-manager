@@ -1,4 +1,4 @@
-import { FC } from "react";
+import type { FC } from "react";
 import { NavLink } from "react-router-dom";
 
 const Logo: FC = () => {

@@ -1,4 +1,5 @@
-import { FC, useState } from "react";
+import type { FC } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ConfirmationButton,
@@ -7,7 +8,7 @@ import {
   useToastNotification,
 } from "@canonical/react-components";
 import { deleteToken } from "api/tokens";
-import { Token } from "types/token";
+import type { Token } from "types/token";
 import { queryKeys } from "util/queryKeys";
 
 interface Props {

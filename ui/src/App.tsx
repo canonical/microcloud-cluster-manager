@@ -1,4 +1,5 @@
-import { FC, lazy, Suspense } from "react";
+import type { FC } from "react";
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import NoMatch from "pages/NoMatch";
 import Settings from "pages/Settings";
@@ -6,8 +7,8 @@ import { useAuth } from "context/auth";
 import { logout } from "util/helpers";
 import ClusterDetail from "pages/clusters/ClusterDetail";
 
-const ClusterList = lazy(() => import("pages/clusters/ClusterList"));
-const Login = lazy(() => import("pages/Login"));
+const ClusterList = lazy(async () => import("pages/clusters/ClusterList"));
+const Login = lazy(async () => import("pages/Login"));
 
 const App: FC = () => {
   const { isAuthLoading, isAuthenticated } = useAuth();

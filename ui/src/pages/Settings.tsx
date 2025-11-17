@@ -1,11 +1,11 @@
-import { FC } from "react";
+import type { FC } from "react";
 import { MainTable, Row, Spinner } from "@canonical/react-components";
 import BaseLayout from "components/BaseLayout";
 import { queryKeys } from "util/queryKeys";
 import { useQuery } from "@tanstack/react-query";
 import NotificationRow from "components/NotificationRow";
 import { fetchConfigurations } from "api/settings";
-import { ConfigData } from "types/config";
+import type { ConfigData } from "types/config";
 
 const Settings: FC = () => {
   const { data: configurations, isLoading } = useQuery({

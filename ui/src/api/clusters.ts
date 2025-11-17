@@ -1,14 +1,16 @@
-import { LxdApiResponse } from "types/apiResponse";
-import { Cluster } from "types/cluster";
+import type { LxdApiResponse } from "types/apiResponse";
+import type { Cluster } from "types/cluster";
 import { handleResponse, handleSettledResult } from "util/helpers";
 
-export const fetchClusters = (): Promise<Cluster[]> => {
+export const fetchClusters = async (): Promise<Cluster[]> => {
   return fetch("/1.0/remote-cluster")
     .then(handleResponse)
     .then((data) => (data as LxdApiResponse<Cluster[]>).metadata ?? []);
 };
 
-export const fetchCluster = (remoteClusterName: string): Promise<Cluster> => {
+export const fetchCluster = async (
+  remoteClusterName: string,
+): Promise<Cluster> => {
   return fetch(`/1.0/remote-cluster/${remoteClusterName}`)
     .then(handleResponse)
     .then((data) => (data as LxdApiResponse<Cluster>).metadata);

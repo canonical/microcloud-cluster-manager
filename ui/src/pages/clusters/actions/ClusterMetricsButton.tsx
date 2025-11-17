@@ -1,15 +1,15 @@
 import { Icon } from "@canonical/react-components";
 import { useQuery } from "@tanstack/react-query";
-import React, { FC } from "react";
+import type { FC } from "react";
 import { queryKeys } from "util/queryKeys";
 import { fetchConfigurations } from "api/settings";
 import classnames from "classnames";
 
-type Props = {
+interface Props {
   clusterName: string;
   className?: string;
   onClose?: () => void;
-};
+}
 
 const ClusterMetricsButton: FC<Props> = ({
   clusterName,

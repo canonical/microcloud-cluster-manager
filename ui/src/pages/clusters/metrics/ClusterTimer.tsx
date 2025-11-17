@@ -1,5 +1,6 @@
-import { FC, useEffect, useState } from "react";
-import { Cluster } from "types/cluster";
+import type { FC } from "react";
+import { useEffect, useState } from "react";
+import type { Cluster } from "types/cluster";
 import { getSecondsSinceLastHeartbeat, isoTimeToString } from "util/helpers";
 
 interface Props {
@@ -13,7 +14,9 @@ const ClusterTimer: FC<Props> = ({ cluster }: Props) => {
     const timerId = setInterval(() => {
       setSeconds(getSecondsSinceLastHeartbeat(cluster));
     }, 1000);
-    return () => clearInterval(timerId);
+    return () => {
+      clearInterval(timerId);
+    };
   }, [cluster, seconds]);
 
   const getFormattedTimeLeft = () => {

@@ -6,15 +6,15 @@ import {
 } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
 import { deleteClusterBulk } from "api/clusters";
-import { FC } from "react";
+import type { FC } from "react";
 import { queryKeys } from "util/queryKeys";
 import { pluralize } from "util/helpers";
 
-type Props = {
+interface Props {
   clusterNames: string[];
   onStart: () => void;
   onFinish: () => void;
-};
+}
 
 const BulkRemoveClusterButton: FC<Props> = ({
   clusterNames,
@@ -71,7 +71,9 @@ const BulkRemoveClusterButton: FC<Props> = ({
           </>
         ),
         confirmButtonLabel: "Remove",
-        onConfirm: () => void handleDelete(),
+        onConfirm: () => {
+          handleDelete();
+        },
       }}
       shiftClickEnabled
     >

@@ -6,16 +6,17 @@ import {
 } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
 import { deleteCluster } from "api/clusters";
-import { FC, useState } from "react";
+import type { FC } from "react";
+import { useState } from "react";
 import { queryKeys } from "util/queryKeys";
 import { useNavigate } from "react-router-dom";
 import classnames from "classnames";
 
-type Props = {
+interface Props {
   clusterName: string;
   className?: string;
   onClose?: () => void;
-};
+}
 
 const RemoveClusterButton: FC<Props> = ({
   clusterName,
@@ -32,7 +33,7 @@ const RemoveClusterButton: FC<Props> = ({
     setLoading(true);
     try {
       await deleteCluster(clusterName);
-      void navigate("/ui/clusters");
+      navigate("/ui/clusters");
       await queryClient.invalidateQueries({
         queryKey: [queryKeys.clusters],
       });
