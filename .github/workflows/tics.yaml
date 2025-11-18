@@ -53,6 +53,11 @@ jobs:
         path: test/coverage
         retention-days: 1
 
+    - name: Install TICS dependencies
+      run: |
+        go install honnef.co/go/tools/cmd/staticcheck@b8ec13ce4d00445d75da053c47498e6f9ec5d7d6 # v0.6.1
+        go install github.com/boumenot/gocover-cobertura@b1bccd90304174121462cb67f5f9e8fc496ee828 # v1.4.0
+
     - name: Produce TICS report
       uses: tiobe/tics-github-action@v3
       with:

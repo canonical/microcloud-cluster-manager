@@ -111,6 +111,7 @@ clean:
 	rm -rf ui/.dotrun.json
 	rm -rf ui/haproxy-local.cfg
 	rm -rf vendor
+	rm -rf .cover
 
 .PHONY: dev
 dev: start-cluster dev-juju-setup dev-k8s-deploy

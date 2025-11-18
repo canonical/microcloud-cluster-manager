@@ -115,56 +115,6 @@ func RemoteClusterDetailExists(ctx context.Context, tx *sqlx.Tx, remoteClusterID
 	return true, nil
 }
 
-// GetAllRemoteClusterDetails returns all remote cluster details.
-func GetAllRemoteClusterDetails(ctx context.Context, tx *sqlx.Tx) ([]RemoteClusterDetail, error) {
-	q := `
-        SELECT 
-			id, remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, 
-			cpu_load_15, memory_total_amount, memory_usage, disk_total_size, 
-			disk_usage, instance_count, instance_statuses, member_count, 
-			member_statuses, created_at, updated_at
-        FROM remote_cluster_details;
-    `
-
-	objects := make([]RemoteClusterDetail, 0)
-	dest := func(scan func(dest ...any) error) error {
-		c := RemoteClusterDetail{}
-		err := scan(
-			&c.ID,
-			&c.RemoteClusterID,
-			&c.CPUTotalCount,
-			&c.CPULoad1,
-			&c.CPULoad5,
-			&c.CPULoad15,
-			&c.MemoryTotalAmount,
-			&c.MemoryUsage,
-			&c.DiskTotalSize,
-			&c.DiskUsage,
-			&c.InstanceCount,
-			&c.InstanceStatuses,
-			&c.MemberCount,
-			&c.MemberStatuses,
-			&c.UIURL,
-			&c.CreatedAt,
-			&c.UpdatedAt,
-		)
-		if err != nil {
-			return err
-		}
-
-		objects = append(objects, c)
-
-		return nil
-	}
-
-	err := query.Scan(ctx, tx, q, dest)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch from \"remote_cluster_details\" table: %w", err)
-	}
-
-	return objects, nil
-}
-
 // GetRemoteClusterDetail returns the detail for a remote cluster.
 func GetRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID int) (*RemoteClusterDetail, error) {
 	q := `
@@ -270,32 +220,6 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 	}
 
 	return &result, nil
-}
-
-// DeleteRemoteClusterDetail deletes a detail entry for a remote cluster.
-func DeleteRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID int) error {
-	q := `
-        DELETE FROM remote_cluster_details
-        WHERE remote_cluster_id = $1
-    `
-
-	result, err := tx.ExecContext(ctx, q, remoteClusterID)
-	if err != nil {
-		return fmt.Errorf("failed to delete remote cluster detail: %w", err)
-	}
-
-	n, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get number of affected rows: %w", err)
-	}
-
-	if n == 0 {
-		return api.StatusErrorf(http.StatusNotFound, "no detail found for remote cluster with id: %d", remoteClusterID)
-	} else if n > 1 {
-		return fmt.Errorf("deleted %d remote cluster detail entries instead of 1", n)
-	}
-
-	return nil
 }
 
 // UpdateRemoteClusterDetail updates a detail entry for a remote cluster.

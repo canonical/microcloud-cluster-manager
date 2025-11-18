@@ -1,7 +1,11 @@
 import { test } from "@playwright/test";
-import { ensureClusterExists } from "./helpers/remote-clusters";
+import {
+  ensureClusterExists,
+  setClusterDiskLimit,
+} from "./helpers/remote-clusters";
 
-test("ensure cluster is present", async ({ page }) => {
-  const clusterName = "cluster-01";
-  await ensureClusterExists(page, clusterName);
+test("find cluster and set disk limit", async ({ page }) => {
+  const cluster = "cluster-01";
+  await ensureClusterExists(page, cluster);
+  await setClusterDiskLimit(page, cluster, "42");
 });

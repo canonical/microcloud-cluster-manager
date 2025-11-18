@@ -3,7 +3,6 @@ package database
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -13,14 +12,6 @@ import (
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/request"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" // Calls init function.
-)
-
-// Set of error variables for CRUD operations.
-var (
-	ErrNotFound              = errors.New("not found")
-	ErrInvalidID             = errors.New("ID is not in its proper form")
-	ErrAuthenticationFailure = errors.New("authentication failed")
-	ErrForbidden             = errors.New("attempted action is not allowed")
 )
 
 // DBConfig is the required properties to use the database.

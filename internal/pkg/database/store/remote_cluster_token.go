@@ -188,33 +188,3 @@ func DeleteRemoteClusterToken(ctx context.Context, tx *sqlx.Tx, name string) err
 
 	return nil
 }
-
-// UpdateCoreRemoteClusterToken updates a remote cluster token by name.
-func UpdateCoreRemoteClusterToken(ctx context.Context, tx *sqlx.Tx, name string, data RemoteClusterToken) error {
-	id, err := GetRemoteClusterTokenID(ctx, tx, name)
-	if err != nil {
-		return err
-	}
-
-	q := `
-        UPDATE remote_cluster_tokens
-        SET cluster_name = $1, description = $2, encoded_token = $3, expiry = $4
-        WHERE id = $5;
-    `
-
-	result, err := tx.ExecContext(ctx, q, data.ClusterName, data.Description, data.EncodedToken, data.Expiry, id)
-	if err != nil {
-		return fmt.Errorf("update remote_cluster_tokens entry failed: %w", err)
-	}
-
-	n, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("fetch affected rows: %w", err)
-	}
-
-	if n != 1 {
-		return fmt.Errorf("query updated %d rows instead of 1", n)
-	}
-
-	return nil
-}

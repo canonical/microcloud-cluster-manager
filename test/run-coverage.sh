@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 set -x
 
 # setup /etc/hosts entries for local domains
@@ -38,6 +39,7 @@ make build-coverage
 
 # set environment variables
 export DB_HOST=localhost
+export DB_PASSWORD=admin
 export OIDC_AUDIENCE=https://lxd-ui-demo.us.auth0.com/api/v2/
 export OIDC_CLIENT_ID=OZSAeCbqAXZid3LL1gRQEkLXP9KlwZtJ
 export OIDC_ISSUER=https://lxd-ui-demo.us.auth0.com/
@@ -73,6 +75,12 @@ sleep 10
 # run golang e2e tests
 echo "running golang e2e tests..."
 go test -count=1 -v ./test/e2e
+
+# run golang cli tests
+echo "running golang cli tests..."
+export SERVICE=cli
+cmd/app-coverage enroll cluster-test-enroll
+cmd/app-coverage enroll cluster-test-enroll-with-expire --expire 2042-05-23T17:00:00Z --description 'Here be dragons'
 
 # run ui unit tests
 echo "running ui unit tests..."

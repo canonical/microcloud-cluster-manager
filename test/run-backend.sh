@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 set -x
 
 # setup /etc/hosts entries for local domains
@@ -38,6 +39,7 @@ make build
 
 # set environment variables
 export DB_HOST=localhost
+export DB_PASSWORD=admin
 export OIDC_AUDIENCE=https://lxd-ui-demo.us.auth0.com/api/v2/
 export OIDC_CLIENT_ID=OZSAeCbqAXZid3LL1gRQEkLXP9KlwZtJ
 export OIDC_ISSUER=https://lxd-ui-demo.us.auth0.com/
@@ -49,7 +51,7 @@ export CLUSTER_CONNECTOR_PORT=9000
 export SERVICE=cluster-connector
 export SERVER_PORT=9000
 export STATUS_PORT=9009
-nohup cmd/app-coverage > >(cat) 2> >(cat >&2) &
+nohup cmd/app > >(cat) 2> >(cat >&2) &
 CLUSTER_CONNECTOR_PID=$!
 
 cleanup() {
@@ -73,4 +75,4 @@ trap cleanup INT
 export SERVICE=management-api
 export SERVER_PORT=30000
 export STATUS_PORT=30003
-cmd/app-coverage
+cmd/app
