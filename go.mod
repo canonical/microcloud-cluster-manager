@@ -16,7 +16,7 @@ require (
 	github.com/spf13/cobra v1.10.1
 	github.com/zitadel/oidc/v3 v3.45.0
 	go.uber.org/automaxprocs v1.6.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.45.0
 	k8s.io/apimachinery v0.34.2
 	k8s.io/client-go v0.34.2
