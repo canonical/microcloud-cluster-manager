@@ -22,7 +22,7 @@ jobs:
     steps:
 
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@v6.0.0
 
     - name: Install Dotrun
       run: sudo pip3 install dotrun
