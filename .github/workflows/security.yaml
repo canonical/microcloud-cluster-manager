@@ -76,7 +76,7 @@ jobs:
             mv trivy-modified.sarif "$GITHUB_WORKSPACE/trivy-microcloud-cluster-manager-repo-scan-results.sarif"
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@e12f0178983d466f2f6028f5cc7a6d786fd97f4b # v3
+        uses: github/codeql-action/upload-sarif@fdbfb4d2750291e159f0156def62b853c2798ca2 # v3
         with:
           sarif_file: "trivy-microcloud-cluster-manager-repo-scan-results.sarif"
           sha: ${{ github.sha }}
