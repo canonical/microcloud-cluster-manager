@@ -70,6 +70,16 @@ juju integrate microcloud-cluster-manager-k8s:grafana-dashboard admin/cos.grafan
 juju integrate microcloud-cluster-manager-k8s:grafana-metadata admin/cos.grafana
 ```
 
+This will make a LXD dashboard available in Grafana. With the relation enabled, Cluster Manager starts forwarding metrics to the observability stack on each cluster heartbeat received.
+
+To access Grafana, you can fetch the admin password with:
+
+```
+juju run --model cos grafana/leader get-admin-password
+```
+
+In the Cluster Manager web interface, you will see a new button on the cluster details page deep linking into the Grafana dashboard.
+
 # Development setup
 
 **CAUTION**: The `install-deps` target has been tested only in an Ubuntu Linux environment and may not work on other operating systems. It is strongly recommended that you avoid running this directly on your host machine. Instead, use it as a convenient method for setting up a VM-based development environment.
