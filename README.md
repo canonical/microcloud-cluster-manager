@@ -80,7 +80,7 @@ juju run --model cos grafana/leader get-admin-password
 
 In the Cluster Manager web interface, you will see a new button on the cluster details page deep linking into the Grafana dashboard.
 
-<img alt="Grafana LXD Dashboard" src="https://assets.ubuntu.com/v1/86529be2-cluster_manager_grafana_cos.png" />
+<img width="1921" height="959" alt="cluster-manager-grafana-cos" src="https://github.com/user-attachments/assets/d015b440-8725-453f-90b4-72ffda4d0ba1" />
 
 # Development setup
 
