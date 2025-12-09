@@ -53,7 +53,7 @@ Now you can access the web ui via https://example.com
 
 Alternatively, use the enroll-cluster command to create a join token for your first cluster on the command line
 ```
-juju run microcloud-cluster-manager-k8s/0 enroll-cluster cluster=foo
+juju run microcloud-cluster-manager-k8s/0 enroll-cluster cluster=microcloud-01
 ```
 
 ## Explore your first clusters details
