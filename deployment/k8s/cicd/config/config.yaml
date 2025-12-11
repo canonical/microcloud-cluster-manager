@@ -21,7 +21,7 @@ data:
   OIDC_CLIENT_ID: RYDnMpkygLAMfeo17lU7LYwWGxisRuRR
   OIDC_CLIENT_SECRET: CNKX4UmrZKZJq5rJy5VM_JfcNPqkws1rwWWQk_q0oyZ8gABARr19ic7xrhPssGA1
   OIDC_ISSUER: https://dev-h6c02msuggpi6ijh.eu.auth0.com/
-  PROMETHEUS_BASE_URL: http://PROMETHEUS_ADDRESS/cos-prometheus-0/api/v1/write
+  PROMETHEUS_BASE_URL: http://PROMETHEUS_ADDRESS/api/v1/write
   SERVER_HOST: "0.0.0.0"
   SERVER_PORT: "9000"
   VERSION: "development"

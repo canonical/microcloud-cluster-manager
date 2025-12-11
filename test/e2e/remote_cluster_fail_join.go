@@ -10,7 +10,7 @@ import (
 
 func testRemoteClusterJoinInvalid(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
 	return "lxd remote cluster join with invalid secret", func(t *testing.T) {
-		remoteClusterName := "remote_cluster_join_invalid_secret"
+		remoteClusterName := helpers.GetRandomName("remote_cluster_join_invalid_secret")
 		var condition string
 
 		{
@@ -22,7 +22,7 @@ func testRemoteClusterJoinInvalid(env *helpers.Environment) (testName string, te
 			}
 
 			tokenData.Secret = "invalid_secret"
-			err = sendJoinRequest(env, tokenData)
+			err = helpers.SendJoinRequest(env, tokenData)
 			if err != nil && err.Error() == "Forbidden" {
 				err = nil
 			} else {
@@ -39,7 +39,7 @@ func testRemoteClusterJoinInvalid(env *helpers.Environment) (testName string, te
 
 func testRemoteClusterJoinExpiredToken(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
 	return "lxd remote cluster join with expired token", func(t *testing.T) {
-		remoteClusterName := "remote_cluster_join_expired_token"
+		remoteClusterName := helpers.GetRandomName("remote_cluster_join_expired_token")
 		var condition string
 
 		{
@@ -53,7 +53,7 @@ func testRemoteClusterJoinExpiredToken(env *helpers.Environment) (testName strin
 
 			// Ensure token expires before sending join request
 			time.Sleep(1 * time.Second)
-			err = sendJoinRequest(env, tokenData)
+			err = helpers.SendJoinRequest(env, tokenData)
 			if err != nil && err.Error() == "tokenFromDb has expired" {
 				err = nil
 			} else {
