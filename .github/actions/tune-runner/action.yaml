@@ -1,0 +1,51 @@
+name: Tune runner for performance and reliability
+description: |
+  Composite action to apply several optimizations to improve performance
+  and reliablity of the runner in use.
+
+runs:
+  using: composite
+  steps:
+  - name: Tune ext4 for performance
+    shell: bash
+    run: |
+      # Taken from https://github.com/canonical/lxd-ci/blob/main/.github/workflows/tests.yml
+      # under the terms of Apache-2.0
+
+      # Optimize ext4 FSes for performance, not reliability
+      for fs in $(findmnt --noheading --type ext4 --list --uniq | awk '{print $1}'); do
+        # nombcache and data=writeback cannot be changed on remount
+        sudo mount -o remount,noatime,barrier=0,commit=6000 "${fs}" || cat /proc/self/mountinfo
+      done
+
+      # Disable dpkg from calling sync()
+      echo "force-unsafe-io" | sudo tee /etc/dpkg/dpkg.cfg.d/force-unsafe-io
+
+  - name: Disable automatic updates
+    shell: bash
+    run: |
+      # For all snaps
+      sudo snap refresh --hold=forever
+
+      # Nothing to do for debs as unattended-updates is not installed by default
+
+  - name: Use BBR for congestion control
+    shell: bash
+    run: |
+      # Not proven at this point but BBR has helped in the past to reduce
+      # network connectivity issues caused by tunnels between the different
+      # prodstacks on different continents. We give it a try here to see
+      # if it helps or not.
+      sudo sysctl net.core.default_qdisc=fq
+      sudo sysctl net.ipv4.tcp_congestion_control=bbr
+
+  - name: Tune APT configuration
+    shell: bash
+    run: |
+      # Configure apt to retry operations to handle flaky network issues
+      # This helps with mirror sync errors and transient network failures
+      cat << "EOF" | sudo tee /etc/apt/apt.conf.d/80-retries
+      Acquire::Retries "5";
+      Acquire::http::Timeout "30";
+      Acquire::https::Timeout "30";
+      EOF

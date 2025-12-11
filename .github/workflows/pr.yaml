@@ -97,16 +97,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.1
 
-      - name: Install LXD for Rockcraft
-        uses: canonical/setup-lxd@v0.1.3
+      - name: Tune runner for performance and reliability
+        uses: ./.github/actions/tune-runner
+
+      - name: Cache restore permissions
+        run: |
+          sudo chmod o+wx /root
+          sudo mkdir -p /home/runner/.cache/yarn
+          sudo chown -R $USER:$USER /home/runner/.cache/yarn
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
         with:
-          channel: 5.21/stable
+          path: |
+            /root/go/pkg/mod
+          key: go-modules-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-modules-
+
+      - name: Cache yarn modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            /home/runner/.cache/yarn
+          key: yarn-${{ hashFiles('ui/yarn.lock') }}
+          restore-keys: |
+            yarn-
 
       - name: Run Rockcraft
         run: |
           export PATH=$PATH:/snap/bin
           sudo snap install --channel latest/stable --classic rockcraft
-          rockcraft pack --verbosity debug
+          sudo rockcraft pack --destructive-mode --verbosity debug
+          # adjust permissions so that files can be cached
+          sudo chmod -R a+rX /home/runner/.cache/yarn
+          sudo chmod -R a+rX /root/go/pkg/mod
 
       - name: Move rock to docker daemon
         id: rock-to-docker
