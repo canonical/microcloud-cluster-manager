@@ -21,7 +21,7 @@ export const ClusterWarningList: FC<Props> = ({ cluster }: Props) => {
       image={<Icon name="success-grey" className="empty-state-icon" />}
       title="No warnings"
     >
-      <p>You’re doing something right!</p>
+      <p>All checks confirm normal status.</p>
     </EmptyState>
   ) : (
     <div className="warning-list">
