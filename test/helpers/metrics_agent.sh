@@ -15,16 +15,7 @@ INTERVAL=15
 CERT_DIR="/tmp/cm"
 CLUSTER_CONNECTOR_SERVICE="cluster-connector"
 
-enable_test_env() {
-  kubectl patch cm config --type=json \
-    -p='[{"op": "replace", "path": "/data/TEST_MODE", "value": "true"}]'
-  if [[ $? -ne 0 ]]; then
-    echo "Error: Failed to update ConfigMap."
-    exit 1
-  fi
-
-  echo "TEST_MODE set to 'true' successfully."
-
+ensure_service_running() {
   # Restart the deployment
   echo "Restarting deployment map-api"
   kubectl rollout restart deployment management-api-depl
@@ -185,7 +176,7 @@ EOF
 }
 
 # main ========================================================================
-enable_test_env
+ensure_service_running
 get_certificate "cluster-connector-cert-secret" "$CLUSTER_CONNECTOR_SERVICE"
 token=$(create_remote_cluster_join_token "lxd-cluster-$(uuidgen)")
 decoded_token=$(decode_token $token)

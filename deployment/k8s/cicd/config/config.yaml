@@ -24,5 +24,4 @@ data:
   PROMETHEUS_BASE_URL: http://192.168.1.133/cos-prometheus-0/api/v1/write
   SERVER_HOST: "0.0.0.0"
   SERVER_PORT: "9000"
-  TEST_MODE: "false"
   VERSION: "development"

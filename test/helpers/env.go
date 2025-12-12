@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,30 +27,32 @@ const (
 
 // Environment represents the environment for the tests.
 type Environment struct {
-	rootDir              string
-	testDir              string
-	certDir              string
-	processIDs           []int
-	managementAPICert    *shared.CertInfo
-	clusterConnectorCert *shared.CertInfo
-	managementAPIHost    string
-	managementApiPort    int
-	clusterConnectorHost string
-	clusterConnectorPort int
-	remoteClusters       []string
-	remoteClusterTokens  []string
+	rootDir                   string
+	testDir                   string
+	certDir                   string
+	processIDs                []int
+	managementAPICert         *shared.CertInfo
+	clusterConnectorCert      *shared.CertInfo
+	managementAPIHost         string
+	managementAPIPort         int
+	managementAPILoginHeaders func(*http.Request) error
+	clusterConnectorHost      string
+	clusterConnectorPort      int
+	remoteClusters            []string
+	remoteClusterTokens       []string
 }
 
 // NewEnv creates a new environment.
 func NewEnv() *Environment {
 	return &Environment{
-		rootDir:              getProjectRoot(),
-		testDir:              "",
-		certDir:              "",
-		managementAPIHost:    "ma.lxd-cm.local",
-		managementApiPort:    30000,
-		clusterConnectorHost: "cc.lxd-cm.local",
-		clusterConnectorPort: getClusterConnectorPort(),
+		rootDir:                   getProjectRoot(),
+		testDir:                   "",
+		certDir:                   "",
+		managementAPIHost:         "ma.lxd-cm.local",
+		managementAPIPort:         30000,
+		managementAPILoginHeaders: nil,
+		clusterConnectorHost:      "cc.lxd-cm.local",
+		clusterConnectorPort:      getClusterConnectorPort(),
 	}
 }
 
@@ -140,6 +143,34 @@ func (e *Environment) ManagementAPICert() *shared.CertInfo {
 	return e.managementAPICert
 }
 
+// ManagementAPILoginHeaders performs a cached login to the management-api and returns
+// a function that adds the authentication headers to an HTTP request.
+func (e *Environment) ManagementAPILoginHeaders() (func(*http.Request) error, error) {
+	if e.managementAPILoginHeaders == nil {
+		username := os.Getenv("OIDC_USER")
+		if username == "" {
+			username = "cluster-manager-e2e-tests@example.org"
+		}
+		password := os.Getenv("OIDC_PASSWORD")
+		if password == "" {
+			password = "cluster-manager-e2e-password"
+		}
+
+		cookies, err := LoginToManagementAPI(e, username, password)
+		if err != nil {
+			return nil, err
+		}
+
+		e.managementAPILoginHeaders = func(req *http.Request) error {
+			for _, cookie := range cookies {
+				req.AddCookie(cookie)
+			}
+			return nil
+		}
+	}
+	return e.managementAPILoginHeaders, nil
+}
+
 // ClusterConnectorCert returns the cluster-connector certificate.
 func (e *Environment) ClusterConnectorCert() *shared.CertInfo {
 	return e.clusterConnectorCert
@@ -157,7 +188,7 @@ func (e *Environment) ClusterConnectorHost() string {
 
 // ManagementAPIHostPort returns the management-api host and port.
 func (e *Environment) ManagementAPIHostPort() string {
-	return fmt.Sprintf("%s:%d", e.managementAPIHost, e.managementApiPort)
+	return fmt.Sprintf("%s:%d", e.managementAPIHost, e.managementAPIPort)
 }
 
 // ClusterConnectorHostPort returns the cluster-connector host and port.

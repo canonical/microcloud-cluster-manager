@@ -21,7 +21,6 @@ type Config struct {
 	ClusterConnectorCert   *shared.CertInfo
 	ClusterConnectorDomain string
 	ClusterConnectorPort   string
-	TestMode               bool
 	// db configs
 	database.DBConfig
 	// api configs
@@ -122,7 +121,6 @@ func LoadConfig() (*Config, error) {
 		ServerHost:             getEnvOrDefault("SERVER_HOST", "0.0.0.0"),
 		ServerPort:             getEnvOrDefault("SERVER_PORT", "9000"),
 		StatusPort:             getEnvOrDefault("STATUS_PORT", "10000"),
-		TestMode:               getEnvOrDefault("TEST_MODE", "false") == "true",
 		AllowedOrigins:         []string{"*"},
 		ReadTimeout:            10,
 		WriteTimeout:           10,

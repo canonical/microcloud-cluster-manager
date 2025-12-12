@@ -24,10 +24,8 @@ func AuthMiddleware(rc types.RouteConfig) mux.MiddlewareFunc {
 				return
 			}
 
-			isTestMode := rc.Env.TestMode
 			_, err := verifier.Auth(r.Context(), w, r)
-			// NOTE: bypass oidc auth if we are running tests
-			if err != nil && !isTestMode {
+			if err != nil {
 				_ = response.Forbidden(nil).Render(w, r)
 				return
 			}

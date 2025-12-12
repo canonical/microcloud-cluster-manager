@@ -136,19 +136,16 @@ ui:
 
 # to ensure that all pods are ready before running tests, we check the liveliness of the pods
 # rollout restart seems to break k8s portforwarding, here we make a request to the server to ensure it is up as well as reset the portforwarding
-.PHONY: switch-test-mode
-switch-test-mode:
-	kubectl patch configmap config --patch '{"data":{"TEST_MODE":"$(IS_ON)"}}'
+.PHONY: ensure-service-running
+ensure-service-running:
 	kubectl rollout restart deployment/management-api-depl
 	kubectl rollout status deployment/management-api-depl --timeout=300s
 	@{ curl --insecure https://localhost:9000 > /dev/null 2>&1 || true; } 2>/dev/null
 
-# Need to set TEST_MODE to true in the management-api deployment so we can by pass oidc authentication
 .PHONY: test-e2e
 test-e2e:
-	$(MAKE) switch-test-mode IS_ON=true
+	$(MAKE) ensure-service-running
 	go test -count=1 -v ./test/e2e
-	$(MAKE) switch-test-mode IS_ON=false
 
 .PHONY: test-ui-e2e
 test-ui-e2e:

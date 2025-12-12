@@ -46,7 +46,6 @@ export OIDC_CLIENT_SECRET=CNKX4UmrZKZJq5rJy5VM_JfcNPqkws1rwWWQk_q0oyZ8gABARr19ic
 export OIDC_ISSUER=https://dev-h6c02msuggpi6ijh.eu.auth0.com/
 export MANAGEMENT_API_TLS_PATH="$KEY_DIR"
 export CLUSTER_CONNECTOR_TLS_PATH="$KEY_DIR"
-export TEST_MODE=true
 export CLUSTER_CONNECTOR_PORT=9000
 
 # enable coverage

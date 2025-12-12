@@ -14,7 +14,6 @@ data:
   DB_DISABLE_TLS: "true"
   SERVER_HOST: "0.0.0.0"
   SERVER_PORT: "9000"
-  TEST_MODE: "false"
   # TODO: define proper versioning strategy
   VERSION: "development"
   CLUSTER_CONNECTOR_DOMAIN: "cc.lxd-cm.local"

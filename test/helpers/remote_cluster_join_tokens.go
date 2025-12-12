@@ -16,6 +16,11 @@ func FindToken(env *Environment, remoteClusterName string) (models.RemoteCluster
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	headers, err := env.ManagementAPILoginHeaders()
+	if err != nil {
+		return models.RemoteClusterToken{}, err
+	}
+
 	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
 	if err != nil {
 		return models.RemoteClusterToken{}, err
@@ -28,7 +33,7 @@ func FindToken(env *Environment, remoteClusterName string) (models.RemoteCluster
 
 	output := &[]models.RemoteClusterToken{}
 	path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster-join-token")
-	err = tlsClient.Query(ctx, http.MethodGet, path, nil, output, nil)
+	err = tlsClient.Query(ctx, http.MethodGet, path, nil, output, headers)
 	if err != nil {
 		return models.RemoteClusterToken{}, err
 	}
@@ -78,6 +83,11 @@ func createRemoteClusterJoinToken(env *Environment, remoteClusterName string, ex
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	headers, err := env.ManagementAPILoginHeaders()
+	if err != nil {
+		return "", err
+	}
+
 	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
 	if err != nil {
 		return "", err
@@ -96,7 +106,7 @@ func createRemoteClusterJoinToken(env *Environment, remoteClusterName string, ex
 	output := &models.RemoteClusterTokenPostResponse{}
 
 	path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster-join-token")
-	err = tlsClient.Query(ctx, http.MethodPost, path, input, output, nil)
+	err = tlsClient.Query(ctx, http.MethodPost, path, input, output, headers)
 	if err != nil {
 		return "", err
 	}
