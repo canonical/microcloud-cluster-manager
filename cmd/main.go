@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -9,6 +10,9 @@ import (
 	managementapi "github.com/canonical/microcloud-cluster-manager/cmd/management-api"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 )
+
+// VERSION represents the current version of the application.
+var VERSION = "0.1"
 
 // SERVICES is a list of valid service names within the cluster manager application.
 var SERVICES = []string{
@@ -30,6 +34,14 @@ func main() {
 }
 
 func run() error {
+	showVersion := flag.Bool("version", false, "print version and exit")
+	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(VERSION)
+		os.Exit(0)
+	}
+
 	// Get the service name from environment
 	service := os.Getenv("SERVICE")
 	if service == "" {
