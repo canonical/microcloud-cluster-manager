@@ -19,17 +19,17 @@ import (
 type RemoteClusterDetail struct {
 	ID                int             `db:"id"`                  // Primary key
 	RemoteClusterID   int             `db:"remote_cluster_id"`   // Foreign key to remote_clusters
-	CPUTotalCount     int             `db:"cpu_total_count"`     // Total CPU count
+	CPUTotalCount     int64           `db:"cpu_total_count"`     // Total CPU count
 	CPULoad1          string          `db:"cpu_load_1"`          // CPU load (1 minute average)
 	CPULoad5          string          `db:"cpu_load_5"`          // CPU load (5 minute average)
 	CPULoad15         string          `db:"cpu_load_15"`         // CPU load (15 minute average)
-	MemoryTotalAmount int             `db:"memory_total_amount"` // Total memory in bytes
-	MemoryUsage       int             `db:"memory_usage"`        // Memory usage in bytes
-	DiskTotalSize     int             `db:"disk_total_size"`     // Total disk size in bytes
-	DiskUsage         int             `db:"disk_usage"`          // Disk usage in bytes
-	InstanceCount     int             `db:"instance_count"`      // Number of instances
+	MemoryTotalAmount int64           `db:"memory_total_amount"` // Total memory in bytes
+	MemoryUsage       int64           `db:"memory_usage"`        // Memory usage in bytes
+	DiskTotalSize     int64           `db:"disk_total_size"`     // Total disk size in bytes
+	DiskUsage         int64           `db:"disk_usage"`          // Disk usage in bytes
+	InstanceCount     int64           `db:"instance_count"`      // Number of instances
 	InstanceStatuses  json.RawMessage `db:"instance_statuses"`   // JSON array of instance statuses
-	MemberCount       int             `db:"member_count"`        // Number of members
+	MemberCount       int64           `db:"member_count"`        // Number of members
 	MemberStatuses    json.RawMessage `db:"member_statuses"`     // JSON array of member statuses
 	UIURL             string          `db:"ui_url"`              // UI URL
 	CreatedAt         time.Time       `db:"created_at"`          // Creation timestamp
@@ -58,21 +58,21 @@ type RemoteClusterWithDetail struct {
 	Name               string          `db:"name"`
 	Description        string          `db:"description"`
 	ClusterCertificate string          `db:"cluster_certificate"`
-	DiskThreshold      int             `db:"disk_threshold"`
-	MemoryThreshold    int             `db:"memory_threshold"`
+	DiskThreshold      int64           `db:"disk_threshold"`
+	MemoryThreshold    int64           `db:"memory_threshold"`
 	ClusterCreatedAt   time.Time       `db:"created_at"`
 	Status             string          `db:"status"`
-	CPUTotalCount      int             `db:"cpu_total_count"`
+	CPUTotalCount      int64           `db:"cpu_total_count"`
 	CPULoad1           string          `db:"cpu_load_1"`
 	CPULoad5           string          `db:"cpu_load_5"`
 	CPULoad15          string          `db:"cpu_load_15"`
-	MemoryTotalAmount  int             `db:"memory_total_amount"`
-	MemoryUsage        int             `db:"memory_usage"`
-	DiskTotalSize      int             `db:"disk_total_size"`
-	DiskUsage          int             `db:"disk_usage"`
-	InstanceCount      int             `db:"instance_count"`
+	MemoryTotalAmount  int64           `db:"memory_total_amount"`
+	MemoryUsage        int64           `db:"memory_usage"`
+	DiskTotalSize      int64           `db:"disk_total_size"`
+	DiskUsage          int64           `db:"disk_usage"`
+	InstanceCount      int64           `db:"instance_count"`
 	InstanceStatuses   json.RawMessage `db:"instance_statuses"`
-	MemberCount        int             `db:"member_count"`
+	MemberCount        int64           `db:"member_count"`
 	MemberStatuses     json.RawMessage `db:"member_statuses"`
 	UIURL              string          `db:"ui_url"`
 	ClusterJoinedAt    time.Time       `db:"joined_at"`
@@ -385,7 +385,7 @@ func GetRemoteClusterWithDetailByID(ctx context.Context, tx *sqlx.Tx, remoteClus
 	return &remoteClusterDetails[0], nil
 }
 
-func parseStatusDistribution(statuses []models.StatusDistribution) (int, json.RawMessage) {
+func parseStatusDistribution(statuses []models.StatusDistribution) (int64, json.RawMessage) {
 	if len(statuses) == 0 {
 		return 0, json.RawMessage("[]")
 	}
@@ -395,7 +395,7 @@ func parseStatusDistribution(statuses []models.StatusDistribution) (int, json.Ra
 		return 0, json.RawMessage("[]")
 	}
 
-	var total int
+	var total int64
 	for _, s := range statuses {
 		total += s.Count
 	}
