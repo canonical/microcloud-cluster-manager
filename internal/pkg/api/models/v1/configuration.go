@@ -10,6 +10,7 @@ type ConfigData struct {
 // Configuration represents application environment data shown to users.
 type Configuration struct {
 	APIVersion             ConfigData `json:"api_version"`
+	Version                ConfigData `json:"version"`
 	ClusterConnectorDomain ConfigData `json:"cluster_connector_domain"`
 	ClusterConnectorPort   ConfigData `json:"cluster_connector_port"`
 	OIDCClientID           ConfigData `json:"oidc_client_id"`

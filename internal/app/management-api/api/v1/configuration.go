@@ -60,6 +60,11 @@ func mapEnvToConfig(cfg config.Config) models.Configuration {
 			Title:       "API Version",
 			Description: "The version of the API being used.",
 		},
+		Version: models.ConfigData{
+			Value:       cfg.Version,
+			Title:       "Version",
+			Description: "The version of MicroCloud Cluster Manager.",
+		},
 		ClusterConnectorDomain: models.ConfigData{
 			Value:       cfg.ClusterConnectorDomain,
 			Title:       "Cluster Connector Domain",

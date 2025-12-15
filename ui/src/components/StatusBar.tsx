@@ -25,7 +25,7 @@ const StatusBar: FC<Props> = () => {
     queryFn: fetchConfigurations,
   });
 
-  const version = configurations?.api_version?.value;
+  const version = configurations?.version?.value;
 
   const { toggleListView, notifications, countBySeverity, isListView } =
     useToastNotification();
