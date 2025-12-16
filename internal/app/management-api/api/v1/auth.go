@@ -6,6 +6,7 @@ import (
 
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/auth"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/google/uuid"
 )
@@ -37,6 +38,7 @@ func login(rc types.RouteConfig) types.EndpointHandler {
 	verifier, ok := rc.Auth.(*auth.Verifier)
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if !ok {
+			logger.Log.Info("AUTHN oidc authenticator missing")
 			return response.InternalError(fmt.Errorf("oidc authenticator missing")).Render(w, r)
 		}
 
@@ -47,6 +49,7 @@ func login(rc types.RouteConfig) types.EndpointHandler {
 
 		state, err := stateToken.String()
 		if err != nil {
+			logger.Log.Info("AUTHN failed to create OIDC state token")
 			return response.InternalError(err).Render(w, r)
 		}
 
@@ -63,12 +66,14 @@ func callback(rc types.RouteConfig) types.EndpointHandler {
 	verifier, ok := rc.Auth.(*auth.Verifier)
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if !ok {
+			logger.Log.Info("AUTHN oidc authenticator missing")
 			return response.InternalError(fmt.Errorf("oidc authenticator missing")).Render(w, r)
 		}
 
 		state := r.URL.Query().Get("state")
 		stateToken, err := auth.DecodeStateToken(state)
 		if err != nil {
+			logger.Log.Info("AUTHN invalid OIDC state token")
 			return response.InternalError(err).Render(w, r)
 		}
 

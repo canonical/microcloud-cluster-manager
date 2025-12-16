@@ -10,6 +10,7 @@ import (
 	"github.com/canonical/lxd/lxd/util"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/certificate"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 )
 
 // CtxRemoteClusterID is the context key for the remote cluster ID.
@@ -55,12 +56,14 @@ func (ma *MtlsAuthenticator) Auth(ctx context.Context, w http.ResponseWriter, r 
 	trusted, fingerprint := util.CheckMutualTLS(*peerCert, trustedCerts)
 
 	if !trusted {
+		logger.Log.Info("AUTHN untrusted peer certificate presented for mTLS")
 		return false, fmt.Errorf("invalid cluster certificate")
 	}
 
 	remoteClusterCert, _ := ma.cache.GetCertificateEntry(fingerprint)
 	request.SetContextValue(r, CtxRemoteClusterID, remoteClusterCert.ClusterID)
 
+	logger.Log.Info("AUTHN peer certificate for mTLS authenticated successfully")
 	return true, nil
 }
 

@@ -14,6 +14,7 @@ import (
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/lxd/util"
 	"github.com/canonical/lxd/shared"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/google/uuid"
 	"github.com/gorilla/securecookie"
@@ -203,10 +204,12 @@ func (o *Verifier) authenticateIDToken(ctx context.Context, w http.ResponseWrite
 func (o *Verifier) Login(w http.ResponseWriter, r *http.Request, stateTokenStr string) {
 	err := o.ensureConfig(r.Context(), r)
 	if err != nil {
+		logger.Log.Info("AUTHN invalid OIDC configuration")
 		_ = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Login failed: %w", err).Error()).Render(w, r)
 		return
 	}
 
+	logger.Log.Info("AUTHN initiating OIDC login flow")
 	handler := rp.AuthURLHandler(func() string { return stateTokenStr }, o.relyingParty, rp.WithURLParam("audience", o.audience))
 	handler(w, r)
 }
@@ -226,6 +229,7 @@ func (o *Verifier) Logout(w http.ResponseWriter, r *http.Request) {
 func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL string) {
 	err := o.ensureConfig(r.Context(), r)
 	if err != nil {
+		logger.Log.Info("AUTHN invalid OIDC configuration")
 		_ = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("OIDC callback failed: %w", err).Error()).Render(w, r)
 		return
 	}
@@ -234,12 +238,14 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 		err := o.WriteTokenToCookies(w, tokens.IDToken, tokens.RefreshToken)
 
 		if err != nil {
+			logger.Log.Info("AUTHN failed to write OIDC tokens to cookies")
 			_ = response.ErrorResponse(http.StatusInternalServerError, err.Error()).Render(w, r)
 			return
 		}
 
 		// Send to the UI.
 		// NOTE: Once the UI does the redirection on its own, we may be able to use the referer here instead.
+		logger.Log.Info("AUTHN login successful, redirecting user")
 		http.Redirect(w, r, redirectURL, http.StatusMovedPermanently)
 	}, o.relyingParty)
 

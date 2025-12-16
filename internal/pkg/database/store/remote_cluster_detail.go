@@ -371,6 +371,10 @@ func GetRemoteClusterWithDetailByName(ctx context.Context, tx *sqlx.Tx, remoteCl
 		return nil, err
 	}
 
+	if len(remoteClusterDetails) == 0 {
+		return nil, api.StatusErrorf(http.StatusNotFound, "remote cluster with name %s not found", remoteClusterName)
+	}
+
 	return &remoteClusterDetails[0], nil
 }
 
@@ -380,6 +384,10 @@ func GetRemoteClusterWithDetailByID(ctx context.Context, tx *sqlx.Tx, remoteClus
 	remoteClusterDetails, err := getRemoteClusterWithDetails(ctx, tx, q, remoteClusterID)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(remoteClusterDetails) == 0 {
+		return nil, api.StatusErrorf(http.StatusNotFound, "remote cluster with ID %d not found", remoteClusterID)
 	}
 
 	return &remoteClusterDetails[0], nil

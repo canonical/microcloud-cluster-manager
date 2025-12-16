@@ -74,6 +74,7 @@ func remoteClustersPost(rc types.RouteConfig) types.EndpointHandler {
 
 		cert, err := certificate.ParseX509Certificate(payload.ClusterCertificate)
 		if err != nil {
+			logger.Log.Info("AUTHN invalid certificate on remote cluster post")
 			return response.BadRequest(fmt.Errorf("invalid certificate: %v", err)).Render(w, r)
 		}
 
@@ -90,16 +91,19 @@ func remoteClustersPost(rc types.RouteConfig) types.EndpointHandler {
 		})
 
 		if err != nil {
+			logger.Log.Info("AUTHN could not find token in db on remote cluster post")
 			return response.SmartError(err).Render(w, r)
 		}
 
 		// check if tokenFromDb has expired
 		if time.Now().After(tokenFromDb.Expiry) {
+			logger.Log.Info("AUTHN expired token used on remote cluster post")
 			return response.Forbidden(fmt.Errorf("tokenFromDb has expired")).Render(w, r)
 		}
 
 		isTokenValid := strings.EqualFold(payload.Token, tokenFromDb.EncodedToken)
 		if !isTokenValid {
+			logger.Log.Info("AUTHN invalid token on remote cluster post")
 			return response.Forbidden(err).Render(w, r)
 		}
 
@@ -151,6 +155,7 @@ func remoteClustersPost(rc types.RouteConfig) types.EndpointHandler {
 			}
 
 			// delete remote cluster tokenFromDb
+			logger.Log.Info("AUTHN remote cluster join token consumed for new cluster")
 			return store.DeleteRemoteClusterToken(ctx, tx, payload.ClusterName)
 		})
 
@@ -176,6 +181,7 @@ func remoteClusterStatusPost(rc types.RouteConfig) types.EndpointHandler {
 		payload := models.RemoteClusterStatusPost{}
 		err := json.NewDecoder(r.Body).Decode(&payload)
 		if err != nil {
+			logger.Log.Info("AUTHN invalid payload on remote cluster status post")
 			return response.BadRequest(err).Render(w, r)
 		}
 

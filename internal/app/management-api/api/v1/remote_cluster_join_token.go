@@ -14,6 +14,7 @@ import (
 	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/auth"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -117,6 +118,7 @@ func tokenPost(rc types.RouteConfig) types.EndpointHandler {
 			return response.SmartError(err).Render(w, r)
 		}
 
+		logger.Log.Info("AUTHN remote cluster join token created")
 		return response.SyncResponse(true, models.RemoteClusterTokenPostResponse{Token: encodedToken}).Render(w, r)
 	}
 }
@@ -171,6 +173,7 @@ func tokenDelete(rc types.RouteConfig) types.EndpointHandler {
 			return response.SmartError(err).Render(w, r)
 		}
 
+		logger.Log.Info("AUTHN remote cluster join token deleted")
 		return response.SyncResponse(true, nil).Render(w, r)
 	}
 }
