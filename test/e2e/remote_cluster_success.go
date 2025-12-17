@@ -1,22 +1,19 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/canonical/lxd/shared"
-	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/test/helpers"
 )
 
 func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
 	return "lxd remote cluster join and status updates under normal conditions", func(t *testing.T) {
-		remoteClusterName := "remote_cluster_e2e"
+		remoteClusterName := helpers.GetRandomName("remote_cluster_e2e")
 		var condition string
 		var err error
 		var tokenData models.RemoteClusterTokenBody
@@ -58,7 +55,7 @@ func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFu
 
 		{
 			condition = "Should be able to receive a join request"
-			err = sendJoinRequest(env, tokenData)
+			err = helpers.SendJoinRequest(env, tokenData)
 			helpers.LogTestOutcome(t, condition, err)
 		}
 
@@ -94,7 +91,8 @@ func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFu
 
 		{
 			condition = "Should be able to receive a status update"
-			response, err := sendStatusUpdate(env, tokenData)
+			input := helpers.CreateStatusPostData()
+			response, err := helpers.SendStatusUpdate(env, tokenData, input)
 			if err != nil {
 				helpers.LogTestOutcome(t, condition, err)
 			}
@@ -157,87 +155,53 @@ func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFu
 	}
 }
 
-// sendJoinRequest sets up a tls http client and sends a join request to Cluster Manager.
-func sendJoinRequest(env *helpers.Environment, tokenData models.RemoteClusterTokenBody) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+func testRemoteClusterSuccessWithMetrics(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
+	return "lxd remote cluster join and status updates with metrics under normal conditions", func(t *testing.T) {
+		remoteClusterName := helpers.GetRandomName("remote_cluster_e2e_with_metrics")
+		var condition string
+		{
+			condition = "Should be able to receive a status update with metrics"
 
-	// generate dedicated lxd cert for Cluster Manager
-	clientCert, err := shared.KeyPairAndCA(env.CertDir(), tokenData.ServerName, shared.CertClient, shared.CertOptions{AddHosts: false})
-	if err != nil {
-		return err
+			tokenData, err := helpers.RegisterRemoteCluster(env, remoteClusterName)
+			if err != nil {
+				helpers.LogTestOutcome(t, condition, err)
+			}
+			instanceName := helpers.GetRandomName("e2e-random-instance")
+
+			metricsText := fmt.Sprintf(`# HELP lxd_cpu_seconds_total Total CPU time used
+			# TYPE lxd_cpu_seconds_total gauge
+			lxd_cpu_seconds_total{instance="inst1",project="default"} 100.0
+			lxd_cpu_seconds_total{instance="inst2",project="default"} 200.0
+			lxd_cpu_seconds_total{instance="%s",project="other"} 300.0
+			# HELP http_requests_total Total HTTP requests
+			# TYPE http_requests_total counter
+			http_requests_total{method="GET",status="200"} 1024
+			# HELP lxd_memory_bytes Memory usage
+			# TYPE lxd_memory_bytes gauge
+			lxd_memory_bytes{instance="inst1"} 2048.0
+			`, instanceName)
+
+			input := helpers.CreateStatusPostData()
+			input.Metrics = metricsText
+
+			_, err = helpers.SendStatusUpdate(env, *tokenData, input)
+
+			if err != nil {
+				helpers.LogTestOutcome(t, condition, err)
+			}
+			// Allow time for Prometheus to ingest metrics
+			time.Sleep(2 * time.Second)
+			prometheusResponse, err := helpers.QueryPrometheus(env, "lxd_cpu_seconds_total")
+			if err != nil {
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			if !strings.Contains(prometheusResponse, instanceName) {
+				err = fmt.Errorf("metrics not found in Prometheus")
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			helpers.LogTestOutcome(t, condition, nil)
+		}
 	}
-
-	clusterConnectorCert := env.ClusterConnectorCert()
-	clusterConnectorCertPublicKey, err := clusterConnectorCert.PublicKeyX509()
-	if err != nil {
-		return err
-	}
-
-	tlsClient, err := helpers.NewTLSHTTPClient(api.URL{}, clientCert, clusterConnectorCertPublicKey, env.ClusterConnectorHost())
-	if err != nil {
-		return err
-	}
-
-	encodedToken, err := tokenData.Encode()
-	if err != nil {
-		return err
-	}
-
-	input := models.RemoteClusterPost{
-		ClusterName:        tokenData.ServerName,
-		ClusterCertificate: string(clientCert.PublicKey()),
-		Token:              encodedToken,
-	}
-
-	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-cluster")
-
-	return tlsClient.Query(ctx, http.MethodPost, path, input, nil, nil)
-}
-
-// sendStatusUpdate sends a status update to the Cluster Manager with the correct client certificate.
-func sendStatusUpdate(env *helpers.Environment, tokenData models.RemoteClusterTokenBody) (*models.RemoteClusterStatusPostResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	clientCert, err := shared.KeyPairAndCA(env.CertDir(), tokenData.ServerName, shared.CertClient, shared.CertOptions{AddHosts: false})
-	if err != nil {
-		return nil, err
-	}
-
-	clusterConnectorCert := env.ClusterConnectorCert()
-	clusterConnectorCertPublicKey, err := clusterConnectorCert.PublicKeyX509()
-	if err != nil {
-		return nil, err
-	}
-
-	tlsClient, err := helpers.NewTLSHTTPClient(api.URL{}, clientCert, clusterConnectorCertPublicKey, env.ClusterConnectorHost())
-	if err != nil {
-		return nil, err
-	}
-
-	input := models.RemoteClusterStatusPost{
-		CPUTotalCount:     8,
-		CPULoad1:          "0.1",
-		CPULoad5:          "0.2",
-		CPULoad15:         "0.3",
-		MemoryTotalAmount: 1024,
-		MemoryUsage:       512,
-		DiskTotalSize:     1024,
-		DiskUsage:         512,
-		InstanceStatuses: []models.StatusDistribution{
-			{Status: "running", Count: 1},
-			{Status: "stopped", Count: 2},
-		},
-		MemberStatuses: []models.StatusDistribution{
-			{Status: "active", Count: 1},
-			{Status: "inactive", Count: 2},
-		},
-	}
-
-	var output models.RemoteClusterStatusPostResponse
-	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-cluster", "status")
-	err = tlsClient.Query(ctx, http.MethodPost, path, input, &output, nil)
-
-	return &output, err
 }

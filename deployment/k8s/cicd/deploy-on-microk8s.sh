@@ -16,7 +16,9 @@ deploy_prometheus() {
   sudo docker run -d \
   --name prometheus \
   -p 9090:9090 \
-  prom/prometheus
+  prom/prometheus \
+  --web.enable-remote-write-receiver \
+  --config.file=/etc/prometheus/prometheus.yml
 }
 
 deploy_k8s_resources() {

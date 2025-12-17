@@ -9,10 +9,13 @@ import (
 
 var tests = []types.Test{
 	testRemoteClusterSuccess,
+	testRemoteClusterSuccessWithMetrics,
 	testRemoteClusterJoinInvalid,
 	testRemoteClusterJoinExpiredToken,
 	testRemoteClusterStatusNoCert,
 	testRemoteClusterStatusInvalidCert,
+	testRemoteClusterStatusUnsupportedMetricsType,
+	testRemoteClusterStatusMalformedMetrics,
 }
 
 func TestE2E(t *testing.T) {
