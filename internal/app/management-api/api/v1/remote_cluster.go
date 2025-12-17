@@ -190,16 +190,22 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 	// generate lookup for remoteCluster details
 	var remoteClusters []models.RemoteCluster
 	for _, e := range dbEntries {
-		var ms []models.StatusDistribution
-		err := json.Unmarshal(e.MemberStatuses, &ms)
+		var memberStatuses []models.StatusDistribution
+		err := json.Unmarshal(e.MemberStatuses, &memberStatuses)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal member statuses: %w", err)
 		}
 
-		var is []models.StatusDistribution
-		err = json.Unmarshal(e.InstanceStatuses, &is)
+		var instanceStatuses []models.StatusDistribution
+		err = json.Unmarshal(e.InstanceStatuses, &instanceStatuses)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal instance statuses: %w", err)
+		}
+
+		var storagePoolUsages []models.StoragePoolUsage
+		err = json.Unmarshal(e.StoragePoolUsages, &storagePoolUsages)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal storage pool usages: %w", err)
 		}
 
 		remoteClusters = append(remoteClusters, models.RemoteCluster{
@@ -215,12 +221,11 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 			CPULoad15:          e.CPULoad15,
 			MemoryTotalAmount:  e.MemoryTotalAmount,
 			MemoryUsage:        e.MemoryUsage,
-			DiskTotalSize:      e.DiskTotalSize,
-			DiskUsage:          e.DiskUsage,
 			MemberCount:        e.MemberCount,
-			MemberStatuses:     ms,
+			MemberStatuses:     memberStatuses,
 			InstanceCount:      e.InstanceCount,
-			InstanceStatuses:   is,
+			InstanceStatuses:   instanceStatuses,
+			StoragePoolUsages:  storagePoolUsages,
 			UIURL:              e.UIURL,
 			JoinedAt:           e.ClusterJoinedAt,
 			CreatedAt:          e.ClusterCreatedAt,

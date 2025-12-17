@@ -37,8 +37,8 @@ export const ClusterWarningList: FC<Props> = ({ cluster }: Props) => {
       {warnings.length > 0 ? (
         warnings.map((warning, index) => {
           const isMemoryUsage = warning.startsWith("Memory usage");
-          const isDiskUsage = warning.startsWith("Disk usage");
-          const canConfigure = isMemoryUsage || isDiskUsage;
+          const isPoolUsage = warning.startsWith("Storage pool");
+          const canConfigure = isMemoryUsage || isPoolUsage;
 
           const actions = [];
           if (canConfigure) {

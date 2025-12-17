@@ -23,6 +23,14 @@ type ServerMetrics struct {
 	Service string `json:"service"`
 }
 
+// StoragePoolUsage represents the storage usage distribution.
+type StoragePoolUsage struct {
+	Name   string `json:"name"`
+	Member string `json:"member"`
+	Total  uint64 `json:"total"`
+	Usage  uint64 `json:"usage"`
+}
+
 // RemoteCluster is a standalone or clustered LXD cluster.
 type RemoteCluster struct {
 	Name               string               `json:"name"`
@@ -37,8 +45,7 @@ type RemoteCluster struct {
 	CPULoad15          string               `json:"cpu_load_15"`
 	MemoryTotalAmount  int64                `json:"memory_total_amount"`
 	MemoryUsage        int64                `json:"memory_usage"`
-	DiskTotalSize      int64                `json:"disk_total_size"`
-	DiskUsage          int64                `json:"disk_usage"`
+	StoragePoolUsages  []StoragePoolUsage   `json:"storage_pool_usages"`
 	MemberCount        int64                `json:"member_count"`
 	MemberStatuses     []StatusDistribution `json:"member_statuses"`
 	InstanceCount      int64                `json:"instance_count"`
@@ -72,8 +79,7 @@ type RemoteClusterStatusPost struct {
 	CPULoad15         string               `json:"cpu_load_15"`
 	MemoryTotalAmount int64                `json:"memory_total_amount"`
 	MemoryUsage       int64                `json:"memory_usage"`
-	DiskTotalSize     int64                `json:"disk_total_size"`
-	DiskUsage         int64                `json:"disk_usage"`
+	StoragePoolUsages []StoragePoolUsage   `json:"storage_pool_usages"`
 	MemberStatuses    []StatusDistribution `json:"member_statuses"`
 	InstanceStatuses  []StatusDistribution `json:"instance_statuses"`
 	ServerMetrics     []ServerMetrics      `json:"server_metrics"`

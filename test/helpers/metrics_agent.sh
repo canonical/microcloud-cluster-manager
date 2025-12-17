@@ -156,8 +156,6 @@ send_status_updates() {
     "cpu_load_15": "0.0",
     "memory_total_amount": 0,
     "memory_usage": 0,
-    "disk_total_size": 0,
-    "disk_usage": 0,
     "member_statuses": [],
     "instance_statuses": [],
     "metrics": $(jq -Rs . <<< "$metrics")
@@ -200,8 +198,6 @@ while true; do
     "cpu_load_15": "0.0",
     "memory_total_amount": 0,
     "memory_usage": 0,
-    "disk_total_size": 0,
-    "disk_usage": 0,
     "member_statuses": [],
     "instance_statuses": [],
     "metrics": $(jq -Rs . <<< "$metrics")

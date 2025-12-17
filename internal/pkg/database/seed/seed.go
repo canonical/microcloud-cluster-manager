@@ -231,6 +231,45 @@ func generateRandomStatuses(status1, status2, status3, status4 string, maxCount 
 	return result, nil
 }
 
+func generateStoragePoolUsages(totalMembers int64) []byte {
+	poolCount := rand.IntN(3) + 1 // 1 to 3 pools
+
+	poolUsages := []map[string]any{}
+	for i := 0; i < poolCount; i++ {
+		isLocal := rand.Float64() < 0.5
+
+		if isLocal {
+			for j := 0; int64(j) < totalMembers; j++ {
+				totalDisk, diskUsage := generateDiskUsage()
+				poolUsages = append(poolUsages, map[string]any{
+					"name":   fmt.Sprintf("pool-%d", i+1),
+					"member": fmt.Sprintf("member-%d", j+1),
+					"total":  totalDisk,
+					"usage":  diskUsage,
+				})
+			}
+		} else {
+			totalDisk, diskUsage := generateDiskUsage()
+			poolUsages = append(poolUsages, map[string]any{
+				"name":  fmt.Sprintf("pool-%d", i+1),
+				"total": totalDisk,
+				"usage": diskUsage,
+			})
+		}
+	}
+
+	result, _ := json.Marshal(poolUsages)
+	return result
+}
+
+func generateDiskUsage() (int64, int64) {
+	totalDisk := (rand.Int64N(200) + 1) * 100 * 1024 * 1024 * 1024 // Random disk size in multiples of 1000
+	halfDisk := totalDisk / 2
+	diskUsage := rand.Int64N(halfDisk + 1) // max half the disk is used
+
+	return totalDisk, diskUsage
+}
+
 // GenerateRemoteClusterDetails generates a slice of RemoteClusterDetail with the specified number of entries.
 func generateRemoteClusterDetails(count int) ([]store.RemoteClusterDetail, error) {
 	clusters := make([]store.RemoteClusterDetail, count)
@@ -238,10 +277,7 @@ func generateRemoteClusterDetails(count int) ([]store.RemoteClusterDetail, error
 	for i := 0; i < count; i++ {
 		totalMemory := (rand.Int64N(16) + 1) * 32 * 1024 * 1024 * 1024 // Random memory in multiples of 1024
 		quarterMemory := totalMemory / 4
-		memoryUsage := quarterMemory + rand.Int64N(quarterMemory+1)    // max half and minimum a quarter of memory is used
-		totalDisk := (rand.Int64N(200) + 1) * 100 * 1024 * 1024 * 1024 // Random disk size in multiples of 1000
-		halfDisk := totalDisk / 2
-		diskUsage := rand.Int64N(halfDisk + 1) // max half the disk is used
+		memoryUsage := quarterMemory + rand.Int64N(quarterMemory+1) // max half and minimum a quarter of memory is used
 		totalInstances := rand.Int64N(50) + 6
 		totalMembers := rand.Int64N(20) + 6
 
@@ -263,12 +299,11 @@ func generateRemoteClusterDetails(count int) ([]store.RemoteClusterDetail, error
 			CPULoad15:         fmt.Sprintf("%.1f", rand.Float64()),
 			MemoryTotalAmount: totalMemory,
 			MemoryUsage:       memoryUsage,
-			DiskTotalSize:     totalDisk,
-			DiskUsage:         diskUsage,
 			InstanceCount:     totalInstances,
 			InstanceStatuses:  instanceStatuses,
 			MemberCount:       totalMembers,
 			MemberStatuses:    memberStatuses,
+			StoragePoolUsages: generateStoragePoolUsages(totalMembers),
 			CreatedAt:         time.Now(),
 			UpdatedAt:         time.Now(),
 		}
@@ -292,9 +327,9 @@ func seedRemoteClusterDetails(ctx context.Context, db *database.DB) error {
 		for idx, detail := range remoteClusterDetails {
 			q := `
 				INSERT INTO remote_cluster_details 
-					(remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, disk_total_size, disk_usage, instance_count, instance_statuses, member_count, member_statuses)
+					(remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages)
 				VALUES 
-					($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+					($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 				ON CONFLICT (remote_cluster_id)
 				DO UPDATE SET
 					remote_cluster_id = $1,
@@ -304,14 +339,13 @@ func seedRemoteClusterDetails(ctx context.Context, db *database.DB) error {
 					cpu_load_15 = $5,
 					memory_total_amount = $6,
 					memory_usage = $7,
-					disk_total_size = $8,
-					disk_usage = $9,
-					instance_count = $10,
-					instance_statuses = $11,
-					member_count = $12,
-					member_statuses = $13
+					instance_count = $8,
+					instance_statuses = $9,
+					member_count = $10,
+					member_statuses = $11,
+				    storage_pool_usages = $12
 				RETURNING 
-					id, remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, disk_total_size, disk_usage, instance_count, instance_statuses, member_count, member_statuses, created_at, updated_at;
+					id, remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, created_at, updated_at;
 			`
 
 			detail.RemoteClusterID = clusters[idx].ID
@@ -324,12 +358,11 @@ func seedRemoteClusterDetails(ctx context.Context, db *database.DB) error {
 				detail.CPULoad15,
 				detail.MemoryTotalAmount,
 				detail.MemoryUsage,
-				detail.DiskTotalSize,
-				detail.DiskUsage,
 				detail.InstanceCount,
 				detail.InstanceStatuses,
 				detail.MemberCount,
 				detail.MemberStatuses,
+				detail.StoragePoolUsages,
 			).Scan(
 				&result.ID,
 				&result.RemoteClusterID,
@@ -339,12 +372,11 @@ func seedRemoteClusterDetails(ctx context.Context, db *database.DB) error {
 				&result.CPULoad15,
 				&result.MemoryTotalAmount,
 				&result.MemoryUsage,
-				&result.DiskTotalSize,
-				&result.DiskUsage,
 				&result.InstanceCount,
 				&result.InstanceStatuses,
 				&result.MemberCount,
 				&result.MemberStatuses,
+				&result.StoragePoolUsages,
 				&result.CreatedAt,
 				&result.UpdatedAt,
 			)

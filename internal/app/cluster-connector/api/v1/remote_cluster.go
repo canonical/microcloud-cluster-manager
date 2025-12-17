@@ -127,9 +127,10 @@ func remoteClustersPost(rc types.RouteConfig) types.EndpointHandler {
 
 			// create relevant remote cluster details
 			_, err = store.CreateRemoteClusterDetail(ctx, tx, store.RemoteClusterDetail{
-				RemoteClusterID:  newRemoteCluster.ID,
-				MemberStatuses:   json.RawMessage("[]"),
-				InstanceStatuses: json.RawMessage("[]"),
+				RemoteClusterID:   newRemoteCluster.ID,
+				MemberStatuses:    json.RawMessage("[]"),
+				InstanceStatuses:  json.RawMessage("[]"),
+				StoragePoolUsages: json.RawMessage("[]"),
 			})
 
 			if err != nil {

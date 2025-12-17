@@ -10,7 +10,7 @@ export interface ClusterFilters {
   instanceStatuses: ClusterInstanceStatus[];
   nodeStatuses: ClusterNodeStatus[];
   memoryUsage: number[];
-  diskUsage: number[];
+  storagePoolUsage: number[];
 }
 
 export const instanceStatuses: ClusterInstanceStatus[] = [

@@ -48,12 +48,11 @@ CREATE TABLE IF NOT EXISTS remote_cluster_details (
     cpu_load_15 TEXT NOT NULL DEFAULT 0,
     memory_total_amount BIGINT NOT NULL DEFAULT 0,
     memory_usage BIGINT NOT NULL DEFAULT 0,
-    disk_total_size BIGINT NOT NULL DEFAULT 0,
-    disk_usage BIGINT NOT NULL DEFAULT 0,
     instance_count INTEGER NOT NULL DEFAULT 0,
     instance_statuses JSONB NOT NULL DEFAULT '[]'::JSONB,
     member_count INTEGER NOT NULL DEFAULT 0,
     member_statuses JSONB NOT NULL DEFAULT '[]'::JSONB,
+    storage_pool_usages JSONB NOT NULL DEFAULT '[]'::JSONB,
     ui_url TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP

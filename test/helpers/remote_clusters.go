@@ -155,8 +155,6 @@ func CreateStatusPostData() models.RemoteClusterStatusPost {
 		CPULoad15:         "0.3",
 		MemoryTotalAmount: 1024,
 		MemoryUsage:       512,
-		DiskTotalSize:     1024,
-		DiskUsage:         512,
 		InstanceStatuses: []models.StatusDistribution{
 			{Status: "running", Count: 1},
 			{Status: "stopped", Count: 2},
@@ -164,6 +162,10 @@ func CreateStatusPostData() models.RemoteClusterStatusPost {
 		MemberStatuses: []models.StatusDistribution{
 			{Status: "active", Count: 1},
 			{Status: "inactive", Count: 2},
+		},
+		StoragePoolUsages: []models.StoragePoolUsage{
+			{Name: "default", Total: 1024, Usage: 512},
+			{Name: "data", Total: 2048, Usage: 1024},
 		},
 	}
 }

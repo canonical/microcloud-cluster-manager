@@ -4,11 +4,16 @@ import { getMinutesSinceLastHeartbeat, pluralize } from "util/helpers";
 export const getClusterWarnings = (cluster: Cluster): string[] => {
   const result: string[] = [];
 
-  const diskUsagePercent =
-    (100 / cluster.disk_total_size) * cluster.disk_usage || 0;
-  if (diskUsagePercent > cluster.disk_threshold) {
-    result.push(`Disk usage is at ${Math.ceil(diskUsagePercent)}%`);
-  }
+  cluster.storage_pool_usages.forEach((pool) => {
+    const usagePercent = (100 / pool.total) * pool.usage || 0;
+    const memberSuffix = pool.member !== "" ? ` on ${pool.member}` : "";
+
+    if (usagePercent > cluster.disk_threshold) {
+      result.push(
+        `Storage pool "${pool.name}${memberSuffix}" usage is at ${Math.ceil(usagePercent)}%`,
+      );
+    }
+  });
 
   const memoryUsagePercent =
     (100 / cluster.memory_total_amount) * cluster.memory_usage || 0;

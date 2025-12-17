@@ -2,6 +2,7 @@ import type { Cluster } from "types/cluster";
 import { ClusterMemory } from "./ClusterMemory";
 import { ClusterDisk } from "./ClusterDisk";
 import type { FC } from "react";
+import { ClusterDiskInfo } from "pages/clusters/metrics/ClusterDiskInfo";
 
 interface Props {
   cluster: Cluster;
@@ -21,7 +22,7 @@ const ClusterDetailMetrics: FC<Props> = ({ cluster }: Props) => {
       </div>
       <div className="meter-row">
         <span className="meter-row__title u-no-margin p-heading--5 u-no-padding">
-          Total storage
+          Total storage <ClusterDiskInfo cluster={cluster} />
         </span>
         <ClusterDisk
           cluster={cluster}

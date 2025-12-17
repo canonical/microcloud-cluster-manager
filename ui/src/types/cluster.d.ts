@@ -3,6 +3,13 @@ export interface StatusDistribution {
   count: number;
 }
 
+export interface StoragePoolUsage {
+  name: string;
+  member?: string;
+  total: number;
+  usage: number;
+}
+
 export interface Cluster {
   name: string;
   description: string;
@@ -13,8 +20,6 @@ export interface Cluster {
   cpu_load_5: string;
   cpu_load_15: string;
   created_at: string;
-  disk_total_size: number;
-  disk_usage: number;
   instance_count: number;
   instance_statuses: StatusDistribution[];
   joined_at: string;
@@ -23,6 +28,7 @@ export interface Cluster {
   member_statuses: StatusDistribution[];
   memory_total_amount: number;
   memory_usage: number;
+  storage_pool_usages: StoragePoolUsage[];
   cluster_certificate: string;
   status: string;
   ui_url: string;

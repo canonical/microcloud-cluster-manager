@@ -126,11 +126,6 @@ func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFu
 				helpers.LogTestOutcome(t, condition, err)
 			}
 
-			if remoteCluster.DiskTotalSize != 1024 {
-				err = fmt.Errorf("invalid disk total size")
-				helpers.LogTestOutcome(t, condition, err)
-			}
-
 			if !reflect.DeepEqual(remoteCluster.InstanceStatuses, []models.StatusDistribution{
 				{Status: "running", Count: 1},
 				{Status: "stopped", Count: 2},
@@ -142,6 +137,14 @@ func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFu
 			if !reflect.DeepEqual(remoteCluster.MemberStatuses, []models.StatusDistribution{
 				{Status: "active", Count: 1},
 				{Status: "inactive", Count: 2},
+			}) {
+				err = fmt.Errorf("invalid member statuses")
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			if !reflect.DeepEqual(remoteCluster.StoragePoolUsages, []models.StoragePoolUsage{
+				{Name: "default", Total: 1024, Usage: 512},
+				{Name: "data", Total: 2048, Usage: 1024},
 			}) {
 				err = fmt.Errorf("invalid member statuses")
 				helpers.LogTestOutcome(t, condition, err)

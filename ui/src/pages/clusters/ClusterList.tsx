@@ -6,7 +6,13 @@ import TabLinks from "components/TabLinks";
 import ClusterListTokens from "./ClusterListTokens";
 import ClusterListActive from "./ClusterListActive";
 import NotificationRow from "components/NotificationRow";
-import ClusterSearchFilter from "pages/clusters/ClusterSearchFilter";
+import ClusterSearchFilter, {
+  INSTANCE_STATUS,
+  MEMORY_USAGE,
+  NODE_STATUS,
+  POOL_USAGE,
+  QUERY,
+} from "pages/clusters/ClusterSearchFilter";
 import CustomLayout from "components/CustomLayout";
 import PageHeader from "components/PageHeader";
 import { useQuery } from "@tanstack/react-query";
@@ -91,16 +97,16 @@ const ClusterList: FC = () => {
   }, [clusters, activeTab]);
 
   const filters: ClusterFilters = {
-    queries: searchParams.getAll("query"),
+    queries: searchParams.getAll(QUERY),
     instanceStatuses: searchParams.getAll(
-      "instance-status",
+      INSTANCE_STATUS,
     ) as ClusterInstanceStatus[],
-    nodeStatuses: searchParams.getAll("node-status") as ClusterNodeStatus[],
+    nodeStatuses: searchParams.getAll(NODE_STATUS) as ClusterNodeStatus[],
     memoryUsage: toNumericUsagePercentiles(
-      searchParams.getAll("memory-usage"),
+      searchParams.getAll(MEMORY_USAGE),
     ) as ClusterPercentiles[],
-    diskUsage: toNumericUsagePercentiles(
-      searchParams.getAll("disk-usage"),
+    storagePoolUsage: toNumericUsagePercentiles(
+      searchParams.getAll(POOL_USAGE),
     ) as ClusterPercentiles[],
   };
 
@@ -140,14 +146,17 @@ const ClusterList: FC = () => {
       return false;
     }
 
+    //Search by Storage pool usage
+    const maxStorageFilter = Math.max(...filters.storagePoolUsage, 0);
+    const maxStorageUsage = Math.max(
+      ...item.storage_pool_usages.map(
+        (usage) => ((100 / usage.total) * usage.usage) / 100 || 0,
+      ),
+      0,
+    );
     if (
-      //Search by Cluster disk usage
-      filters.diskUsage.length > 0 &&
-      !hasAllUsagePercentileBands(
-        filters.diskUsage,
-        item.disk_usage,
-        item.disk_total_size,
-      )
+      filters.storagePoolUsage.length > 0 &&
+      maxStorageFilter > maxStorageUsage
     ) {
       return false;
     }

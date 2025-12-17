@@ -17,23 +17,22 @@ import (
 
 // RemoteClusterDetail represents detailed information about a remote LXD cluster.
 type RemoteClusterDetail struct {
-	ID                int             `db:"id"`                  // Primary key
-	RemoteClusterID   int             `db:"remote_cluster_id"`   // Foreign key to remote_clusters
-	CPUTotalCount     int64           `db:"cpu_total_count"`     // Total CPU count
-	CPULoad1          string          `db:"cpu_load_1"`          // CPU load (1 minute average)
-	CPULoad5          string          `db:"cpu_load_5"`          // CPU load (5 minute average)
-	CPULoad15         string          `db:"cpu_load_15"`         // CPU load (15 minute average)
-	MemoryTotalAmount int64           `db:"memory_total_amount"` // Total memory in bytes
-	MemoryUsage       int64           `db:"memory_usage"`        // Memory usage in bytes
-	DiskTotalSize     int64           `db:"disk_total_size"`     // Total disk size in bytes
-	DiskUsage         int64           `db:"disk_usage"`          // Disk usage in bytes
-	InstanceCount     int64           `db:"instance_count"`      // Number of instances
-	InstanceStatuses  json.RawMessage `db:"instance_statuses"`   // JSON array of instance statuses
-	MemberCount       int64           `db:"member_count"`        // Number of members
-	MemberStatuses    json.RawMessage `db:"member_statuses"`     // JSON array of member statuses
-	UIURL             string          `db:"ui_url"`              // UI URL
-	CreatedAt         time.Time       `db:"created_at"`          // Creation timestamp
-	UpdatedAt         time.Time       `db:"updated_at"`          // Update timestamp
+	ID                int             `db:"id"`                    // Primary key
+	RemoteClusterID   int             `db:"remote_cluster_id"`     // Foreign key to remote_clusters
+	CPUTotalCount     int64           `db:"cpu_total_count"`       // Total CPU count
+	CPULoad1          string          `db:"cpu_load_1"`            // CPU load (1 minute average)
+	CPULoad5          string          `db:"cpu_load_5"`            // CPU load (5 minute average)
+	CPULoad15         string          `db:"cpu_load_15"`           // CPU load (15 minute average)
+	MemoryTotalAmount int64           `db:"memory_total_amount"`   // Total memory in bytes
+	MemoryUsage       int64           `db:"memory_usage"`          // Memory usage in bytes
+	InstanceCount     int64           `db:"instance_count"`        // Number of instances
+	InstanceStatuses  json.RawMessage `db:"instance_statuses"`     // JSON array of instance statuses
+	MemberCount       int64           `db:"member_count"`          // Number of members
+	MemberStatuses    json.RawMessage `db:"member_statuses"`       // JSON array of member statuses
+	StoragePoolUsages json.RawMessage `json:"storage_pool_usages"` // JSON array of storage pool usages
+	UIURL             string          `db:"ui_url"`                // UI URL
+	CreatedAt         time.Time       `db:"created_at"`            // Creation timestamp
+	UpdatedAt         time.Time       `db:"updated_at"`            // Update timestamp
 }
 
 // Put updates the RemoteClusterDetail with the provided payload.
@@ -42,12 +41,11 @@ func (r *RemoteClusterDetail) Put(payload models.RemoteClusterStatusPost) {
 	r.CPULoad5 = payload.CPULoad5
 	r.CPULoad15 = payload.CPULoad15
 	r.CPUTotalCount = payload.CPUTotalCount
-	r.DiskTotalSize = payload.DiskTotalSize
-	r.DiskUsage = payload.DiskUsage
 	r.InstanceCount, r.InstanceStatuses = parseStatusDistribution(payload.InstanceStatuses)
 	r.MemberCount, r.MemberStatuses = parseStatusDistribution(payload.MemberStatuses)
 	r.MemoryTotalAmount = payload.MemoryTotalAmount
 	r.MemoryUsage = payload.MemoryUsage
+	r.StoragePoolUsages = parsePoolUsage(payload.StoragePoolUsages)
 	r.UIURL = payload.UIURL
 	r.UpdatedAt = time.Now()
 }
@@ -68,12 +66,11 @@ type RemoteClusterWithDetail struct {
 	CPULoad15          string          `db:"cpu_load_15"`
 	MemoryTotalAmount  int64           `db:"memory_total_amount"`
 	MemoryUsage        int64           `db:"memory_usage"`
-	DiskTotalSize      int64           `db:"disk_total_size"`
-	DiskUsage          int64           `db:"disk_usage"`
 	InstanceCount      int64           `db:"instance_count"`
 	InstanceStatuses   json.RawMessage `db:"instance_statuses"`
 	MemberCount        int64           `db:"member_count"`
 	MemberStatuses     json.RawMessage `db:"member_statuses"`
+	StoragePoolUsages  json.RawMessage `json:"storage_pool_usages"`
 	UIURL              string          `db:"ui_url"`
 	ClusterJoinedAt    time.Time       `db:"joined_at"`
 	ClusterUpdatedAt   time.Time       `db:"updated_at"`
@@ -120,9 +117,9 @@ func GetRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID in
 	q := `
         SELECT 
 			id, remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, 
-			cpu_load_15, memory_total_amount, memory_usage, disk_total_size, 
-			disk_usage, instance_count, instance_statuses, member_count, 
-			member_statuses, ui_url, created_at, updated_at
+			cpu_load_15, memory_total_amount, memory_usage, 
+			instance_count, instance_statuses, member_count, 
+			member_statuses, storage_pool_usages, ui_url, created_at, updated_at
         FROM remote_cluster_details
 		WHERE remote_cluster_id = $1;
     `
@@ -137,12 +134,11 @@ func GetRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID in
 		&result.CPULoad15,
 		&result.MemoryTotalAmount,
 		&result.MemoryUsage,
-		&result.DiskTotalSize,
-		&result.DiskUsage,
 		&result.InstanceCount,
 		&result.InstanceStatuses,
 		&result.MemberCount,
 		&result.MemberStatuses,
+		&result.StoragePoolUsages,
 		&result.UIURL,
 		&result.CreatedAt,
 		&result.UpdatedAt,
@@ -172,11 +168,11 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 
 	q := `
         INSERT INTO remote_cluster_details 
-			(remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, disk_total_size, disk_usage, instance_count, instance_statuses, member_count, member_statuses, ui_url)
+			(remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url)
         VALUES 
-			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING 
-			id, remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, disk_total_size, disk_usage, instance_count, instance_statuses, member_count, member_statuses, ui_url, created_at, updated_at;
+			id, remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url, created_at, updated_at;
     `
 
 	var result RemoteClusterDetail
@@ -188,12 +184,11 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 		data.CPULoad15,
 		data.MemoryTotalAmount,
 		data.MemoryUsage,
-		data.DiskTotalSize,
-		data.DiskUsage,
 		data.InstanceCount,
 		data.InstanceStatuses,
 		data.MemberCount,
 		data.MemberStatuses,
+		data.StoragePoolUsages,
 		data.UIURL,
 	).Scan(
 		&result.ID,
@@ -204,12 +199,11 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 		&result.CPULoad15,
 		&result.MemoryTotalAmount,
 		&result.MemoryUsage,
-		&result.DiskTotalSize,
-		&result.DiskUsage,
 		&result.InstanceCount,
 		&result.InstanceStatuses,
 		&result.MemberCount,
 		&result.MemberStatuses,
+		&result.StoragePoolUsages,
 		&result.UIURL,
 		&result.CreatedAt,
 		&result.UpdatedAt,
@@ -231,8 +225,8 @@ func UpdateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID
 
 	q := `
         UPDATE remote_cluster_details
-        SET cpu_total_count = $1, cpu_load_1 = $2, cpu_load_5 = $3, cpu_load_15 = $4, memory_total_amount = $5, memory_usage = $6, disk_total_size = $7, disk_usage = $8, instance_count = $9, instance_statuses = $10, member_count = $11, member_statuses = $12, ui_url = $13
-        WHERE id = $14;
+        SET cpu_total_count = $1, cpu_load_1 = $2, cpu_load_5 = $3, cpu_load_15 = $4, memory_total_amount = $5, memory_usage = $6, instance_count = $7, instance_statuses = $8, member_count = $9, member_statuses = $10, storage_pool_usages = $11, ui_url = $12, updated_at = NOW()
+        WHERE id = $13;
     `
 
 	result, err := tx.ExecContext(ctx, q,
@@ -242,12 +236,11 @@ func UpdateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID
 		data.CPULoad15,
 		data.MemoryTotalAmount,
 		data.MemoryUsage,
-		data.DiskTotalSize,
-		data.DiskUsage,
 		data.InstanceCount,
 		data.InstanceStatuses,
 		data.MemberCount,
 		data.MemberStatuses,
+		data.StoragePoolUsages,
 		data.UIURL,
 		id,
 	)
@@ -282,12 +275,11 @@ var baseDetailQuery = `
 		remote_cluster_details.cpu_load_15,
 		remote_cluster_details.memory_total_amount,
 		remote_cluster_details.memory_usage,
-		remote_cluster_details.disk_total_size,
-		remote_cluster_details.disk_usage,
 		remote_cluster_details.instance_count,
 		remote_cluster_details.instance_statuses,
 		remote_cluster_details.member_count,
 		remote_cluster_details.member_statuses,
+		remote_cluster_details.storage_pool_usages,
 		remote_cluster_details.ui_url,
 		remote_cluster_details.updated_at,
 		COALESCE(
@@ -324,12 +316,11 @@ func getRemoteClusterWithDetails(ctx context.Context, tx *sqlx.Tx, sql string, a
 			&c.CPULoad15,
 			&c.MemoryTotalAmount,
 			&c.MemoryUsage,
-			&c.DiskTotalSize,
-			&c.DiskUsage,
 			&c.InstanceCount,
 			&c.InstanceStatuses,
 			&c.MemberCount,
 			&c.MemberStatuses,
+			&c.StoragePoolUsages,
 			&c.UIURL,
 			&c.ClusterUpdatedAt,
 			&c.DiskThreshold,
@@ -409,4 +400,17 @@ func parseStatusDistribution(statuses []models.StatusDistribution) (int64, json.
 	}
 
 	return total, parsedStatuses
+}
+
+func parsePoolUsage(usages []models.StoragePoolUsage) json.RawMessage {
+	if len(usages) == 0 {
+		return json.RawMessage("[]")
+	}
+
+	parsedUsages, err := json.Marshal(usages)
+	if err != nil {
+		return json.RawMessage("[]")
+	}
+
+	return parsedUsages
 }

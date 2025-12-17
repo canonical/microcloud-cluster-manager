@@ -18,7 +18,7 @@ export const NAME = "name";
 export const INSTANCE_STATUS = "instance-status";
 export const NODE_STATUS = "node-status";
 export const MEMORY_USAGE = "memory-usage";
-export const DISK_USAGE = "disk-usage";
+export const POOL_USAGE = "pool-usage";
 
 const QUERY_PARAMS = [
   QUERY,
@@ -26,7 +26,7 @@ const QUERY_PARAMS = [
   INSTANCE_STATUS,
   NODE_STATUS,
   MEMORY_USAGE,
-  DISK_USAGE,
+  POOL_USAGE,
 ];
 
 const ClusterSearchFilter: FC = () => {
@@ -49,16 +49,16 @@ const ClusterSearchFilter: FC = () => {
     },
     {
       id: 3,
-      heading: "Memory Usage",
+      heading: "Memory usage",
       chips: usagePercentiles.map((percentile) => {
         return { lead: MEMORY_USAGE, value: percentile };
       }),
     },
     {
       id: 4,
-      heading: "Disk Usage",
+      heading: "Storage pool usage",
       chips: usagePercentiles.map((percentile) => {
-        return { lead: DISK_USAGE, value: percentile };
+        return { lead: POOL_USAGE, value: percentile };
       }),
     },
   ];
