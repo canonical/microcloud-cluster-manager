@@ -2,7 +2,9 @@ package query
 
 import (
 	"context"
+	"database/sql"
 
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -19,7 +21,7 @@ func Scan(ctx context.Context, tx *sqlx.Tx, sql string, rowFunc Dest, inArgs ...
 		return err
 	}
 
-	defer func() { _ = rows.Close() }()
+	defer ScanCleanup(rows)
 
 	for rows.Next() {
 		err = rowFunc(rows.Scan)
@@ -29,4 +31,11 @@ func Scan(ctx context.Context, tx *sqlx.Tx, sql string, rowFunc Dest, inArgs ...
 	}
 
 	return rows.Err()
+}
+
+func ScanCleanup(rows *sql.Rows) {
+	err := rows.Close()
+	if err != nil {
+		logger.Log.Errorw("query scan cleanup: failed to close rows", err)
+	}
 }

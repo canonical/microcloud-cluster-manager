@@ -129,7 +129,10 @@ func (o *Verifier) Auth(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		// Cookies are present but we failed to decrypt them. They may have been tampered with, so delete them to force
 		// the user to log in again.
-		_ = o.setCookies(w, nil, uuid.UUID{}, "", "", true)
+		err := o.setCookies(w, nil, uuid.UUID{}, "", "", true)
+		if err != nil {
+			return false, fmt.Errorf("Failed to delete invalid login cookies: %w", err)
+		}
 		return false, fmt.Errorf("Failed to retrieve login information: %w", err)
 	}
 
@@ -205,7 +208,10 @@ func (o *Verifier) Login(w http.ResponseWriter, r *http.Request, stateTokenStr s
 	err := o.ensureConfig(r.Context(), r)
 	if err != nil {
 		logger.Log.Info("AUTHN invalid OIDC configuration")
-		_ = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Login failed: %w", err).Error()).Render(w, r)
+		err := response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Login failed: %w", err).Error()).Render(w, r)
+		if err != nil {
+			logger.Log.Errorw("Failed rendering internal server error response due to invalid OIDC configuration: %w", err)
+		}
 		return
 	}
 
@@ -218,7 +224,11 @@ func (o *Verifier) Login(w http.ResponseWriter, r *http.Request, stateTokenStr s
 func (o *Verifier) Logout(w http.ResponseWriter, r *http.Request) {
 	err := o.setCookies(w, nil, uuid.UUID{}, "", "", true)
 	if err != nil {
-		_ = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to delete login information: %w", err).Error()).Render(w, r)
+		logger.Log.Errorw("Failed to delete login information: %w", err)
+		err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to delete login information: %w", err).Error()).Render(w, r)
+		if err != nil {
+			logger.Log.Errorw("Failed rendering internal server error response due to failed deletion of login information: %w", err)
+		}
 		return
 	}
 
@@ -230,7 +240,10 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 	err := o.ensureConfig(r.Context(), r)
 	if err != nil {
 		logger.Log.Info("AUTHN invalid OIDC configuration")
-		_ = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("OIDC callback failed: %w", err).Error()).Render(w, r)
+		err := response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("OIDC callback failed: %w", err).Error()).Render(w, r)
+		if err != nil {
+			logger.Log.Errorw("Failed rendering internal server error response due to invalid OIDC configuration: %w", err)
+		}
 		return
 	}
 
@@ -239,7 +252,10 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 
 		if err != nil {
 			logger.Log.Info("AUTHN failed to write OIDC tokens to cookies")
-			_ = response.ErrorResponse(http.StatusInternalServerError, err.Error()).Render(w, r)
+			err = response.ErrorResponse(http.StatusInternalServerError, err.Error()).Render(w, r)
+			if err != nil {
+				logger.Log.Errorw("Failed rendering internal server error response due to failed writing of OIDC tokens to cookies: %w", err)
+			}
 			return
 		}
 

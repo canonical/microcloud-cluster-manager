@@ -26,7 +26,10 @@ func main() {
 	err := run()
 	if err != nil {
 		logger.Log.Errorw("startup", "ERROR", err)
-		_ = logger.Log.Sync()
+		err = logger.Log.Sync()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to sync logger: %v\n", err)
+		}
 		os.Exit(1)
 	}
 

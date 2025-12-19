@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/canonical/lxd/lxd/response"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/gorilla/mux"
 )
@@ -15,13 +16,19 @@ func AuthMiddleware(rc types.RouteConfig) mux.MiddlewareFunc {
 	middlewareFunc := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if verifier == nil || !ok {
-				_ = response.Forbidden(nil).Render(w, r)
+				err := response.Forbidden(nil).Render(w, r)
+				if err != nil {
+					logger.Log.Errorw("Failed rendering forbidden response due to invalid verifier: %w", err)
+				}
 				return
 			}
 
 			_, err := verifier.Auth(r.Context(), w, r)
 			if err != nil {
-				_ = response.Forbidden(nil).Render(w, r)
+				err := response.Forbidden(nil).Render(w, r)
+				if err != nil {
+					logger.Log.Errorw("Failed rendering forbidden response due to authentication error: %w", err)
+				}
 				return
 			}
 

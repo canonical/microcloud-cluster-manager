@@ -214,7 +214,7 @@ func generateCounts(maxCount int64) (int64, int64, int64, int64) {
 }
 
 // generateRandomStatuses generates a JSON array of statuses with random counts.
-func generateRandomStatuses(status1, status2, status3, status4 string, maxCount int64) []byte {
+func generateRandomStatuses(status1, status2, status3, status4 string, maxCount int64) ([]byte, error) {
 	count1, count2, count3, count4 := generateCounts(maxCount)
 
 	statuses := []map[string]any{
@@ -224,12 +224,15 @@ func generateRandomStatuses(status1, status2, status3, status4 string, maxCount 
 		{"status": status4, "count": count4},
 	}
 
-	result, _ := json.Marshal(statuses)
-	return result
+	result, err := json.Marshal(statuses)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // GenerateRemoteClusterDetails generates a slice of RemoteClusterDetail with the specified number of entries.
-func generateRemoteClusterDetails(count int) []store.RemoteClusterDetail {
+func generateRemoteClusterDetails(count int) ([]store.RemoteClusterDetail, error) {
 	clusters := make([]store.RemoteClusterDetail, count)
 
 	for i := 0; i < count; i++ {
@@ -242,6 +245,16 @@ func generateRemoteClusterDetails(count int) []store.RemoteClusterDetail {
 		totalInstances := rand.Int64N(50) + 6
 		totalMembers := rand.Int64N(20) + 6
 
+		instanceStatuses, err := generateRandomStatuses("Running", "Stopped", "Frozen", "Error", totalInstances)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate instance statuses: %w", err)
+		}
+
+		memberStatuses, err := generateRandomStatuses("Online", "Offline", "Evacuated", "Blocked", totalMembers)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate member statuses: %w", err)
+		}
+
 		clusters[i] = store.RemoteClusterDetail{
 			RemoteClusterID:   i + 1,
 			CPUTotalCount:     rand.Int64N(32) + 1, // Random CPU count between 1 and 32
@@ -253,19 +266,22 @@ func generateRemoteClusterDetails(count int) []store.RemoteClusterDetail {
 			DiskTotalSize:     totalDisk,
 			DiskUsage:         diskUsage,
 			InstanceCount:     totalInstances,
-			InstanceStatuses:  generateRandomStatuses("Running", "Stopped", "Frozen", "Error", totalInstances),
+			InstanceStatuses:  instanceStatuses,
 			MemberCount:       totalMembers,
-			MemberStatuses:    generateRandomStatuses("Online", "Offline", "Evacuated", "Blocked", totalMembers),
+			MemberStatuses:    memberStatuses,
 			CreatedAt:         time.Now(),
 			UpdatedAt:         time.Now(),
 		}
 	}
-	return clusters
+	return clusters, nil
 }
 
 // seedRemoteClusterDetails inserts multiple remote cluster details into the database.
 func seedRemoteClusterDetails(ctx context.Context, db *database.DB) error {
-	remoteClusterDetails := generateRemoteClusterDetails(20)
+	remoteClusterDetails, err := generateRemoteClusterDetails(20)
+	if err != nil {
+		return fmt.Errorf("failed to generate remote cluster details: %w", err)
+	}
 
 	return db.Transaction(ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		clusters, err := store.GetRemoteClusters(ctx, tx)

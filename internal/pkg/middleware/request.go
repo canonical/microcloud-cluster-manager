@@ -16,7 +16,10 @@ func RequestTrace(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.NewUUID()
 		if err != nil {
-			_ = response.InternalError(err).Render(w, r)
+			err := response.InternalError(err).Render(w, r)
+			if err != nil {
+				logger.Log.Errorw("Failed rendering internal error response due to failed UUID generation: %w", err)
+			}
 			return
 		}
 
@@ -37,7 +40,10 @@ func LogRequest(next http.Handler) http.Handler {
 		// If the context is missing this value, we can't log anything
 		v, err := request.GetValues(ctx)
 		if err != nil {
-			_ = response.InternalError(err).Render(w, r)
+			err := response.InternalError(err).Render(w, r)
+			if err != nil {
+				logger.Log.Errorw("Failed rendering internal error response due to missing request values: %w", err)
+			}
 			return
 		}
 
