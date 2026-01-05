@@ -30,7 +30,7 @@ jobs:
     - name: Install Node for frontend dependencies
       uses: actions/setup-node@v6
       with:
-        node-version: 22
+        node-version: 24
 
     - name: Install frontend dependencies
       run: cd ui && yarn install --immutable
