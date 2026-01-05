@@ -152,28 +152,15 @@ jobs:
   backend-e2e:
     name: Backend E2E tests
     runs-on: ubuntu-latest
-    needs: build-rock
     steps:
 
       - name: Checkout
         uses: actions/checkout@v6.0.1
 
-      - name: Download image
-        uses: actions/download-artifact@v7
-        with:
-          name: docker-image
-          path: docker-image
-
-      - name: Setup microk8s cluster
-        uses: balchua/microk8s-actions@v0.4.3
-        with:
-          channel: '1.31-strict/stable'
-          # load local rock image into k8s cluster
-          # https://microk8s.io/docs/sideload
-          sideload-images-path: '${{ github.workspace }}/docker-image'
-
-      - name: Deploy k8s resources
-        run: deployment/k8s/cicd/deploy-on-microk8s.sh ${{ needs.build-rock.outputs.image-name }}
+      - name: Run backend
+        run: |
+          test/run-backend.sh &
+          curl --head --fail --retry-delay 2 --retry 100 --retry-connrefused --insecure https://localhost:30000
 
       - name: Install Go
         uses: actions/setup-go@v6
@@ -190,28 +177,15 @@ jobs:
       fail-fast: false
       matrix:
         browser: ["chromium", "firefox"]
-    needs: build-rock
     steps:
 
       - name: Checkout
         uses: actions/checkout@v6.0.1
 
-      - name: Download image
-        uses: actions/download-artifact@v7
-        with:
-          name: docker-image
-          path: docker-image
-
-      - name: Setup microk8s cluster
-        uses: balchua/microk8s-actions@v0.4.3
-        with:
-          channel: '1.31-strict/stable'
-          # load local rock image into k8s cluster
-          # https://microk8s.io/docs/sideload
-          sideload-images-path: '${{ github.workspace }}/docker-image'
-
-      - name: Deploy k8s resources
-        run: deployment/k8s/cicd/deploy-on-microk8s.sh ${{ needs.build-rock.outputs.image-name }}
+      - name: Run backend
+        run: |
+          test/run-backend.sh &
+          curl --head --fail --retry-delay 2 --retry 100 --retry-connrefused --insecure https://localhost:30000
 
       - name: Install Node.js
         uses: actions/setup-node@v6

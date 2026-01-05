@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -12,10 +11,6 @@ import (
 	"strings"
 
 	"github.com/canonical/lxd/shared"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
 const (
@@ -201,36 +196,15 @@ func (e *Environment) setCertificates() error {
 	getCertificateData := func(secretName string) (cert, key, ca []byte, err error) {
 		secretPathEnvVar := strings.ReplaceAll(secretName, "-", "_")
 		secretPath := os.Getenv(secretPathEnvVar)
-		if secretPath != "" {
-			cert, certErr := os.ReadFile(filepath.Join(secretPath, "tls.crt"))
-			key, keyErr := os.ReadFile(filepath.Join(secretPath, "tls.key"))
-			ca, caErr := os.ReadFile(filepath.Join(secretPath, "ca.crt"))
+		cert, certErr := os.ReadFile(filepath.Join(secretPath, "tls.crt"))
+		key, keyErr := os.ReadFile(filepath.Join(secretPath, "tls.key"))
+		ca, caErr := os.ReadFile(filepath.Join(secretPath, "ca.crt"))
 
-			if certErr != nil || keyErr != nil || caErr != nil {
-				return nil, nil, nil, fmt.Errorf("secret path %q for secret name %q does not contain all required keys", secretPath, secretName)
-			}
-
-			return cert, key, ca, nil
-		} else {
-			kClient, err := e.getKubeClient()
-			if err != nil {
-				return nil, nil, nil, err
-			}
-
-			secret, err := kClient.CoreV1().Secrets("default").Get(context.TODO(), secretName, metav1.GetOptions{})
-			if err != nil {
-				return nil, nil, nil, fmt.Errorf("could not get secret %q: %w", secretName, err)
-			}
-
-			cert, certExist := secret.Data["tls.crt"]
-			key, keyExist := secret.Data["tls.key"]
-			ca, caExist := secret.Data["ca.crt"]
-
-			if !certExist || !keyExist || !caExist {
-				return nil, nil, nil, fmt.Errorf("secret %q does not contain all required keys", secretName)
-			}
-			return cert, key, ca, nil
+		if certErr != nil || keyErr != nil || caErr != nil {
+			return nil, nil, nil, fmt.Errorf("secret path %q for secret name %q does not contain all required keys", secretPath, secretName)
 		}
+
+		return cert, key, ca, nil
 	}
 
 	// Helper function to write a file and handle errors
@@ -271,26 +245,6 @@ func (e *Environment) setCertificates() error {
 	e.clusterConnectorCert = certInfo
 
 	return nil
-}
-
-func (e *Environment) getKubeClient() (*kubernetes.Clientset, error) {
-	home := homedir.HomeDir()
-	if home == "" {
-		return nil, fmt.Errorf("could not find home directory for kubeconfig")
-	}
-
-	kubeconfig := filepath.Join(home, ".kube", "config")
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		return nil, fmt.Errorf("could not build kubeconfig: %v", err)
-	}
-
-	kClient, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, fmt.Errorf("could not create kubernetes client: %v", err)
-	}
-
-	return kClient, nil
 }
 
 func getProjectRoot() string {

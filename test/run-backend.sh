@@ -34,6 +34,15 @@ docker run -d \
   -p 5432:5432 \
   postgres:latest
 
+# run prometheus
+docker run -d \
+  --name prometheus \
+  -p 9090:9090 \
+  prom/prometheus \
+  --web.enable-remote-write-receiver \
+  --config.file=/etc/prometheus/prometheus.yml
+PROMETHEUS_ADDRESS="$(hostname -I | awk '{print $1}'):9090"
+
 # build golang app
 make build
 
@@ -47,6 +56,7 @@ export OIDC_ISSUER=https://dev-h6c02msuggpi6ijh.eu.auth0.com/
 export MANAGEMENT_API_TLS_PATH="$KEY_DIR"
 export CLUSTER_CONNECTOR_TLS_PATH="$KEY_DIR"
 export CLUSTER_CONNECTOR_PORT=9000
+export PROMETHEUS_BASE_URL=http://$PROMETHEUS_ADDRESS/api/v1/write
 
 # run the cluster connector
 export SERVICE=cluster-connector

@@ -114,10 +114,8 @@ clean:
 	rm -rf .cover
 
 .PHONY: dev
-dev: start-cluster dev-juju-setup dev-k8s-deploy
-
-.PHONY: debug
-debug: start-cluster dev-juju-setup debug-k8s-deploy
+dev:
+	./test/run-backend.sh
 
 .PHONY: dev-rock
 dev-rock: start-cluster dev-juju-setup rock-k8s-deploy
@@ -138,13 +136,14 @@ ui:
 # rollout restart seems to break k8s portforwarding, here we make a request to the server to ensure it is up as well as reset the portforwarding
 .PHONY: ensure-service-running
 ensure-service-running:
-	kubectl rollout restart deployment/management-api-depl
-	kubectl rollout status deployment/management-api-depl --timeout=300s
 	@{ curl --insecure https://localhost:9000 > /dev/null 2>&1 || true; } 2>/dev/null
 
 .PHONY: test-e2e
 test-e2e:
 	$(MAKE) ensure-service-running
+	export management_api_cert_secret="$(shell pwd)/test/keys" ; \
+	export cluster_connector_cert_secret="$(shell pwd)/test/keys" ; \
+	export CLUSTER_CONNECTOR_PORT=9000 ; \
 	go test -count=1 -v ./test/e2e
 
 .PHONY: test-ui-e2e

@@ -39,9 +39,7 @@ const config: PlaywrightTestConfig<TestOptions> = {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     actionTimeout: 0,
     // For local testing, it's better to use the vite dev server so we don't need to rebuild assets
-    baseURL: process.env.CI
-      ? "https://ma.lxd-cm.local:30000/ui"
-      : "https://ma.lxd-cm.local:8414/ui",
+    baseURL: "https://ma.lxd-cm.local:30000/ui",
     ignoreHTTPSErrors: true,
     video: "retain-on-failure",
 
