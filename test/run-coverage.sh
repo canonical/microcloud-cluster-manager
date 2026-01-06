@@ -107,9 +107,9 @@ cd ui
 dotrun &
 curl --head --fail --retry-delay 2 --retry 100 --retry-connrefused --insecure https://ma.lxd-cm.local:8414
 npx playwright install --with-deps chromium
-unset CI # ensure we run against dotrun ui, so the correct source maps and paths are used
+export COVERAGE=1 # ensure we run against dotrun ui, so the correct source maps and paths are used
 yarn test-e2e-coverage
-export CI=1
+unset COVERAGE
 cd ..
 DOTRUN_CONTAINER_ID=$(docker ps | grep dotrun | awk '{print $1}' | tail -n1)
 docker stop $DOTRUN_CONTAINER_ID

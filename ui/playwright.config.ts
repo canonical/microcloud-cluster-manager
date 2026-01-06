@@ -39,7 +39,9 @@ const config: PlaywrightTestConfig<TestOptions> = {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     actionTimeout: 0,
     // For local testing, it's better to use the vite dev server so we don't need to rebuild assets
-    baseURL: "https://ma.lxd-cm.local:30000/ui",
+    baseURL: process.env.COVERAGE
+      ? "https://ma.lxd-cm.local:8414/ui"
+      : "https://ma.lxd-cm.local:30000/ui",
     ignoreHTTPSErrors: true,
     video: "retain-on-failure",
 
@@ -57,15 +59,15 @@ const config: PlaywrightTestConfig<TestOptions> = {
     {
       name: "setup-chromium",
       use: {
-          ...devices["Desktop Chrome"],
-          hasCoverage: true,
+        ...devices["Desktop Chrome"],
+        hasCoverage: true,
       },
       testMatch: /.*\.setup\.ts/,
     },
     {
       name: "setup-firefox",
       use: {
-          ...devices["Desktop Firefox"],
+        ...devices["Desktop Firefox"],
       },
       testMatch: /.*\.setup\.ts/,
     },
