@@ -169,14 +169,14 @@ func testRemoteClusterSuccessWithMetrics(env *helpers.Environment) (testName str
 			instanceMember1 := helpers.GetRandomName("e2e-random-instance-member-1")
 			metricsMember1 := models.ServerMetrics{
 				Member:  "member1",
-				Service: "lxd",
+				Service: "LXD",
 				Metrics: getServerMetricsWithInstance(instanceMember1),
 			}
 
 			instanceMember2 := helpers.GetRandomName("e2e-random-instance-member-2")
 			metricsMember2 := models.ServerMetrics{
 				Member:  "member2",
-				Service: "lxd",
+				Service: "LXD",
 				Metrics: getServerMetricsWithInstance(instanceMember2),
 			}
 

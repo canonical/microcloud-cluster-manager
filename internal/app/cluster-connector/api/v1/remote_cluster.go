@@ -235,7 +235,7 @@ func remoteClusterStatusPost(rc types.RouteConfig) types.EndpointHandler {
 
 			for i := range payload.ServerMetrics {
 				serverMetrics := payload.ServerMetrics[i]
-				if serverMetrics.Service != "lxd" {
+				if serverMetrics.Service != "LXD" {
 					logger.Log.Warnw("Unsupported service metrics received, skipping.", "service", serverMetrics.Service, "remote cluster", remoteClusterID)
 					continue
 				}
