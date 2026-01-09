@@ -1,23 +1,36 @@
 package helpers
 
 import (
-	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
+
+	"github.com/canonical/lxd/shared"
 )
 
-func LoginToManagementAPI(e *Environment, username string, password string) ([]*http.Cookie, error) {
+func LoginToManagementAPI(e *Environment, username string, password string, serverCert *x509.Certificate) ([]*http.Cookie, error) {
 	jar, _ := cookiejar.New(nil)
+
+	// Add the public key to the CA pool to make it trusted.
+	tlsConfig := shared.InitTLSConfig()
+	rootCAs, err := x509.SystemCertPool()
+	if err != nil || rootCAs == nil {
+		tlsConfig.RootCAs = x509.NewCertPool()
+	} else {
+		tlsConfig.RootCAs = rootCAs
+	}
+	serverCert.IsCA = true
+	serverCert.KeyUsage = x509.KeyUsageCertSign
+	tlsConfig.RootCAs.AddCert(serverCert)
 
 	client := &http.Client{
 		Jar: jar,
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, // ignore cert errors
-			},
+			TLSClientConfig: tlsConfig,
 		},
 	}
 
@@ -50,6 +63,10 @@ func LoginToManagementAPI(e *Environment, username string, password string) ([]*
 	}
 
 	loginAction := idpURL.Scheme + "://" + idpURL.Host + idpURL.Path
+	if loginAction != "https://dev-h6c02msuggpi6ijh.eu.auth0.com/u/login" {
+		return nil, fmt.Errorf("disallowed login action: %q", loginAction)
+	}
+
 	resp, err = client.Post(
 		loginAction,
 		"application/x-www-form-urlencoded",

@@ -19,12 +19,12 @@ func FindRemoteCluster(env *Environment, remoteClusterName string) (*models.Remo
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	headers, err := env.ManagementAPILoginHeaders()
+	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
 	if err != nil {
 		return nil, err
 	}
 
-	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
+	headers, err := env.ManagementAPILoginHeaders(certPublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -217,12 +217,12 @@ func getConfiguration(env *Environment) (*models.Configuration, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	headers, err := env.ManagementAPILoginHeaders()
+	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
 	if err != nil {
 		return nil, err
 	}
 
-	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
+	headers, err := env.ManagementAPILoginHeaders(certPublicKey)
 	if err != nil {
 		return nil, err
 	}
