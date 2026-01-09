@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/http"
 	"os"
@@ -140,7 +141,7 @@ func (e *Environment) ManagementAPICert() *shared.CertInfo {
 
 // ManagementAPILoginHeaders performs a cached login to the management-api and returns
 // a function that adds the authentication headers to an HTTP request.
-func (e *Environment) ManagementAPILoginHeaders() (func(*http.Request) error, error) {
+func (e *Environment) ManagementAPILoginHeaders(serverCert *x509.Certificate) (func(*http.Request) error, error) {
 	if e.managementAPILoginHeaders == nil {
 		username := os.Getenv("OIDC_USER")
 		if username == "" {
@@ -151,7 +152,7 @@ func (e *Environment) ManagementAPILoginHeaders() (func(*http.Request) error, er
 			password = "cluster-manager-e2e-password"
 		}
 
-		cookies, err := LoginToManagementAPI(e, username, password)
+		cookies, err := LoginToManagementAPI(e, username, password, serverCert)
 		if err != nil {
 			return nil, err
 		}
