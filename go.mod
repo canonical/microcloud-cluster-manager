@@ -12,7 +12,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/prometheus/common v0.67.4
-	github.com/prometheus/prometheus v0.308.1
+	github.com/prometheus/prometheus v0.309.1
 	github.com/spf13/cobra v1.10.2
 	github.com/zitadel/oidc/v3 v3.45.1
 	go.uber.org/automaxprocs v1.6.0
