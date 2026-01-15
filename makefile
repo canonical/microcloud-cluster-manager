@@ -312,7 +312,6 @@ install-docker:
 		echo "Configuring Docker for user $$USER..."; \
 		sudo addgroup --system docker; \
 		sudo adduser $$USER docker; \
-		newgrp docker; \
 		sudo snap disable docker; \
 		sudo snap enable docker; \
 		if ! grep -q "/snap/bin" $$HOME/.bashrc; then \
@@ -320,6 +319,9 @@ install-docker:
 			echo 'export PATH=$$PATH:/snap/bin' >> $$HOME/.bashrc; \
 			source $$HOME/.bashrc; \
 		fi; \
+		echo "Restarting shell to apply Docker group changes..."; \
+		echo "Please restart make install-deps to continue installation."; \
+		newgrp docker; \
 	else \
 		echo "Docker is already installed."; \
 	fi
