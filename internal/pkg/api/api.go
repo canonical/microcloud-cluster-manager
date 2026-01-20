@@ -21,20 +21,22 @@ type Handler func(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 
 // APIConfig is used to configure the API which represents the entry point of any service in the application.
 type APIConfig struct {
-	Shutdown  chan os.Signal
-	DB        *database.DB
-	Auth      types.Authenticator
-	EnvConfig *config.Config
+	Shutdown    chan os.Signal
+	DB          *database.DB
+	Auth        types.Authenticator
+	RateLimiter types.RateLimiter
+	EnvConfig   *config.Config
 }
 
 // API is the entrypoint into our application and what configures our context
 // object for each of our http handlers.
 type API struct {
-	mux       *mux.Router
-	shutdown  chan os.Signal
-	db        *database.DB
-	auth      types.Authenticator
-	envConfig *config.Config
+	mux         *mux.Router
+	shutdown    chan os.Signal
+	db          *database.DB
+	auth        types.Authenticator
+	rateLimiter types.RateLimiter
+	envConfig   *config.Config
 }
 
 // NewAPI creates a new API.
@@ -45,11 +47,12 @@ func NewAPI(cfg APIConfig) *API {
 	mux.UseEncodedPath()
 
 	return &API{
-		mux:       mux,
-		shutdown:  cfg.Shutdown,
-		db:        cfg.DB,
-		auth:      cfg.Auth,
-		envConfig: cfg.EnvConfig,
+		mux:         mux,
+		shutdown:    cfg.Shutdown,
+		db:          cfg.DB,
+		auth:        cfg.Auth,
+		rateLimiter: cfg.RateLimiter,
+		envConfig:   cfg.EnvConfig,
 	}
 }
 
@@ -67,9 +70,10 @@ func (a *API) UseGlobalMiddleWares(mw ...mux.MiddlewareFunc) {
 // RegisterRoutes adds the routes to the router.
 func (a *API) RegisterRoutes(routes []types.RouteGroup) {
 	rc := types.RouteConfig{
-		Auth: a.auth,
-		DB:   a.db,
-		Env:  a.envConfig,
+		Auth:        a.auth,
+		RateLimiter: a.rateLimiter,
+		DB:          a.db,
+		Env:         a.envConfig,
 	}
 
 	registerRoutes(a.mux, routes, rc)

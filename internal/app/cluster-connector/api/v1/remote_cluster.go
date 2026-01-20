@@ -14,6 +14,7 @@ import (
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/auth"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/certificate"
+	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/rate_limit"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
@@ -28,6 +29,9 @@ import (
 // RemoteCluster is the API endpoint for managing remote clusters.
 var RemoteCluster = types.RouteGroup{
 	Prefix: "remote-cluster",
+	Middlewares: []types.RouteMiddleware{
+		rate_limit.RateLimitMiddleware,
+	},
 	Endpoints: []types.Endpoint{
 		{
 			Method:  http.MethodPost,
@@ -40,6 +44,7 @@ var RemoteCluster = types.RouteGroup{
 var RemoteClusterProtected = types.RouteGroup{
 	Prefix: "remote-cluster",
 	Middlewares: []types.RouteMiddleware{
+		rate_limit.RateLimitMiddleware,
 		auth.AuthMiddleware,
 	},
 	Endpoints: []types.Endpoint{

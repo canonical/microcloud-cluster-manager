@@ -14,6 +14,7 @@ import (
 	"github.com/canonical/lxd/lxd/util"
 	routes "github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/auth"
+	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/rate_limit"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/config"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database"
@@ -129,6 +130,10 @@ func Run() (err error) {
 	mtlsAuthenticator := auth.NewMtlsAuthenticator(db)
 
 	// =========================================================================
+	// Initialize rate limiting support
+	tokenBucketRateLimiter := rate_limit.NewRateLimiter(cfg.RateLimitRefillRate, cfg.RateLimitBucketSize, cfg.RateLimitClientActiveInterval, cfg.RateLimitMaxClients, cfg.RateLimitCleanupInterval, cfg.RateLimitLogInterval)
+
+	// =========================================================================
 	// Initialize api
 
 	logger.Log.Infow("startup", "status", "initializing API")
@@ -139,10 +144,11 @@ func Run() (err error) {
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	a := api.NewAPI(api.APIConfig{
-		Shutdown:  shutdown,
-		DB:        db,
-		EnvConfig: cfg,
-		Auth:      mtlsAuthenticator,
+		Shutdown:    shutdown,
+		DB:          db,
+		EnvConfig:   cfg,
+		Auth:        mtlsAuthenticator,
+		RateLimiter: tokenBucketRateLimiter,
 	})
 
 	// register global middlewares in order

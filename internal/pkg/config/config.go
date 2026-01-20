@@ -7,9 +7,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/canonical/lxd/shared"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database"
+	"golang.org/x/time/rate"
 )
 
 // Config represents the configurable environment variables for all services within the application.
@@ -39,6 +41,13 @@ type Config struct {
 	// cos configs
 	GrafanaBaseURL    string
 	PrometheusBaseURL string
+	// rate limit configs
+	RateLimitRefillRate           rate.Limit
+	RateLimitBucketSize           int
+	RateLimitClientActiveInterval time.Duration
+	RateLimitCleanupInterval      time.Duration
+	RateLimitLogInterval          time.Duration
+	RateLimitMaxClients           int
 }
 
 // getEnvOrDefault retrieves an environment variable or returns the default value if not set.
@@ -57,6 +66,41 @@ func getEnvAsInt(key string, defaultValue int) (int, error) {
 		return strconv.Atoi(value)
 	}
 	return defaultValue, nil
+}
+
+// getRequiredEnv retrieves a required environment variable.
+func getRequiredEnv(key string) (string, error) {
+	value := os.Getenv(key)
+	if value == "" {
+		return "", fmt.Errorf("%s is required", key)
+	}
+	return value, nil
+}
+
+// getRequiredInt retrieves a required environment variable as an integer.
+func getRequiredInt(key string) (int, error) {
+	value, err := getRequiredEnv(key)
+	if err != nil {
+		return 0, err
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s: %w", key, err)
+	}
+	return parsed, nil
+}
+
+// getRequiredFloat retrieves a required environment variable as a float.
+func getRequiredFloat(key string) (float64, error) {
+	value, err := getRequiredEnv(key)
+	if err != nil {
+		return 0, err
+	}
+	parsed, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s: %w", key, err)
+	}
+	return parsed, nil
 }
 
 // getServiceCert loads the TLS certificate and key from the environment based on the service name.
@@ -112,8 +156,40 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("OIDC_CLIENT_ID and OIDC_ISSUER are required")
 	}
 
+	// cos Config
 	grafanaBaseURL := os.Getenv("GRAFANA_BASE_URL")
 	prometheusBaseURL := os.Getenv("PROMETHEUS_BASE_URL")
+
+	// Rate Limit Config
+	rateLimitRefillRate, err := getRequiredFloat("RATE_LIMIT_REFILL_RATE")
+	if err != nil {
+		return nil, err
+	}
+
+	rateLimitBucketSize, err := getRequiredInt("RATE_LIMIT_BUCKET_SIZE")
+	if err != nil {
+		return nil, err
+	}
+
+	rateLimitClientActiveIntervalSeconds, err := getRequiredInt("RATE_LIMIT_CLIENT_ACTIVE_INTERVAL_SECONDS")
+	if err != nil {
+		return nil, err
+	}
+
+	rateLimitCleanupIntervalSeconds, err := getRequiredInt("RATE_LIMIT_CLEANUP_INTERVAL_SECONDS")
+	if err != nil {
+		return nil, err
+	}
+
+	rateLimitLogIntervalSeconds, err := getRequiredInt("RATE_LIMIT_LOG_INTERVAL_SECONDS")
+	if err != nil {
+		return nil, err
+	}
+
+	rateLimitMaxClients, err := getRequiredInt("RATE_LIMIT_MAX_CLIENTS")
+	if err != nil {
+		return nil, err
+	}
 
 	return &Config{
 		Version:                getEnvOrDefault("VERSION", "development"),
@@ -143,6 +219,13 @@ func LoadConfig() (*Config, error) {
 		OIDCAudience:      oidcAudience,
 		GrafanaBaseURL:    grafanaBaseURL,
 		PrometheusBaseURL: prometheusBaseURL,
+
+		RateLimitRefillRate:           rate.Limit(rateLimitRefillRate),
+		RateLimitBucketSize:           rateLimitBucketSize,
+		RateLimitClientActiveInterval: time.Duration(rateLimitClientActiveIntervalSeconds) * time.Second,
+		RateLimitCleanupInterval:      time.Duration(rateLimitCleanupIntervalSeconds) * time.Second,
+		RateLimitLogInterval:          time.Duration(rateLimitLogIntervalSeconds) * time.Second,
+		RateLimitMaxClients:           rateLimitMaxClients,
 	}, nil
 }
 

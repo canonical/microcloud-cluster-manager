@@ -24,11 +24,17 @@ type Authenticator interface {
 	Auth(ctx context.Context, w http.ResponseWriter, r *http.Request) (bool, error)
 }
 
+// RateLimiter represent the interface that each service in cluster manager must implement for enforcing rate limit.
+type RateLimiter interface {
+	CheckLimit(ctx context.Context, w http.ResponseWriter, r *http.Request) (bool, error)
+}
+
 // RouteConfig holds the necessary dependencies for routes and middlewares within service APIs.
 type RouteConfig struct {
-	Auth Authenticator
-	DB   *database.DB
-	Env  *config.Config
+	Auth        Authenticator
+	RateLimiter RateLimiter
+	DB          *database.DB
+	Env         *config.Config
 }
 
 // RouteMiddleware represents middlewares in service APIs that requires route dependencies.
