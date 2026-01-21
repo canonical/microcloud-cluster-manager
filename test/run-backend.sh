@@ -26,6 +26,7 @@ export management_api_cert_secret="$KEY_DIR"
 export cluster_connector_cert_secret="$KEY_DIR"
 
 # run postgres
+docker rm -f my-postgres 2>/dev/null || true
 docker run -d \
   --name my-postgres \
   -e POSTGRES_USER=admin \
@@ -35,6 +36,7 @@ docker run -d \
   postgres:latest
 
 # run prometheus
+docker rm -f prometheus 2>/dev/null || true
 docker run -d \
   --name prometheus \
   -p 9090:9090 \
