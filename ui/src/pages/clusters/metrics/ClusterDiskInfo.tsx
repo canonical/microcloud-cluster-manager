@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import type { Cluster } from "types/cluster";
-import { Icon, usePortal } from "@canonical/react-components";
+import { usePortal } from "@canonical/react-components";
 import { Link } from "react-router-dom";
 import { ClusterDiskModal } from "pages/clusters/metrics/ClusterDiskModal";
 
@@ -19,7 +19,7 @@ export const ClusterDiskInfo: FC<Props> = ({ cluster }: Props) => {
         </Portal>
       )}
       <Link onClick={openPortal} to="#">
-        <Icon name="information" />
+        <span className="p-text--small">View details</span>
       </Link>
     </>
   );
