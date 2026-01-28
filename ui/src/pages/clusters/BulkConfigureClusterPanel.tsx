@@ -17,6 +17,7 @@ import usePanelParams from "context/usePanelParams";
 import { fetchClusters, updateClusterBulk } from "api/clusters";
 import { pluralize } from "util/helpers";
 import BulkConfigurePanelInput from "components/forms/BulkConfigurePanelInput";
+import * as Yup from "yup";
 
 const BulkConfigureClusterPanel: FC = () => {
   const panelParams = usePanelParams();
@@ -84,11 +85,17 @@ const BulkConfigureClusterPanel: FC = () => {
       (cluster) => cluster.memory_threshold === clusters?.[0]?.memory_threshold,
     );
 
+  const BulkConfigurationSchema = Yup.object().shape({
+    diskThreshold: Yup.number().min(0).max(100),
+    memoryThreshold: Yup.number().min(0).max(100),
+  });
+
   const formik = useFormik<ConfigureClusterFormValues>({
     initialValues: {
       diskThreshold: undefined,
       memoryThreshold: undefined,
     },
+    validationSchema: BulkConfigurationSchema,
     enableReinitialize: true,
     onSubmit: handleSubmit,
   });
@@ -116,7 +123,7 @@ const BulkConfigureClusterPanel: FC = () => {
                 }}
                 firstValue={clusters[0]?.disk_threshold}
                 defaultValue={80}
-                label="Disk threshold"
+                label="Disk threshold percentage"
                 labelForId="diskThreshold"
                 value={formik.values.diskThreshold}
               >
@@ -130,6 +137,9 @@ const BulkConfigureClusterPanel: FC = () => {
                   onBlur={formik.handleBlur}
                   onChange={formik.handleChange}
                   value={formik.values.diskThreshold}
+                  error={
+                    formik.touched.diskThreshold && formik.errors.diskThreshold
+                  }
                 />
               </BulkConfigurePanelInput>
               <BulkConfigurePanelInput
@@ -139,7 +149,7 @@ const BulkConfigureClusterPanel: FC = () => {
                 }}
                 firstValue={clusters[0]?.memory_threshold}
                 defaultValue={80}
-                label="Memory threshold"
+                label="Memory threshold percentage"
                 labelForId="memoryThreshold"
                 value={formik.values.memoryThreshold}
               >
@@ -153,6 +163,10 @@ const BulkConfigureClusterPanel: FC = () => {
                   onBlur={formik.handleBlur}
                   onChange={formik.handleChange}
                   value={formik.values.memoryThreshold}
+                  error={
+                    formik.touched.memoryThreshold &&
+                    formik.errors.memoryThreshold
+                  }
                 />
               </BulkConfigurePanelInput>
             </Form>

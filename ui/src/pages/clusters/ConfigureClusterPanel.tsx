@@ -15,6 +15,7 @@ import { queryKeys } from "util/queryKeys";
 import NotificationRow from "components/NotificationRow";
 import usePanelParams from "context/usePanelParams";
 import { fetchCluster, updateCluster } from "api/clusters";
+import * as Yup from "yup";
 
 export const FIELD_DISK_THRESHOLD = "diskThreshold";
 export const FIELD_MEMORY_THRESHOLD = "memoryThreshold";
@@ -75,12 +76,19 @@ const ConfigureClusterPanel: FC = () => {
       });
   };
 
+  const ConfigurationSchema = Yup.object().shape({
+    description: Yup.string(),
+    diskThreshold: Yup.number().min(0).max(100),
+    memoryThreshold: Yup.number().min(0).max(100),
+  });
+
   const formik = useFormik<ConfigureClusterFormValues>({
     initialValues: {
       description: cluster?.description ?? "",
       diskThreshold: cluster?.disk_threshold ?? 80,
       memoryThreshold: cluster?.memory_threshold ?? 80,
     },
+    validationSchema: ConfigurationSchema,
     enableReinitialize: true,
     onSubmit: handleSubmit,
   });
@@ -107,7 +115,7 @@ const ConfigureClusterPanel: FC = () => {
               <Input
                 name={FIELD_DISK_THRESHOLD}
                 type="number"
-                label="Disk threshold"
+                label="Disk threshold percentage"
                 placeholder="Enter value"
                 min={1}
                 max={100}
@@ -115,11 +123,14 @@ const ConfigureClusterPanel: FC = () => {
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.diskThreshold}
+                error={
+                  formik.touched.diskThreshold && formik.errors.diskThreshold
+                }
               />
               <Input
                 name={FIELD_MEMORY_THRESHOLD}
                 type="number"
-                label="Memory threshold"
+                label="Memory threshold percentage"
                 placeholder="Enter value"
                 min={1}
                 max={100}
@@ -127,6 +138,10 @@ const ConfigureClusterPanel: FC = () => {
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.memoryThreshold}
+                error={
+                  formik.touched.memoryThreshold &&
+                  formik.errors.memoryThreshold
+                }
               />
               <Input
                 name={FIELD_DESCRIPTION}
@@ -137,6 +152,7 @@ const ConfigureClusterPanel: FC = () => {
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.description}
+                error={formik.touched.description && formik.errors.description}
               />
             </Form>
           </ScrollableContainer>

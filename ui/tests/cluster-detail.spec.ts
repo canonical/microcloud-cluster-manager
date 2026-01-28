@@ -11,13 +11,13 @@ test.describe("Cluster Configuration", () => {
   test("should set disk threshold limit", async ({ page }) => {
     const cluster = randomSeedClusterName();
     await ensureClusterExists(page, cluster);
-    await setClusterConfig(page, cluster, "Disk threshold", "42");
+    await setClusterConfig(page, cluster, "Disk threshold percentage", "42");
   });
 
   test("should set memory threshold limit", async ({ page }) => {
     const cluster = randomSeedClusterName();
     await ensureClusterExists(page, cluster);
-    await setClusterConfig(page, cluster, "Memory threshold", "42");
+    await setClusterConfig(page, cluster, "Memory threshold percentage", "42");
   });
 
   test("should display warnings for low thresholds and hide them when thresholds are high", async ({
@@ -25,15 +25,15 @@ test.describe("Cluster Configuration", () => {
   }) => {
     const cluster = randomSeedClusterName();
     await ensureClusterExists(page, cluster);
-    await setClusterConfig(page, cluster, "Memory threshold", "1");
-    await setClusterConfig(page, cluster, "Disk threshold", "1");
+    await setClusterConfig(page, cluster, "Memory threshold percentage", "1");
+    await setClusterConfig(page, cluster, "Disk threshold percentage", "1");
 
     await expect(page.getByText(/\d warning?/)).toBeVisible();
     const notifications = page.locator(".p-notification--caution");
     const initialCount = await notifications.count();
 
-    await setClusterConfig(page, cluster, "Memory threshold", "100");
-    await setClusterConfig(page, cluster, "Disk threshold", "100");
+    await setClusterConfig(page, cluster, "Memory threshold percentage", "100");
+    await setClusterConfig(page, cluster, "Disk threshold percentage", "100");
     const finalCount = await notifications.count();
     expect(initialCount === 0 || finalCount < initialCount).toBe(true);
   });

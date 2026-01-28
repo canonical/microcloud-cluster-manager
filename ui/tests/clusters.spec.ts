@@ -19,10 +19,10 @@ test.describe("Cluster Bulk Configuration", () => {
       .click();
 
     await page.getByRole("button", { name: "Configure clusters" }).click();
-    await page.getByTitle("Set Disk threshold").click();
-    await page.getByLabel("Disk threshold").fill("100");
-    await page.getByTitle("Set Memory threshold").click();
-    await page.getByLabel("Memory threshold").fill("100");
+    await page.getByTitle("Set Disk threshold percentage").click();
+    await page.getByLabel("Disk threshold percentage").fill("100");
+    await page.getByTitle("Set Memory threshold percentage").click();
+    await page.getByLabel("Memory threshold percentage").fill("100");
     await page.getByRole("button", { name: "Save changes" }).click();
 
     await expect(
