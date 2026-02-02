@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/securecookie v1.1.2
 	github.com/jmoiron/sqlx v1.4.0
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.11.1
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/prometheus/common v0.67.5
 	github.com/prometheus/prometheus v0.309.1
