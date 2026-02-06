@@ -25,6 +25,7 @@ juju integrate traefik-k8s:traefik-route microcloud-cluster-manager-k8s
 For authentication you need an OIDC provider. You can use Auth0, Ory Hydra, Keycloak, Microsoft Entra among others. See [LXD documentation on OIDC](https://documentation.ubuntu.com/lxd/latest/howto/oidc/) for how to configure the provider side. The callback path is `/oidc/callback`, but in contrast to LXD it must be without the port 8443 as cluster manager listens on the default port 443.
 
 Configure the cluster manager charm with your auth provider:
+
 ```
 juju config microcloud-cluster-manager-k8s oidc-issuer=https://example.com/
 juju config microcloud-cluster-manager-k8s oidc-client-id=ababab
@@ -40,6 +41,7 @@ juju config microcloud-cluster-manager-k8s cluster-connector-domain=cluster-conn
 ```
 
 You might want to set the domain for your traefic controller
+
 ```
 juju config traefik-k8s external_hostname=example.com
 ```
@@ -53,6 +55,7 @@ Now you can access the web ui via https://example.com
 <img width="1435" height="745" alt="image" src="https://github.com/user-attachments/assets/987942d6-d53f-470e-b1a9-081b171a23f7" />
 
 Alternatively, use the enroll-cluster command to create a join token for your first cluster on the command line
+
 ```
 juju run microcloud-cluster-manager-k8s/0 enroll-cluster cluster=microcloud-01
 ```
@@ -91,11 +94,12 @@ In the Cluster Manager web interface, you will see a new button on the cluster d
 
 # Development setup
 
-**CAUTION**: The `install-deps` target has been tested only in an Ubuntu Linux environment and may not work on other operating systems. It is strongly recommended that you avoid running this directly on your host machine. Instead, use it as a convenient method for setting up a VM-based development environment.
+**CAUTION**: The `install-core` and `install-deps` targets have been tested only in an Ubuntu Linux environment and may not work on other operating systems. It is strongly recommended that you avoid running this directly on your host machine. Instead, use it as a convenient method for setting up a VM-based development environment.
 
 To start the development environment, run these commands:
 
 ```bash
+make install-core
 make install-deps
 sudo make add-hosts
 make dev

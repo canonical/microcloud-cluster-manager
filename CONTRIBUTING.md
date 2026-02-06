@@ -4,13 +4,19 @@
 
 ### Automatic dependency installation
 
-For convenience, a `make` target is prepared to install all required dependencies for the development environment. You may simply run the following command at the project root:
+For convenience, two `make` targets are prepared to install all required dependencies for the development environment. You may simply run the following command at the project root:
+
+```
+make install-core
+```
+
+then run 
 
 ```
 make install-deps
 ```
 
-**CAUTION**: The `install-deps` target has been tested only in an Ubuntu Linux environment and may not work on other operating systems. It is strongly recommended that you avoid running this directly on your host machine. Instead, use it as a convenient method for setting up a VM-based development environment.
+**CAUTION**: The `install-core` and `install-deps` targets have been tested only in an Ubuntu Linux environment and may not work on other operating systems. It is strongly recommended that you avoid running this directly on your host machine. Instead, use it as a convenient method for setting up a VM-based development environment.
 
 ### Manual dependency installation
 

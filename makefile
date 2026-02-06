@@ -279,10 +279,13 @@ deploy-ci-k8s-cluster:
 # ====================================================================
 # Development dependencies
 
+.PHONY: install-core
+install-core: install-go install-docker
+
 .PHONY: install-deps
-install-deps: install-go install-docker install-kubectl \
-							install-kind install-skaffold install-nvm \
-							install-juju install-dotrun
+install-deps: install-kubectl install-kind \
+								install-skaffold install-nvm \
+								install-juju install-dotrun
 
 # install golang based on version in go.mod if it does not exist
 .PHONY: install-go
