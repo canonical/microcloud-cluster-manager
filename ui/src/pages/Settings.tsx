@@ -33,7 +33,7 @@ const Settings: FC = () => {
         {
           content: (
             <>
-              <div>{config.value}</div>
+              <div>{config.value || "-"}</div>
               <div className="u-text--muted">{config.description}</div>
             </>
           ),

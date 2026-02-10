@@ -120,5 +120,35 @@ func mapEnvToConfig(cfg config.Config) models.Configuration {
 			Title:       "Prometheus base URL",
 			Description: "The base url for prometheus.",
 		},
+		RateLimitBucketSize: models.ConfigData{
+			Value:       strconv.Itoa(cfg.RateLimitBucketSize),
+			Title:       "Rate Limit Bucket Size",
+			Description: "Maximum tokens in the rate limiting bucket (requests/second).",
+		},
+		RateLimitClientActiveInterval: models.ConfigData{
+			Value:       cfg.RateLimitClientActiveInterval.String(),
+			Title:       "Rate Limit Client Active Interval",
+			Description: "Time after which inactive clients are available for clean up.",
+		},
+		RateLimitCleanupInterval: models.ConfigData{
+			Value:       cfg.RateLimitCleanupInterval.String(),
+			Title:       "Rate Limit Cleanup Interval",
+			Description: "Time between cleanup runs.",
+		},
+		RateLimitLogInterval: models.ConfigData{
+			Value:       cfg.RateLimitLogInterval.String(),
+			Title:       "Rate Limit Log Interval",
+			Description: "Time between logs to avoid I/O strain.",
+		},
+		RateLimitMaxClients: models.ConfigData{
+			Value:       strconv.Itoa(cfg.RateLimitMaxClients),
+			Title:       "Rate Limit Max Clients",
+			Description: "Maximum number of clients to track in the rate limiter. If reached, new clients will be rejected.",
+		},
+		RateLimitRefillRate: models.ConfigData{
+			Value:       fmt.Sprintf("%.2f", cfg.RateLimitRefillRate),
+			Title:       "Rate Limit Refill Rate",
+			Description: "Tokens added to rate limiting bucket per second.",
+		},
 	}
 }
