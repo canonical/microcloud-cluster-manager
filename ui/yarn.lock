@@ -906,10 +906,10 @@
     hashery "^1.2.0"
     keyv "^5.5.4"
 
-"@canonical/react-components@3.9.1":
-  version "3.9.1"
-  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-3.9.1.tgz#badedad8ed7ed86bc57671a2e9da196130eaaae1"
-  integrity sha512-/mFM7AuqmFUGWAajLm201052R+UBqjOoAHhS3qeXRXtRJM1hQLjxmAuGxKid8C6GbSenIhtGROfCM415CYR4Qw==
+"@canonical/react-components@3.10.0":
+  version "3.10.0"
+  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-3.10.0.tgz#dc981ec09012df524505b6efbb29031306cd270d"
+  integrity sha512-e8dpVP5GrBVEse06ME51Yr1cSDPKAaakHgDRRkLVs9Nv8TtEExujh2LI79xbpGsh7JWL6vJJKphT+lxHcImo9Q==
   dependencies:
     "@types/jest" "29.5.14"
     "@types/node" "20.19.30"
