@@ -19,6 +19,8 @@ import (
 type RemoteClusterDetail struct {
 	ID                int             `db:"id"`                    // Primary key
 	RemoteClusterID   int             `db:"remote_cluster_id"`     // Foreign key to remote_clusters
+	CephCount         int64           `db:"ceph_count"`            // Number of members
+	CephStatuses      json.RawMessage `db:"ceph_statuses"`         // JSON array of ceph statuses
 	CPUTotalCount     int64           `db:"cpu_total_count"`       // Total CPU count
 	CPULoad1          string          `db:"cpu_load_1"`            // CPU load (1 minute average)
 	CPULoad5          string          `db:"cpu_load_5"`            // CPU load (5 minute average)
@@ -37,6 +39,7 @@ type RemoteClusterDetail struct {
 
 // Put updates the RemoteClusterDetail with the provided payload.
 func (r *RemoteClusterDetail) Put(payload models.RemoteClusterStatusPost) {
+	r.CephCount, r.CephStatuses = parseStatusDistribution(payload.CephStatuses)
 	r.CPULoad1 = payload.CPULoad1
 	r.CPULoad5 = payload.CPULoad5
 	r.CPULoad15 = payload.CPULoad15
@@ -60,6 +63,8 @@ type RemoteClusterWithDetail struct {
 	MemoryThreshold    int64           `db:"memory_threshold"`
 	ClusterCreatedAt   time.Time       `db:"created_at"`
 	Status             string          `db:"status"`
+	CephCount          int64           `db:"ceph_count"`
+	CephStatuses       json.RawMessage `db:"ceph_statuses"`
 	CPUTotalCount      int64           `db:"cpu_total_count"`
 	CPULoad1           string          `db:"cpu_load_1"`
 	CPULoad5           string          `db:"cpu_load_5"`
@@ -116,7 +121,7 @@ func RemoteClusterDetailExists(ctx context.Context, tx *sqlx.Tx, remoteClusterID
 func GetRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID int) (*RemoteClusterDetail, error) {
 	q := `
         SELECT 
-			id, remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, 
+			id, remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, 
 			cpu_load_15, memory_total_amount, memory_usage, 
 			instance_count, instance_statuses, member_count, 
 			member_statuses, storage_pool_usages, ui_url, created_at, updated_at
@@ -128,6 +133,8 @@ func GetRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID in
 	err := tx.QueryRowContext(ctx, q, remoteClusterID).Scan(
 		&result.ID,
 		&result.RemoteClusterID,
+		&result.CephCount,
+		&result.CephStatuses,
 		&result.CPUTotalCount,
 		&result.CPULoad1,
 		&result.CPULoad5,
@@ -168,16 +175,18 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 
 	q := `
         INSERT INTO remote_cluster_details 
-			(remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url)
+			(remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url)
         VALUES 
-			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         RETURNING 
-			id, remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url, created_at, updated_at;
+			id, remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url, created_at, updated_at;
     `
 
 	var result RemoteClusterDetail
 	err = tx.QueryRowContext(ctx, q,
 		data.RemoteClusterID,
+		data.CephCount,
+		data.CephStatuses,
 		data.CPUTotalCount,
 		data.CPULoad1,
 		data.CPULoad5,
@@ -193,6 +202,8 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 	).Scan(
 		&result.ID,
 		&result.RemoteClusterID,
+		&result.CephCount,
+		&result.CephStatuses,
 		&result.CPUTotalCount,
 		&result.CPULoad1,
 		&result.CPULoad5,
@@ -225,11 +236,27 @@ func UpdateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID
 
 	q := `
         UPDATE remote_cluster_details
-        SET cpu_total_count = $1, cpu_load_1 = $2, cpu_load_5 = $3, cpu_load_15 = $4, memory_total_amount = $5, memory_usage = $6, instance_count = $7, instance_statuses = $8, member_count = $9, member_statuses = $10, storage_pool_usages = $11, ui_url = $12, updated_at = NOW()
-        WHERE id = $13;
+        SET ceph_count = $1,
+            ceph_statuses = $2,
+            cpu_total_count = $3,
+            cpu_load_1 = $4,
+            cpu_load_5 = $5,
+            cpu_load_15 = $6,
+            memory_total_amount = $7,
+            memory_usage = $8,
+            instance_count = $9,
+            instance_statuses = $10,
+            member_count = $11,
+            member_statuses = $12,
+            storage_pool_usages = $13,
+            ui_url = $14,
+            updated_at = NOW()
+        WHERE id = $15;
     `
 
 	result, err := tx.ExecContext(ctx, q,
+		data.CephCount,
+		data.CephStatuses,
 		data.CPUTotalCount,
 		data.CPULoad1,
 		data.CPULoad5,
@@ -269,6 +296,8 @@ var baseDetailQuery = `
 		remote_clusters.cluster_certificate,
 		remote_clusters.joined_at,
 		remote_clusters.created_at,
+		remote_cluster_details.ceph_count,
+		remote_cluster_details.ceph_statuses,
 		remote_cluster_details.cpu_total_count,
 		remote_cluster_details.cpu_load_1,
 		remote_cluster_details.cpu_load_5,
@@ -310,6 +339,8 @@ func getRemoteClusterWithDetails(ctx context.Context, tx *sqlx.Tx, sql string, a
 			&c.ClusterCertificate,
 			&c.ClusterJoinedAt,
 			&c.ClusterCreatedAt,
+			&c.CephCount,
+			&c.CephStatuses,
 			&c.CPUTotalCount,
 			&c.CPULoad1,
 			&c.CPULoad5,

@@ -1,5 +1,9 @@
 import type { Cluster } from "types/cluster";
-import { getMinutesSinceLastHeartbeat, pluralize } from "util/helpers";
+import {
+  capitalizeFirstLetter,
+  getMinutesSinceLastHeartbeat,
+  pluralize,
+} from "util/helpers";
 
 export const getClusterWarnings = (cluster: Cluster): string[] => {
   const result: string[] = [];
@@ -47,6 +51,17 @@ export const getClusterWarnings = (cluster: Cluster): string[] => {
       `Cluster has not sent a heartbeat in the last ${lastHeartbeatMins} minutes`,
     );
   }
+
+  cluster.ceph_statuses.forEach((cephDistribution) => {
+    const status = capitalizeFirstLetter(cephDistribution.status.toLowerCase());
+    const count = cephDistribution.count;
+    if (status === "Online" || count === 0) {
+      return;
+    }
+    result.push(
+      `Ceph has ${count} ${pluralize("member", count)} with status ${status}`,
+    );
+  });
 
   return result;
 };

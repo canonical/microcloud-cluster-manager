@@ -39,6 +39,8 @@ type RemoteCluster struct {
 	DiskThreshold      int64                `json:"disk_threshold"`
 	MemoryThreshold    int64                `json:"memory_threshold"`
 	Status             string               `json:"status"`
+	CephCount          int64                `json:"ceph_count"`
+	CephStatuses       []StatusDistribution `json:"ceph_statuses"`
 	CPUTotalCount      int64                `json:"cpu_total_count"`
 	CPULoad1           string               `json:"cpu_load_1"`
 	CPULoad5           string               `json:"cpu_load_5"`
@@ -71,8 +73,9 @@ type RemoteClusterPost struct {
 	Token              string `json:"token" yaml:"token"`
 }
 
-// RemoteClusterStatusPost is sent by LXD with to inform about its current status.
+// RemoteClusterStatusPost is sent by LXD to inform about its current status.
 type RemoteClusterStatusPost struct {
+	CephStatuses      []StatusDistribution `json:"ceph_statuses"`
 	CPUTotalCount     int64                `json:"cpu_total_count"`
 	CPULoad1          string               `json:"cpu_load_1"`
 	CPULoad5          string               `json:"cpu_load_5"`

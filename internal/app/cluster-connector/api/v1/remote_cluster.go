@@ -133,6 +133,7 @@ func remoteClustersPost(rc types.RouteConfig) types.EndpointHandler {
 			// create relevant remote cluster details
 			_, err = store.CreateRemoteClusterDetail(ctx, tx, store.RemoteClusterDetail{
 				RemoteClusterID:   newRemoteCluster.ID,
+				CephStatuses:      json.RawMessage("[]"),
 				MemberStatuses:    json.RawMessage("[]"),
 				InstanceStatuses:  json.RawMessage("[]"),
 				StoragePoolUsages: json.RawMessage("[]"),
@@ -254,8 +255,8 @@ func remoteClusterStatusPost(rc types.RouteConfig) types.EndpointHandler {
 
 				err = forwardMetricsToPrometheus(timeSeries, rc)
 				if err != nil {
-					logger.Log.Warnw("Failed to forward metrics to Prometheus", "remote cluster", remoteClusterID, "err", err)
-					return fmt.Errorf("failed to forward metrics to Prometheus: %w", err)
+					logger.Log.Warnw("Failed to forward metrics to Prometheus, skipping", "remote cluster", remoteClusterID, "err", err)
+					continue
 				}
 			}
 
