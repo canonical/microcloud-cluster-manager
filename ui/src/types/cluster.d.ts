@@ -15,6 +15,8 @@ export interface Cluster {
   description: string;
   disk_threshold: number;
   memory_threshold: number;
+  ceph_count: number;
+  ceph_statuses: StatusDistribution[];
   cpu_total_count: number;
   cpu_load_1: string;
   cpu_load_5: string;

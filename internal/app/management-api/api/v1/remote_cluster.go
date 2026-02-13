@@ -192,8 +192,14 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 	// generate lookup for remoteCluster details
 	var remoteClusters []models.RemoteCluster
 	for _, e := range dbEntries {
+		var cephStatuses []models.StatusDistribution
+		err := json.Unmarshal(e.CephStatuses, &cephStatuses)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal ceph statuses: %w", err)
+		}
+
 		var memberStatuses []models.StatusDistribution
-		err := json.Unmarshal(e.MemberStatuses, &memberStatuses)
+		err = json.Unmarshal(e.MemberStatuses, &memberStatuses)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal member statuses: %w", err)
 		}
@@ -217,6 +223,8 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 			DiskThreshold:      e.DiskThreshold,
 			MemoryThreshold:    e.MemoryThreshold,
 			Status:             e.Status,
+			CephCount:          e.CephCount,
+			CephStatuses:       cephStatuses,
 			CPUTotalCount:      e.CPUTotalCount,
 			CPULoad1:           e.CPULoad1,
 			CPULoad5:           e.CPULoad5,

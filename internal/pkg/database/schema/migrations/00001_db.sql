@@ -42,6 +42,8 @@ CREATE INDEX IF NOT EXISTS idx_remote_cluster_tokens_name ON remote_cluster_toke
 CREATE TABLE IF NOT EXISTS remote_cluster_details (
     id SERIAL PRIMARY KEY,
     remote_cluster_id INTEGER NOT NULL UNIQUE REFERENCES remote_clusters(id) ON DELETE CASCADE,
+    ceph_count INTEGER NOT NULL DEFAULT 0,
+    ceph_statuses JSONB NOT NULL DEFAULT '[]'::JSONB,
     cpu_total_count BIGINT NOT NULL DEFAULT 0,
     cpu_load_1 TEXT NOT NULL DEFAULT 0,
     cpu_load_5 TEXT NOT NULL DEFAULT 0,

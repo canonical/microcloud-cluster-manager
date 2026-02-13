@@ -291,8 +291,15 @@ func generateRemoteClusterDetails(count int) ([]store.RemoteClusterDetail, error
 			return nil, fmt.Errorf("failed to generate member statuses: %w", err)
 		}
 
+		cephStatuses, err := generateRandomStatuses("ONLINE", "UNAVAILABLE", "FOO", "BAR", totalMembers)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate ceph statuses: %w", err)
+		}
+
 		clusters[i] = store.RemoteClusterDetail{
 			RemoteClusterID:   i + 1,
+			CephCount:         totalMembers,
+			CephStatuses:      cephStatuses,
 			CPUTotalCount:     rand.Int64N(32) + 1, // Random CPU count between 1 and 32
 			CPULoad1:          fmt.Sprintf("%.1f", rand.Float64()),
 			CPULoad5:          fmt.Sprintf("%.1f", rand.Float64()),
@@ -327,31 +334,35 @@ func seedRemoteClusterDetails(ctx context.Context, db *database.DB) error {
 		for idx, detail := range remoteClusterDetails {
 			q := `
 				INSERT INTO remote_cluster_details 
-					(remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages)
+					(remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages)
 				VALUES 
-					($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+					($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 				ON CONFLICT (remote_cluster_id)
 				DO UPDATE SET
 					remote_cluster_id = $1,
-					cpu_total_count = $2,
-					cpu_load_1 = $3,
-					cpu_load_5 = $4,
-					cpu_load_15 = $5,
-					memory_total_amount = $6,
-					memory_usage = $7,
-					instance_count = $8,
-					instance_statuses = $9,
-					member_count = $10,
-					member_statuses = $11,
-				    storage_pool_usages = $12
+				    ceph_count = $2,
+				    ceph_statuses = $3,
+					cpu_total_count = $4,
+					cpu_load_1 = $5,
+					cpu_load_5 = $6,
+					cpu_load_15 = $7,
+					memory_total_amount = $8,
+					memory_usage = $9,
+					instance_count = $10,
+					instance_statuses = $11,
+					member_count = $12,
+					member_statuses = $13,
+				    storage_pool_usages = $14
 				RETURNING 
-					id, remote_cluster_id, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, created_at, updated_at;
+					id, remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, created_at, updated_at;
 			`
 
 			detail.RemoteClusterID = clusters[idx].ID
 			var result store.RemoteClusterDetail
 			err := tx.QueryRowContext(ctx, q,
 				detail.RemoteClusterID,
+				detail.CephCount,
+				detail.CephStatuses,
 				detail.CPUTotalCount,
 				detail.CPULoad1,
 				detail.CPULoad5,
@@ -366,6 +377,8 @@ func seedRemoteClusterDetails(ctx context.Context, db *database.DB) error {
 			).Scan(
 				&result.ID,
 				&result.RemoteClusterID,
+				&result.CephCount,
+				&result.CephStatuses,
 				&result.CPUTotalCount,
 				&result.CPULoad1,
 				&result.CPULoad5,

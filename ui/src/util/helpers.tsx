@@ -117,3 +117,6 @@ export const handleSettledResult = (
     throw error;
   }
 };
+
+export const capitalizeFirstLetter = (val: string): string =>
+  val.charAt(0).toUpperCase() + val.slice(1);
