@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/securecookie v1.1.2
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.11.2
-	github.com/pressly/goose/v3 v3.26.0
+	github.com/pressly/goose/v3 v3.27.0
 	github.com/prometheus/common v0.67.5
 	github.com/prometheus/prometheus v0.309.1
 	github.com/spf13/cobra v1.10.2
@@ -50,7 +50,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
-	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
