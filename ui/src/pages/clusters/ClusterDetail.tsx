@@ -130,6 +130,14 @@ const ClusterDetail: FC = () => {
                 />
               </div>
             )}
+            <Notification
+              severity="information"
+              title={
+                cluster.tunnel_connected
+                  ? "Tunnel connected"
+                  : "Tunnel not available"
+              }
+            />
             <ClusterWarningList cluster={cluster} />
           </Row>
         )}

@@ -1,8 +1,9 @@
--- TODO: this is just an example!
 -- +goose Up
-ALTER TABLE remote_clusters
-ADD COLUMN age INTEGER DEFAULT 0;
+CREATE TABLE IF NOT EXISTS user_access_tokens (
+    id SERIAL PRIMARY KEY,
+    access_token TEXT NOT NULL DEFAULT ''
+);
+
 
 -- +goose Down
-ALTER TABLE remote_clusters
-DROP COLUMN age;
+DROP TABLE user_access_tokens;

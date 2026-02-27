@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/canonical/lxd/lxd/request"
@@ -20,6 +22,9 @@ import (
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/golang/snappy"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
@@ -37,6 +42,21 @@ var RemoteCluster = types.RouteGroup{
 			Method:  http.MethodPost,
 			Handler: remoteClustersPost,
 		},
+		{
+			Path:    "{remoteClusterName}/tunnel/{path:.*}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterTunnel,
+		},
+		{
+			Path:    "{remoteClusterName}/tunnel/{path:.*}",
+			Method:  http.MethodPost,
+			Handler: remoteClusterTunnel,
+		},
+		{
+			Path:    "{remoteClusterName}/tunnel/{path:.*}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterTunnel,
+		},
 	},
 }
 
@@ -52,6 +72,11 @@ var RemoteClusterProtected = types.RouteGroup{
 			Path:    "status",
 			Method:  http.MethodPost,
 			Handler: remoteClusterStatusPost,
+		},
+		{
+			Path:    "ws",
+			Method:  http.MethodGet,
+			Handler: remoteClusterWsGet,
 		},
 		{
 			Method:  http.MethodDelete,
@@ -356,7 +381,12 @@ func forwardMetricsToPrometheus(timeSeries []prompb.TimeSeries, rc types.RouteCo
 	if err != nil {
 		return fmt.Errorf("failed to send metrics to Prometheus: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			logger.Log.Warnw("Failed to close Prometheus response body", "error", err)
+		}
+	}()
 
 	if resp.StatusCode > 299 {
 		body, err := io.ReadAll(resp.Body)
@@ -366,6 +396,136 @@ func forwardMetricsToPrometheus(timeSeries []prompb.TimeSeries, rc types.RouteCo
 		return fmt.Errorf("failed to send metrics to Prometheus, status: %s, response: %s", resp.Status, string(body))
 	}
 
+	return nil
+}
+
+// apply mtls for this endpoint.
+func remoteClusterWsGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterID, err := request.GetContextValue[int](r.Context(), auth.CtxRemoteClusterID)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
+			dbRemoteCluster, err := store.GetRemoteClusterWithDetailByID(ctx, tx, remoteClusterID)
+			if err != nil {
+				return err
+			}
+
+			if dbRemoteCluster == nil {
+				return fmt.Errorf("remote cluster not found")
+			}
+
+			// todo: use dynamic url of the current host
+			memberUrl := "https://localhost:9000"
+			return storeTunnelMemberUrl(ctx, tx, remoteClusterID, memberUrl)
+		})
+
+		if err != nil {
+			logger.Log.Warnw("Failed to verify remote cluster for websocket", "remote cluster", remoteClusterID, "err", err)
+			return response.SmartError(err).Render(w, r)
+		}
+
+		var upgrader = websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				return true // allow all origins
+			},
+		}
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			logger.Log.Warnw("Upgrade error:", err)
+			return response.SmartError(err).Render(w, r)
+		}
+
+		tunnel := getClusterTunnel(rc, remoteClusterID)
+		defer func() {
+			logger.Log.Warnw("Client disconnected")
+			ensureClosed(tunnel)
+			err = rc.DB.Transaction(context.Background(), func(ctx context.Context, tx *sqlx.Tx) error {
+				return storeTunnelMemberUrl(ctx, tx, remoteClusterID, "")
+			})
+			if err != nil {
+				logger.Log.Warnw("Failed to clear websocket member on disconnect", "remote cluster", remoteClusterID, "err", err)
+			}
+		}()
+
+		logger.Log.Warnw("Client connected")
+
+		// Close any previous connection
+		ensureClosed(tunnel)
+
+		tunnel.Mu.Lock()
+		tunnel.WsConn = conn
+		tunnel.Mu.Unlock()
+
+		for {
+			var resp types.ClusterManagerTunnelResponse
+			err := conn.ReadJSON(&resp)
+			if err != nil {
+				logger.Log.Error("WebSocket read error: %v", err)
+				return nil
+			}
+
+			// Route the response to the waiting HTTP handler
+			tunnel.Mu.RLock()
+			ch, exists := tunnel.PendingCalls[resp.ID]
+			tunnel.Mu.RUnlock()
+
+			if exists {
+				ch <- resp
+			} else {
+				logger.Log.Error("No pending request for response ID %s", resp.ID)
+			}
+		}
+	}
+}
+
+func ensureClosed(tunnel *types.Tunnel) {
+	conn := tunnel.WsConn
+	if conn != nil {
+		tunnel.Mu.Lock()
+		tunnel.WsConn = nil
+		tunnel.Mu.Unlock()
+
+		err := conn.Close()
+		if err != nil {
+			logger.Log.Warnw("Failed to close existing WebSocket connection", "error", err)
+		}
+	}
+}
+
+func getClusterTunnel(rc types.RouteConfig, remoteClusterID int) *types.Tunnel {
+	rc.TunnelStore.Mu.Lock()
+	defer rc.TunnelStore.Mu.Unlock()
+
+	tunnel := rc.TunnelStore.TunnelByCluster[remoteClusterID]
+	if tunnel == nil {
+		// Initialize a new tunnel for this cluster
+		tunnel = &types.Tunnel{
+			Mu:           sync.RWMutex{},
+			WsConn:       nil, // will be set.
+			PendingCalls: make(map[string]chan types.ClusterManagerTunnelResponse),
+		}
+
+		rc.TunnelStore.TunnelByCluster[remoteClusterID] = tunnel
+	}
+
+	return tunnel
+}
+
+func storeTunnelMemberUrl(ctx context.Context, tx *sqlx.Tx, remoteClusterID int, memberUrl string) error {
+	dbRemoteClusterDetail, err := store.GetRemoteClusterDetail(ctx, tx, remoteClusterID)
+	if err != nil {
+		return err
+	}
+
+	dbRemoteClusterDetail.TunnelMemberURL = memberUrl
+	err = store.UpdateRemoteClusterDetail(ctx, tx, remoteClusterID, *dbRemoteClusterDetail)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -390,5 +550,135 @@ func remoteClusterDelete(rc types.RouteConfig) types.EndpointHandler {
 		}
 
 		return response.EmptySyncResponse.Render(w, r)
+	}
+}
+
+func remoteClusterTunnel(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		var remoteClusterID int
+		err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
+			remoteCluster, err := store.GetRemoteCluster(ctx, tx, remoteClusterName)
+			if err != nil {
+				return err
+			}
+
+			remoteClusterID = remoteCluster.ID
+
+			return nil
+		})
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		id, err := uuid.NewV7()
+		if err != nil {
+			logger.Log.Errorw("Failed to generate request ID", "error", err)
+			http.Error(w, "Failed to generate request ID", http.StatusInternalServerError)
+			return nil
+		}
+
+		body, err := readBody(r)
+		if err != nil {
+			logger.Log.Errorw("Failed to read request body", "error", err)
+			http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+			return nil
+		}
+
+		logger.Log.Debug("remote cluster tunnel request", "id", id, "method", r.Method, "path", r.URL.Path)
+
+		rc.TunnelStore.Mu.Lock()
+		tunnel := rc.TunnelStore.TunnelByCluster[remoteClusterID]
+		rc.TunnelStore.Mu.Unlock()
+
+		if tunnel == nil {
+			http.Error(w, "Tunnel not found", http.StatusInternalServerError)
+			return nil
+		}
+
+		tunnel.Mu.Lock()
+		isConnected := tunnel.WsConn != nil
+		tunnel.Mu.Unlock()
+		if !isConnected {
+			http.Error(w, "Tunnel not connected", http.StatusInternalServerError)
+			return nil
+		}
+
+		prefix := fmt.Sprintf("/1.0/remote-cluster/%s/tunnel", url.PathEscape(remoteClusterName))
+		path := strings.TrimPrefix(r.URL.Path, prefix)
+		req := types.ClusterManagerTunnelRequest{
+			ID:      id.String(),
+			Method:  r.Method,
+			Path:    path,
+			Headers: extractHeaders(r),
+			Body:    body,
+		}
+
+		tunnel.Mu.Lock()
+		err = tunnel.WsConn.WriteJSON(req)
+		tunnel.Mu.Unlock()
+
+		if err != nil {
+			logger.Log.Errorw("Failed to send request over WebSocket", "error", err)
+			http.Error(w, "Failed to send request", http.StatusInternalServerError)
+			ensureClosed(tunnel)
+			return nil
+		}
+
+		// Wait for response
+		ch := make(chan types.ClusterManagerTunnelResponse)
+		tunnel.PendingCalls[id.String()] = ch
+		defer delete(tunnel.PendingCalls, id.String())
+
+		select {
+		case resp := <-ch:
+			writeResponse(w, resp)
+		case <-time.After(5 * time.Second):
+			http.Error(w, "Timeout", http.StatusGatewayTimeout)
+		}
+
+		return nil
+	}
+}
+
+func extractHeaders(r *http.Request) map[string]string {
+	headers := make(map[string]string)
+	for k, v := range r.Header {
+		if len(v) > 0 {
+			headers[k] = v[0]
+		}
+	}
+	return headers
+}
+
+func readBody(r *http.Request) ([]byte, error) {
+	defer func() {
+		err := r.Body.Close()
+		if err != nil {
+			logger.Log.Warnw("Failed to close request body", "error", err)
+		}
+	}()
+	return io.ReadAll(r.Body)
+}
+
+func writeResponse(w http.ResponseWriter, resp types.ClusterManagerTunnelResponse) {
+	// Write headers
+	for k, v := range resp.Headers {
+		value := v
+		if k == "Location" {
+			// Rewrite Location header, as the LXD-UI redirects and we need to ensure it points to the nested path
+			value = strings.ReplaceAll(value, "/ui", "/1.0/remote-cluster/lxd-ui/ui")
+		}
+		w.Header().Set(k, value)
+	}
+
+	w.WriteHeader(resp.Status)
+	_, err := w.Write(resp.Body)
+	if err != nil {
+		logger.Log.Error("error writing response body: %v", err)
 	}
 }
