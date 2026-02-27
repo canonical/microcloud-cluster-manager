@@ -33,6 +33,7 @@ type RemoteClusterDetail struct {
 	MemberStatuses    json.RawMessage `db:"member_statuses"`       // JSON array of member statuses
 	StoragePoolUsages json.RawMessage `json:"storage_pool_usages"` // JSON array of storage pool usages
 	UIURL             string          `db:"ui_url"`                // UI URL
+	TunnelMemberURL   string          `db:"tunnel_member_url"`     // Cluster manager member url that holds the tunnel
 	CreatedAt         time.Time       `db:"created_at"`            // Creation timestamp
 	UpdatedAt         time.Time       `db:"updated_at"`            // Update timestamp
 }
@@ -75,8 +76,9 @@ type RemoteClusterWithDetail struct {
 	InstanceStatuses   json.RawMessage `db:"instance_statuses"`
 	MemberCount        int64           `db:"member_count"`
 	MemberStatuses     json.RawMessage `db:"member_statuses"`
-	StoragePoolUsages  json.RawMessage `json:"storage_pool_usages"`
+	StoragePoolUsages  json.RawMessage `db:"storage_pool_usages"`
 	UIURL              string          `db:"ui_url"`
+	TunnelMemberURL    string          `db:"tunnel_member_url"`
 	ClusterJoinedAt    time.Time       `db:"joined_at"`
 	ClusterUpdatedAt   time.Time       `db:"updated_at"`
 }
@@ -124,7 +126,7 @@ func GetRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID in
 			id, remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, 
 			cpu_load_15, memory_total_amount, memory_usage, 
 			instance_count, instance_statuses, member_count, 
-			member_statuses, storage_pool_usages, ui_url, created_at, updated_at
+			member_statuses, storage_pool_usages, ui_url, tunnel_member_url, created_at, updated_at
         FROM remote_cluster_details
 		WHERE remote_cluster_id = $1;
     `
@@ -147,6 +149,7 @@ func GetRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID in
 		&result.MemberStatuses,
 		&result.StoragePoolUsages,
 		&result.UIURL,
+		&result.TunnelMemberURL,
 		&result.CreatedAt,
 		&result.UpdatedAt,
 	)
@@ -175,11 +178,11 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 
 	q := `
         INSERT INTO remote_cluster_details 
-			(remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url)
+			(remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url, tunnel_member_url)
         VALUES 
-			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING 
-			id, remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url, created_at, updated_at;
+			id, remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url, tunnel_member_url, created_at, updated_at;
     `
 
 	var result RemoteClusterDetail
@@ -199,6 +202,7 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 		data.MemberStatuses,
 		data.StoragePoolUsages,
 		data.UIURL,
+		data.TunnelMemberURL,
 	).Scan(
 		&result.ID,
 		&result.RemoteClusterID,
@@ -216,6 +220,7 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 		&result.MemberStatuses,
 		&result.StoragePoolUsages,
 		&result.UIURL,
+		&result.TunnelMemberURL,
 		&result.CreatedAt,
 		&result.UpdatedAt,
 	)
@@ -250,8 +255,9 @@ func UpdateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID
             member_statuses = $12,
             storage_pool_usages = $13,
             ui_url = $14,
+            tunnel_member_url = $15,
             updated_at = NOW()
-        WHERE id = $15;
+        WHERE id = $16;
     `
 
 	result, err := tx.ExecContext(ctx, q,
@@ -269,6 +275,7 @@ func UpdateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID
 		data.MemberStatuses,
 		data.StoragePoolUsages,
 		data.UIURL,
+		data.TunnelMemberURL,
 		id,
 	)
 	if err != nil {
@@ -310,6 +317,7 @@ var baseDetailQuery = `
 		remote_cluster_details.member_statuses,
 		remote_cluster_details.storage_pool_usages,
 		remote_cluster_details.ui_url,
+		remote_cluster_details.tunnel_member_url,
 		remote_cluster_details.updated_at,
 		COALESCE(
 			(SELECT value::bigint FROM remote_cluster_config cfg
@@ -353,6 +361,7 @@ func getRemoteClusterWithDetails(ctx context.Context, tx *sqlx.Tx, sql string, a
 			&c.MemberStatuses,
 			&c.StoragePoolUsages,
 			&c.UIURL,
+			&c.TunnelMemberURL,
 			&c.ClusterUpdatedAt,
 			&c.DiskThreshold,
 			&c.MemoryThreshold,
