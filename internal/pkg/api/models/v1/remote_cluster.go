@@ -53,6 +53,7 @@ type RemoteCluster struct {
 	InstanceCount      int64                `json:"instance_count"`
 	InstanceStatuses   []StatusDistribution `json:"instance_statuses"`
 	UIURL              string               `json:"ui_url"`
+	TunnelConnected    bool                 `json:"tunnel_connected"`
 	JoinedAt           time.Time            `json:"joined_at"`
 	CreatedAt          time.Time            `json:"created_at"`
 	LastStatusUpdateAt time.Time            `json:"last_status_update_at"`

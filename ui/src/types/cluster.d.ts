@@ -34,6 +34,7 @@ export interface Cluster {
   cluster_certificate: string;
   status: string;
   ui_url: string;
+  tunnel_connected: boolean;
 }
 
 export type ClusterInstanceStatus = "Running" | "Frozen" | "Error" | "Stopped";
