@@ -34,7 +34,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-router-dom": "7.12.0",
-    "vanilla-framework": "4.44.0",
+    "vanilla-framework": "4.45.0",
     "yup": "1.7.1"
   },
   "devDependencies": {
@@ -43,7 +43,7 @@
     "@babel/preset-env": "7.28.5",
     "@babel/preset-react": "7.28.5",
     "@babel/preset-typescript": "7.28.5",
-    "@canonical/typescript-config-react": "0.15.1",
+    "@canonical/typescript-config-react": "0.16.0",
     "@eslint/eslintrc": "3.3.3",
     "@eslint/js": "9.39.2",
     "@playwright/test": "1.57.0",
