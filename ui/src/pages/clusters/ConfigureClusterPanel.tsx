@@ -111,7 +111,15 @@ const ConfigureClusterPanel: FC = () => {
             dependencies={[notify.notification]}
             belowIds={["panel-footer"]}
           >
-            <Form onSubmit={() => void formik.submitForm()} className="form">
+            <Form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void formik.submitForm();
+              }}
+              className="form"
+            >
+              {/* hidden submit to enable enter key in inputs */}
+              <Input type="submit" hidden value="Hidden input" />
               <Input
                 name={FIELD_DISK_THRESHOLD}
                 type="number"

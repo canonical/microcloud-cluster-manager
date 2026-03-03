@@ -105,7 +105,13 @@ const EnrollClusterPanel: FC = () => {
             dependencies={[notify.notification]}
             belowIds={["panel-footer"]}
           >
-            <Form onSubmit={() => void formik.submitForm()} className="form">
+            <Form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void formik.submitForm();
+              }}
+              className="form"
+            >
               <ClusterCreateDetailsForm formik={formik} />
             </Form>
           </ScrollableContainer>
