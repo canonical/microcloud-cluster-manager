@@ -154,25 +154,29 @@ func remoteClusterPatch(rc types.RouteConfig) types.EndpointHandler {
 			if payload.DiskThreshold < 0 || payload.DiskThreshold > 100 {
 				return errors.New("disk threshold outside 0 and 100 percent")
 			}
-			err = store.UpdateRemoteClusterConfig(ctx, tx, store.RemoteClusterConfig{
-				RemoteClusterID: existingRemoteCluster.ID,
-				Key:             store.DiskThresholdKey,
-				Value:           fmt.Sprintf("%d", payload.DiskThreshold),
-			})
-			if err != nil {
-				return err
+			if payload.DiskThreshold > 0 {
+				err = store.UpdateRemoteClusterConfig(ctx, tx, store.RemoteClusterConfig{
+					RemoteClusterID: existingRemoteCluster.ID,
+					Key:             store.DiskThresholdKey,
+					Value:           fmt.Sprintf("%d", payload.DiskThreshold),
+				})
+				if err != nil {
+					return err
+				}
 			}
 
 			if payload.MemoryThreshold < 0 || payload.MemoryThreshold > 100 {
 				return errors.New("memory threshold outside 0 and 100 percent")
 			}
-			err = store.UpdateRemoteClusterConfig(ctx, tx, store.RemoteClusterConfig{
-				RemoteClusterID: existingRemoteCluster.ID,
-				Key:             store.MemoryThresholdKey,
-				Value:           fmt.Sprintf("%d", payload.MemoryThreshold),
-			})
-			if err != nil {
-				return err
+			if payload.MemoryThreshold > 0 {
+				err = store.UpdateRemoteClusterConfig(ctx, tx, store.RemoteClusterConfig{
+					RemoteClusterID: existingRemoteCluster.ID,
+					Key:             store.MemoryThresholdKey,
+					Value:           fmt.Sprintf("%d", payload.MemoryThreshold),
+				})
+				if err != nil {
+					return err
+				}
 			}
 
 			newRemoteCluster.UpdatedAt = time.Now()
