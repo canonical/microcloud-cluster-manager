@@ -26,6 +26,8 @@ interface Props {
 const ClusterCreateDetailsForm: FC<Props> = ({ formik }) => {
   return (
     <>
+      {/* hidden submit to enable enter key in inputs */}
+      <Input type="submit" hidden value="Hidden input" />
       <Input
         id="name"
         name="clusterName"
