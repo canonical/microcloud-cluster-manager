@@ -22,13 +22,15 @@ jobs:
     steps:
 
     - name: Checkout
-      uses: actions/checkout@v6.0.2
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
 
     - name: Install Dotrun
       run: sudo pip3 install dotrun
 
     - name: Install Node for frontend dependencies
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
       with:
         node-version: 24
 
@@ -36,7 +38,7 @@ jobs:
       run: cd ui && yarn install --immutable
 
     - name: Install Go for backend dependencies
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
       with:
         go-version: 1.25.x
 
@@ -59,7 +61,7 @@ jobs:
         go install github.com/boumenot/gocover-cobertura@b1bccd90304174121462cb67f5f9e8fc496ee828 # v1.4.0
 
     - name: Produce TICS report
-      uses: tiobe/tics-github-action@v3
+      uses: tiobe/tics-github-action@faf5066082a31b2517574270b45e3df92aa39a35 # v3.7.1
       with:
         mode: qserver
         project: microcloud-cluster-manager

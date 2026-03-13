@@ -17,16 +17,16 @@ jobs:
     steps:
 
       - name: Check if CLA signed
-        uses: canonical/has-signed-canonical-cla@v2
+        uses: canonical/has-signed-canonical-cla@1c20438ad54b4d37105e777000545881d2293ba4 # v2.2.0
 
       - name: Get PR Commits
         id: 'get-pr-commits'
-        uses: tim-actions/get-pr-commits@master
+        uses: tim-actions/get-pr-commits@198af03565609bb4ed924d1260247b4881f09e7d # v1.3.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check that all commits are signed-off
-        uses: tim-actions/dco@master
+        uses: tim-actions/dco@f2279e6e62d5a7d9115b0cb8e837b777b1b02e21 # v1.1.0
         with:
           commits: ${{ steps.get-pr-commits.outputs.commits }}
 
@@ -36,10 +36,12 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Install Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: 1.25.x
 
@@ -52,10 +54,12 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Install Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
 
@@ -74,10 +78,12 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Install Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
 
@@ -95,7 +101,9 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Tune runner for performance and reliability
         uses: ./.github/actions/tune-runner
@@ -107,7 +115,7 @@ jobs:
           sudo chown -R $USER:$USER /home/runner/.cache/yarn
 
       - name: Cache Go modules
-        uses: actions/cache@v5
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: |
             /root/go/pkg/mod
@@ -116,7 +124,7 @@ jobs:
             go-modules-
 
       - name: Cache yarn modules
-        uses: actions/cache@v5
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: |
             /home/runner/.cache/yarn
@@ -143,7 +151,7 @@ jobs:
         run: make docker-image-to-tarball
 
       - name: Upload image tarball
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: docker-image
           path: microcloud-cluster-manager.tar
@@ -155,10 +163,12 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Install Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: 1.25.x
 
@@ -171,7 +181,9 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Run backend
         run: |
@@ -179,7 +191,7 @@ jobs:
           curl --head --fail --retry-delay 2 --retry 100 --retry-connrefused --insecure https://localhost:30000
 
       - name: Install Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: 1.25.x
 
@@ -196,7 +208,9 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Run backend
         run: |
@@ -204,7 +218,7 @@ jobs:
           curl --head --fail --retry-delay 2 --retry 100 --retry-connrefused --insecure https://localhost:30000
 
       - name: Install Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
 
@@ -229,7 +243,7 @@ jobs:
 
       - name: Upload ${{ matrix.browser }} blob reports to be merged
         if: always()
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: blob-report-${{ matrix.browser }}
           path: ui/blob-report
@@ -243,15 +257,17 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Install Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
 
       - name: Download blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         with:
           path: blob-reports
           pattern: blob-report-*
@@ -262,7 +278,7 @@ jobs:
         run: npx playwright merge-reports --reporter html ./blob-reports
 
       - name: Upload merged report
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: always()
         with:
           name: playwright-report
