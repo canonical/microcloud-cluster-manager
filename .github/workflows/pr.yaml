@@ -185,18 +185,40 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: 1.25.x
+
       - name: Run backend
         run: |
           test/run-backend.sh &
           curl --head --fail --retry-delay 2 --retry 100 --retry-connrefused --insecure https://localhost:30000
+
+      - name: Run backend E2E tests
+        run: make test-e2e
+
+  backend-openapi:
+    name: Backend OpenAPI v3 tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false 
 
       - name: Install Go
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: 1.25.x
 
-      - name: Run backend E2E tests
-        run: make test-e2e
+      - name: Run backend
+        run: |
+          test/run-backend.sh &
+          curl --head --fail --retry-delay 2 --retry 100 --retry-connrefused --insecure https://localhost:30000
+
+      - name: Run backend OpenAPI v3 tests
+        run: make test-openapi
 
   ui-e2e:
     name: UI E2E tests

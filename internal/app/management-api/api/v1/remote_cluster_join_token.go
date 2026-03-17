@@ -99,7 +99,7 @@ func tokenPost(rc types.RouteConfig) types.EndpointHandler {
 				return err
 			}
 			if isNameTaken {
-				return fmt.Errorf("cluster name already exists")
+				return response.Conflict(fmt.Errorf("cluster name already exists")).Render(w, r)
 			}
 
 			tokenData := store.RemoteClusterToken{
