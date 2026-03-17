@@ -146,6 +146,15 @@ test-e2e:
 	export CLUSTER_CONNECTOR_PORT=9000 ; \
 	go test -count=1 -v ./test/e2e
 
+.PHONY: test-openapi
+test-openapi:
+	$(MAKE) ensure-service-running
+	export management_api_cert_secret="$(shell pwd)/test/keys" ; \
+	export cluster_connector_cert_secret="$(shell pwd)/test/keys" ; \
+	export CLUSTER_CONNECTOR_PORT=9000 ; \
+	curl -L https://raw.githubusercontent.com/canonical/microcloud/main/doc/_extra/cluster-manager-api.yaml -o test/openapi/cluster-manager-api.yaml
+	go test -count=1 -v ./test/openapi
+
 .PHONY: test-ui-e2e
 test-ui-e2e:
 	cd ui && CI=$(CI) npx playwright test $(if $(PROJECT),--project $(PROJECT))
