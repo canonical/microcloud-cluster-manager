@@ -14,7 +14,7 @@ juju add-model cluster-manager
 juju deploy postgresql-k8s --channel 14/stable --trust
 juju deploy self-signed-certificates --trust
 juju deploy traefik-k8s --trust
-juju deploy microcloud-cluster-manager-k8s --channel edge --trust
+juju deploy microcloud-cluster-manager-k8s --trust
 
 juju integrate postgresql-k8s:database microcloud-cluster-manager-k8s
 juju integrate self-signed-certificates:certificates microcloud-cluster-manager-k8s
