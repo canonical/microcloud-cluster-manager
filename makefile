@@ -198,7 +198,7 @@ build-ui:
 
 .PHONY: copy-ui
 copy-ui:
-	rm -rf $(GO_UI_FOLDER)
+	rm -rf $(GO_UI_FOLDER)/ui
 	mkdir -p $(GO_UI_FOLDER)
 	cp -r ui/build/ui $(GO_UI_FOLDER)
 
