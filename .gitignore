@@ -27,7 +27,7 @@ tmp
 vendor
 cmd/app
 cmd/app-coverage
-internal/app/management-api/api/v1/static/ui
+internal/app/management-api/api/v1/static/*
 test/keys/*
 test/coverage/*
 ui/coverage
