@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS remote_cluster_details (
     member_statuses JSONB NOT NULL DEFAULT '[]'::JSONB,
     storage_pool_usages JSONB NOT NULL DEFAULT '[]'::JSONB,
     ui_url TEXT NOT NULL DEFAULT '',
+    tunnel_member_url TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
