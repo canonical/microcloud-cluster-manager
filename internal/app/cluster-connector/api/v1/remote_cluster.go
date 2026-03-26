@@ -170,7 +170,7 @@ func remoteClustersPost(rc types.RouteConfig) types.EndpointHandler {
 			return response.SmartError(err).Render(w, r)
 		}
 
-		verifier, ok := rc.Auth.(*auth.MtlsAuthenticator)
+		verifier, ok := rc.Auth.Authenticator.(*auth.MtlsAuthenticator)
 		if ok {
 			err = verifier.Cache().AddCertificate(cert.Certificate, remoteClusterID)
 			if err != nil {

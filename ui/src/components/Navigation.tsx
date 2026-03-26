@@ -10,12 +10,12 @@ import classnames from "classnames";
 import Logo from "./Logo";
 import NavLink from "components/NavLink";
 import { useMenuCollapsed } from "context/menuCollapsed";
-import { isWidthBelow, logout } from "util/helpers";
+import { isDimensionBelow, logout } from "util/helpers";
 import { useAuth } from "context/auth";
 import { useServer } from "context/useServer";
 
 const Navigation: FC = () => {
-  const isSmallScreen = () => isWidthBelow(620);
+  const isSmallScreen = () => isDimensionBelow(620);
   const { menuCollapsed, setMenuCollapsed } = useMenuCollapsed();
   const { isAuthenticated } = useAuth();
   const { data: identity } = useServer();

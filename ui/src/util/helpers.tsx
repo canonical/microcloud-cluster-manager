@@ -22,8 +22,13 @@ export const handleResponse = async (response: Response) => {
   return response.json() as unknown;
 };
 
-export const isWidthBelow = (width: number): boolean =>
-  window.innerWidth < width;
+export const isDimensionBelow = (
+  dimension: number,
+  mode: "width" | "height" = "width",
+): boolean =>
+  mode === "width"
+    ? window.innerWidth < dimension
+    : window.innerHeight < dimension;
 
 export function getMinutesSinceLastHeartbeat(cluster: Cluster): number {
   const lastSeenTime = Date.parse(cluster.last_status_update_at);

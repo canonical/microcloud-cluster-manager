@@ -17,8 +17,9 @@ var APIRoot = types.RouteGroup{
 	},
 	Endpoints: []types.Endpoint{
 		{
-			Method:  http.MethodGet,
-			Handler: apiRootGet,
+			Method:            http.MethodGet,
+			Handler:           apiRootGet,
+			AllowUnauthorized: true,
 		},
 	},
 }

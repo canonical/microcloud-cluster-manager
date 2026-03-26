@@ -17,25 +17,28 @@ var Auth = types.RouteGroup{
 	Prefix: "oidc",
 	Endpoints: []types.Endpoint{
 		{
-			Path:    "login",
-			Method:  http.MethodGet,
-			Handler: login,
+			Path:              "login",
+			Method:            http.MethodGet,
+			Handler:           login,
+			AllowUnauthorized: true,
 		},
 		{
-			Path:    "callback",
-			Method:  http.MethodGet,
-			Handler: callback,
+			Path:              "callback",
+			Method:            http.MethodGet,
+			Handler:           callback,
+			AllowUnauthorized: true,
 		},
 		{
-			Path:    "logout",
-			Method:  http.MethodGet,
-			Handler: logout,
+			Path:              "logout",
+			Method:            http.MethodGet,
+			Handler:           logout,
+			AllowUnauthorized: true,
 		},
 	},
 }
 
 func login(rc types.RouteConfig) types.EndpointHandler {
-	verifier, ok := rc.Auth.(*auth.Verifier)
+	verifier, ok := rc.Auth.Authenticator.(*auth.Verifier)
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if !ok {
 			logger.Log.Info("AUTHN oidc authenticator missing")
@@ -63,7 +66,7 @@ func login(rc types.RouteConfig) types.EndpointHandler {
 }
 
 func callback(rc types.RouteConfig) types.EndpointHandler {
-	verifier, ok := rc.Auth.(*auth.Verifier)
+	verifier, ok := rc.Auth.Authenticator.(*auth.Verifier)
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if !ok {
 			logger.Log.Info("AUTHN oidc authenticator missing")
@@ -87,7 +90,7 @@ func callback(rc types.RouteConfig) types.EndpointHandler {
 }
 
 func logout(rc types.RouteConfig) types.EndpointHandler {
-	verifier, ok := rc.Auth.(*auth.Verifier)
+	verifier, ok := rc.Auth.Authenticator.(*auth.Verifier)
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if !ok {
 			return response.InternalError(fmt.Errorf("oidc authenticator missing")).Render(w, r)
