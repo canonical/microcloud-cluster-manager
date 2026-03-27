@@ -14,14 +14,21 @@ type EndpointHandler func(w http.ResponseWriter, r *http.Request) error
 
 // Endpoint holds the handler function, method and path for a route.
 type Endpoint struct {
-	Handler func(RouteConfig) EndpointHandler
-	Method  string
-	Path    string
+	Handler             func(RouteConfig) EndpointHandler
+	Method              string
+	Path                string
+	AllowUnauthorized   bool
+	AllowedEntitlements []string
 }
 
 // Authenticator represents the interface that each service in cluster manager must implement for securing their respective APIs.
 type Authenticator interface {
 	Auth(ctx context.Context, w http.ResponseWriter, r *http.Request) (bool, error)
+}
+
+// Authorizor represent the interface that each service in cluster manager must implement for enforcing authorization based on entitlements.
+type Authorizor interface {
+	CheckPermissions(ctx context.Context, allowedEntitlements []string) error
 }
 
 // RateLimiter represent the interface that each service in cluster manager must implement for enforcing rate limit.
@@ -32,6 +39,7 @@ type RateLimiter interface {
 // RouteConfig holds the necessary dependencies for routes and middlewares within service APIs.
 type RouteConfig struct {
 	Auth        Authenticator
+	Authorizor  Authorizor
 	RateLimiter RateLimiter
 	DB          *database.DB
 	Env         *config.Config

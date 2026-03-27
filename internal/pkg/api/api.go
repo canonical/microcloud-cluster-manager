@@ -24,6 +24,7 @@ type APIConfig struct {
 	Shutdown    chan os.Signal
 	DB          *database.DB
 	Auth        types.Authenticator
+	Authorizor  types.Authorizor
 	RateLimiter types.RateLimiter
 	EnvConfig   *config.Config
 }
@@ -35,6 +36,7 @@ type API struct {
 	shutdown    chan os.Signal
 	db          *database.DB
 	auth        types.Authenticator
+	authorizor  types.Authorizor
 	rateLimiter types.RateLimiter
 	envConfig   *config.Config
 }
@@ -51,6 +53,7 @@ func NewAPI(cfg APIConfig) *API {
 		shutdown:    cfg.Shutdown,
 		db:          cfg.DB,
 		auth:        cfg.Auth,
+		authorizor:  cfg.Authorizor,
 		rateLimiter: cfg.RateLimiter,
 		envConfig:   cfg.EnvConfig,
 	}
@@ -71,6 +74,7 @@ func (a *API) UseGlobalMiddleWares(mw ...mux.MiddlewareFunc) {
 func (a *API) RegisterRoutes(routes []types.RouteGroup) {
 	rc := types.RouteConfig{
 		Auth:        a.auth,
+		Authorizor:  a.authorizor,
 		RateLimiter: a.rateLimiter,
 		DB:          a.db,
 		Env:         a.envConfig,

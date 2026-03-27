@@ -71,6 +71,15 @@ func Run() (err error) {
 	}
 
 	// =========================================================================
+	// Initialize authorization support
+
+	authorizor, err := auth.NewManagementAPIAuthorizor()
+
+	if err != nil {
+		return fmt.Errorf("authorizor error: %w", err)
+	}
+
+	// =========================================================================
 	// Database Support
 
 	logger.Log.Infow("startup", "status", "initializing database support", "host", cfg.DBHost)
@@ -104,10 +113,11 @@ func Run() (err error) {
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	a := api.NewAPI(api.APIConfig{
-		Shutdown:  shutdown,
-		DB:        db,
-		Auth:      oidcVerifier,
-		EnvConfig: cfg,
+		Shutdown:   shutdown,
+		DB:         db,
+		Auth:       oidcVerifier,
+		Authorizor: authorizor,
+		EnvConfig:  cfg,
 	})
 
 	// register global middlewares in order

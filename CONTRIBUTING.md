@@ -10,7 +10,7 @@ For convenience, two `make` targets are prepared to install all required depende
 make install-core
 ```
 
-then run 
+then run
 
 ```
 make install-deps
@@ -42,6 +42,7 @@ Docker is required to build and run the service containers for the Kubernetes cl
 ```
 sudo snap install docker
 ```
+
 By default, Docker is only accessible with root privileges (sudo). We want to be able to use Docker commands as a regular user:
 
 ```
@@ -133,7 +134,6 @@ Watching for changes...
 
 **NOTE**: If it's your first time starting the development environment, it may take a while for all the resources and images to be pulled into the cluster.
 
-
 ### Run the UI in a separate terminal
 
 First, add the local development hosts `ma.lxd-cm.local` and `cc.lxd-cm.local` to your `/etc/hosts` file. You can do this with the following command:
@@ -161,7 +161,7 @@ Checking for dotrun image updates...
 
 yarn run v1.22.21
 $ ./entrypoint 0.0.0.0:${PORT}
-[WARNING] 344/114722 (65) : parsing [haproxy-local.cfg:11] : 'bind ma.lxd-cm.local:8414' : 
+[WARNING] 344/114722 (65) : parsing [haproxy-local.cfg:11] : 'bind ma.lxd-cm.local:8414' :
   unable to load default 1024 bits DH parameter for certificate 'keys/lxd-cm.pem'.
   , SSL library will use an automatically generated DH parameter.
 [WARNING] 344/114722 (65) : Setting tune.ssl.default-dh-param to 1024 by default, if your workload permits it you should set it to at least 2048. Please set a value >= 1024 to make this warning disappear.
@@ -195,7 +195,7 @@ make dev-rock
 
 ## End-to-end (e2e) tests
 
-You can run both backend and frontend e2e tests against the running development cluster with the following command:
+The e2e tests steps through the OIDC authentication flow using a pre-configured auth0 account with admin access. You can run both backend and frontend e2e tests against the running development cluster with the following command:
 
 ### Backend e2e tests
 
@@ -205,7 +205,7 @@ make test-e2e
 
 ### UI e2e tests
 
-The UI e2e tests steps through the OIDC authentication flow using a pre-configured auth0 account. For the tests to work locally, you will need to create a file at the path `ui/.env.local` containing the following variables:
+For the tests to work locally, you will need to create a file at the path `ui/.env.local` containing the following variables:
 
 ```
 OIDC_USER="cluster-manager-e2e-tests@example.org"

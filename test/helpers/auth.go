@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"crypto/x509"
 	"fmt"
 	"io"
@@ -10,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/canonical/lxd/shared"
+	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/auth"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 )
 
 func LoginToManagementAPI(e *Environment, username string, password string, serverCert *x509.Certificate) ([]*http.Cookie, error) {
@@ -88,4 +91,16 @@ func LoginToManagementAPI(e *Environment, username string, password string, serv
 	cookies := jar.Cookies(&url.URL{Scheme: "https", Host: e.managementAPIHost})
 
 	return cookies, nil
+}
+
+func GetManagementAPIAuthorizor() (*auth.ManagementAPIAuthorizor, error) {
+	return auth.NewManagementAPIAuthorizor()
+}
+
+func GetContextWithUserInfo(isAdmin bool) context.Context {
+	userInfo := &types.UserInfo{
+		IsAdmin: isAdmin,
+	}
+	ctx := context.WithValue(context.Background(), types.UserInfoKey, userInfo)
+	return ctx
 }

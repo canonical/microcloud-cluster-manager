@@ -70,6 +70,17 @@ func registerEndpoint(mux *mux.Router, prefix string, e types.Endpoint, rc types
 			}
 		}
 
+		if !e.AllowUnauthorized {
+			err := rc.Authorizor.CheckPermissions(r.Context(), e.AllowedEntitlements)
+			if err != nil {
+				renderErr := response.ErrorResponse(http.StatusForbidden, err.Error()).Render(w, r)
+				if renderErr != nil {
+					logger.Log.Errorw("failed to write error response", "path", path.Join(prefix, e.Path), "ERROR", renderErr.Error())
+				}
+				return
+			}
+		}
+
 		err := e.Handler(rc)(w, r)
 		if err != nil {
 			logger.Log.Errorw("internal error", "ERROR", err)

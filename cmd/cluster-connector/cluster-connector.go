@@ -130,6 +130,14 @@ func Run() (err error) {
 	mtlsAuthenticator := auth.NewMtlsAuthenticator(db)
 
 	// =========================================================================
+	// Initialize authorizor support
+
+	authorizor, err := auth.NewClusterConnectorAuthorizor()
+	if err != nil {
+		return fmt.Errorf("authorizor error: %w", err)
+	}
+
+	// =========================================================================
 	// Initialize rate limiting support
 	tokenBucketRateLimiter := rate_limit.NewRateLimiter(cfg.RateLimitRefillRate, cfg.RateLimitBucketSize, cfg.RateLimitClientActiveInterval, cfg.RateLimitMaxClients, cfg.RateLimitCleanupInterval, cfg.RateLimitLogInterval)
 
@@ -148,6 +156,7 @@ func Run() (err error) {
 		DB:          db,
 		EnvConfig:   cfg,
 		Auth:        mtlsAuthenticator,
+		Authorizor:  authorizor,
 		RateLimiter: tokenBucketRateLimiter,
 	})
 

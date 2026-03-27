@@ -17,19 +17,22 @@ var Auth = types.RouteGroup{
 	Prefix: "oidc",
 	Endpoints: []types.Endpoint{
 		{
-			Path:    "login",
-			Method:  http.MethodGet,
-			Handler: login,
+			Path:              "login",
+			Method:            http.MethodGet,
+			Handler:           login,
+			AllowUnauthorized: true,
 		},
 		{
-			Path:    "callback",
-			Method:  http.MethodGet,
-			Handler: callback,
+			Path:              "callback",
+			Method:            http.MethodGet,
+			Handler:           callback,
+			AllowUnauthorized: true,
 		},
 		{
-			Path:    "logout",
-			Method:  http.MethodGet,
-			Handler: logout,
+			Path:              "logout",
+			Method:            http.MethodGet,
+			Handler:           logout,
+			AllowUnauthorized: true,
 		},
 	},
 }

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/canonical/lxd/lxd/response"
@@ -66,6 +67,7 @@ type AuthenticationResult struct {
 	Subject string
 	Email   string
 	Name    string
+	IsAdmin bool
 }
 
 // AuthError represents an authentication error. If an error of this type is returned, the caller should call
@@ -142,13 +144,52 @@ func (o *Verifier) Auth(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	// When authenticating via the UI, we expect that there will be ID and refresh tokens present in the request cookies.
 	result, err := o.authenticateIDToken(ctx, w, idToken, refreshToken)
+
 	if err != nil {
 		return false, err
+	}
+	claims, err := rp.VerifyIDToken[*oidc.IDTokenClaims](ctx, idToken, o.relyingParty.IDTokenVerifier())
+
+	if err != nil {
+		return false, err
+	}
+
+	err = extractIdpGroups(claims, result)
+	if err != nil {
+		return false, fmt.Errorf("Failed to extract user information from ID token claims: %w", err)
 	}
 
 	setUserInfoInRequest(result, r)
 
 	return true, nil
+}
+
+// extractIdpGroups extracts the user's groups from the OIDC claims and sets the IsAdmin field on the AuthenticationResult
+// if the user is in the "admin" group.
+func extractIdpGroups(claims *oidc.IDTokenClaims, result *AuthenticationResult) error {
+	raw, ok := claims.Claims["mcm-idp-groups"]
+	if !ok {
+		logger.Log.Info("AUTHN OIDC groups claim missing")
+		return fmt.Errorf("Missing OIDC groups claim.")
+	}
+
+	rawSlice, ok := raw.([]any)
+	if !ok {
+		return fmt.Errorf("Malformed OIDC groups claim.")
+	}
+	groups := make([]string, 0, len(rawSlice))
+	for _, v := range rawSlice {
+		s, ok := v.(string)
+		if !ok {
+			return fmt.Errorf("Malformed OIDC groups claim.")
+		}
+		groups = append(groups, s)
+	}
+
+	if slices.Contains(groups, "admin") {
+		result.IsAdmin = true
+	}
+	return nil
 }
 
 // authenticateIDToken verifies the identity token and returns the ID token subject. If no identity token is given (or
@@ -567,8 +608,9 @@ func getCallbackURL(host string) string {
 
 func setUserInfoInRequest(authResult *AuthenticationResult, r *http.Request) {
 	userInfo := &types.UserInfo{
-		Email: authResult.Email,
-		Name:  authResult.Name,
+		Email:   authResult.Email,
+		Name:    authResult.Name,
+		IsAdmin: authResult.IsAdmin,
 	}
 
 	userInfoCtx := context.WithValue(r.Context(), types.UserInfoKey, userInfo)
