@@ -4,6 +4,7 @@ go 1.25.4
 
 require (
 	github.com/canonical/lxd v0.0.0-20260105151203-f0abf58d180f
+	github.com/getkin/kin-openapi v0.134.0
 	github.com/golang/snappy v1.0.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
@@ -25,8 +26,7 @@ require (
 	github.com/armon/go-proxyproto v0.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/flosch/pongo2 v0.0.0-20200913210552-0d938eb266f3 // indirect
-	github.com/getkin/kin-openapi v0.134.0 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.22.4 // indirect
