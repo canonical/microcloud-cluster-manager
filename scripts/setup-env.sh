@@ -8,7 +8,7 @@ make add-hosts
 
 # generate keys if they don't exist
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-KEY_DIR="$SCRIPT_DIR/keys"
+KEY_DIR="$SCRIPT_DIR/../test/keys"
 if [ ! -d "$KEY_DIR" ]; then
   mkdir -p $KEY_DIR
   openssl req -nodes -x509 -newkey ec \

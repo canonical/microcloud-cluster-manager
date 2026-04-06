@@ -15,12 +15,11 @@ jobs:
       pull-requests: read # to get list of commits from the PR
     runs-on: ubuntu-latest
     steps:
-
       - name: Check if CLA signed
         uses: canonical/has-signed-canonical-cla@1c20438ad54b4d37105e777000545881d2293ba4 # v2.2.0
 
       - name: Get PR Commits
-        id: 'get-pr-commits'
+        id: "get-pr-commits"
         uses: tim-actions/get-pr-commits@198af03565609bb4ed924d1260247b4881f09e7d # v1.3.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -34,7 +33,6 @@ jobs:
     name: Lint Backend
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -52,7 +50,6 @@ jobs:
     name: Lint UI
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -76,7 +73,6 @@ jobs:
     name: Unit test UI
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -99,7 +95,6 @@ jobs:
     outputs:
       image-name: ${{ steps.rock-to-docker.outputs.image-name }}
     steps:
-
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -156,12 +151,11 @@ jobs:
           name: docker-image
           path: microcloud-cluster-manager.tar
           retention-days: 1
-  
+
   backend-unit:
     name: Unit test Backend
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -179,7 +173,6 @@ jobs:
     name: Backend E2E tests
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -192,7 +185,7 @@ jobs:
 
       - name: Run backend
         run: |
-          test/run-backend.sh &
+          scripts/run-backend.sh &
           curl --head --fail --retry-delay 2 --retry 100 --retry-connrefused --insecure https://localhost:30000
 
       - name: Run backend E2E tests
@@ -205,7 +198,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          persist-credentials: false 
+          persist-credentials: false
 
       - name: Install Go
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
@@ -214,7 +207,7 @@ jobs:
 
       - name: Run backend
         run: |
-          test/run-backend.sh &
+          scripts/run-backend.sh &
           curl --head --fail --retry-delay 2 --retry 100 --retry-connrefused --insecure https://localhost:30000
 
       - name: Run backend OpenAPI v3 tests
@@ -228,7 +221,6 @@ jobs:
       matrix:
         browser: ["chromium", "firefox"]
     steps:
-
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -236,7 +228,7 @@ jobs:
 
       - name: Run backend
         run: |
-          test/run-backend.sh &
+          scripts/run-backend.sh &
           curl --head --fail --retry-delay 2 --retry 100 --retry-connrefused --insecure https://localhost:30000
 
       - name: Install Node.js
@@ -277,7 +269,6 @@ jobs:
     needs: ui-e2e
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:

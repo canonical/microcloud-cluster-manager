@@ -20,51 +20,50 @@ jobs:
     env:
       DEBIAN_FRONTEND: noninteractive
     steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
-    - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      with:
-        persist-credentials: false
+      - name: Install Dotrun
+        run: sudo pip3 install dotrun
 
-    - name: Install Dotrun
-      run: sudo pip3 install dotrun
+      - name: Install Node for frontend dependencies
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
 
-    - name: Install Node for frontend dependencies
-      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-      with:
-        node-version: 24
+      - name: Install frontend dependencies
+        run: cd ui && yarn install --immutable
 
-    - name: Install frontend dependencies
-      run: cd ui && yarn install --immutable
+      - name: Install Go for backend dependencies
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: 1.25.x
 
-    - name: Install Go for backend dependencies
-      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
-      with:
-        go-version: 1.25.x
+      - name: Install backend dependencies
+        run: go mod download
 
-    - name: Install backend dependencies
-      run: go mod download
+      - name: Run tests with coverage
+        run: scripts/run-coverage.sh
 
-    - name: Run tests with coverage
-      run: test/run-coverage.sh
+      - name: Upload coverage data
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: coverage
+          path: test/coverage
+          retention-days: 1
 
-    - name: Upload coverage data
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-      with:
-        name: coverage
-        path: test/coverage
-        retention-days: 1
+      - name: Install TICS dependencies
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@b8ec13ce4d00445d75da053c47498e6f9ec5d7d6 # v0.6.1
+          go install github.com/boumenot/gocover-cobertura@b1bccd90304174121462cb67f5f9e8fc496ee828 # v1.4.0
 
-    - name: Install TICS dependencies
-      run: |
-        go install honnef.co/go/tools/cmd/staticcheck@b8ec13ce4d00445d75da053c47498e6f9ec5d7d6 # v0.6.1
-        go install github.com/boumenot/gocover-cobertura@b1bccd90304174121462cb67f5f9e8fc496ee828 # v1.4.0
-
-    - name: Produce TICS report
-      uses: tiobe/tics-github-action@a53037a6bb9f71b6a97cdeb0ac41632266804b9e # v3.8.0
-      with:
-        mode: qserver
-        project: microcloud-cluster-manager
-        viewerUrl: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=GoProjects
-        ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
-        installTics: true
+      - name: Produce TICS report
+        uses: tiobe/tics-github-action@a53037a6bb9f71b6a97cdeb0ac41632266804b9e # v3.8.0
+        with:
+          mode: qserver
+          project: microcloud-cluster-manager
+          viewerUrl: https://canonical.tiobe.com/tiobeweb/TICS/api/cfg?name=GoProjects
+          ticsAuthToken: ${{ secrets.TICSAUTHTOKEN }}
+          installTics: true
