@@ -16,6 +16,13 @@ default: all
 # ==============================================================================
 # Static code linting utility targets.
 
+.PHONY: add-hooks
+add-hooks:
+	@echo "Adding git hooks..."
+	@cp scripts/pre-commit.sh .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "Hooks Added"
+
 .PHONY: lint-backend
 lint-backend:
 ifeq ($(shell command -v golangci-lint 2> /dev/null),)
@@ -115,7 +122,7 @@ clean:
 
 .PHONY: dev
 dev:
-	./test/run-backend.sh
+	./scripts/run-backend.sh
 
 .PHONY: dev-rock
 dev-rock: start-cluster dev-juju-setup rock-k8s-deploy

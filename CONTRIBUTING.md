@@ -10,7 +10,7 @@ For convenience, two `make` targets are prepared to install all required depende
 make install-core
 ```
 
-then run 
+then run
 
 ```
 make install-deps
@@ -42,6 +42,7 @@ Docker is required to build and run the service containers for the Kubernetes cl
 ```
 sudo snap install docker
 ```
+
 By default, Docker is only accessible with root privileges (sudo). We want to be able to use Docker commands as a regular user:
 
 ```
@@ -109,6 +110,16 @@ sudo snap install rockcraft --classic
 
 ## Running the local development environment
 
+## Git hooks
+
+To enable pre-commit checks, run:
+
+```
+make add-hooks
+```
+
+After this, each commit runs backend lint checks with `golangci-lint` and UI checks with `yarn lint-staged`.
+
 ### Run the backend cluster
 
 Once you have all the required dependencies installed, to get the local development environment up and running, run the following commands at the project root:
@@ -132,7 +143,6 @@ Watching for changes...
 ```
 
 **NOTE**: If it's your first time starting the development environment, it may take a while for all the resources and images to be pulled into the cluster.
-
 
 ### Run the UI in a separate terminal
 
@@ -161,7 +171,7 @@ Checking for dotrun image updates...
 
 yarn run v1.22.21
 $ ./entrypoint 0.0.0.0:${PORT}
-[WARNING] 344/114722 (65) : parsing [haproxy-local.cfg:11] : 'bind ma.lxd-cm.local:8414' : 
+[WARNING] 344/114722 (65) : parsing [haproxy-local.cfg:11] : 'bind ma.lxd-cm.local:8414' :
   unable to load default 1024 bits DH parameter for certificate 'keys/lxd-cm.pem'.
   , SSL library will use an automatically generated DH parameter.
 [WARNING] 344/114722 (65) : Setting tune.ssl.default-dh-param to 1024 by default, if your workload permits it you should set it to at least 2048. Please set a value >= 1024 to make this warning disappear.
