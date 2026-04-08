@@ -938,10 +938,10 @@
     hashery "^1.5.0"
     keyv "^5.6.0"
 
-"@canonical/react-components@4.0.1":
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-4.0.1.tgz#73175f6ab82fa8e0971be98c1efff37cb317784f"
-  integrity sha512-lfD/SoSZQVgttKi4isgkSraowyQNxAodnSWk/Ksmv8A1gO9Oz3dRcPdKnMDfGx3ih8Lb1n+gBZFcDgq+dbmY2g==
+"@canonical/react-components@4.2.0":
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-4.2.0.tgz#144a28d3d9074fef2414fc8b1cee07f3416dc800"
+  integrity sha512-e4rYL0fvJTHynQtd7bfDtzYf25NxYGQq+BXtSMbpTU6cYxsw47EgITxYouB8yNa18iuAxYxINP3tRZugQK6qOw==
   dependencies:
     "@types/jest" "30.0.0"
     "@types/node" "20.19.30"
@@ -954,17 +954,17 @@
     prop-types "15.8.1"
     react-table "7.8.0"
 
-"@canonical/typescript-config-react@0.21.0":
-  version "0.21.0"
-  resolved "https://registry.yarnpkg.com/@canonical/typescript-config-react/-/typescript-config-react-0.21.0.tgz#0e17b893ccdb0754634769df515e8b4bee781adf"
-  integrity sha512-u+aMJiebE/J0qWYmP/CfKfpD8Mc7LqJ0Aj2QsEVfeTOvTgMAtCytARz7wv8zVf9AE7ltKKJXwY+X9j1GdPGh6Q==
+"@canonical/typescript-config-react@0.23.0":
+  version "0.23.0"
+  resolved "https://registry.yarnpkg.com/@canonical/typescript-config-react/-/typescript-config-react-0.23.0.tgz#49487f6b96a3116e495946e2b135645e665b707c"
+  integrity sha512-bU8g27R6go6PI83laxofugf6rVP6YrUeGy3UcD59OH2DfdHOdiTMECNKzfQJbYipUqn7GuNdXnI/OsmHcFS8Fw==
   dependencies:
-    "@canonical/typescript-config" "^0.21.0"
+    "@canonical/typescript-config" "^0.23.0"
 
-"@canonical/typescript-config@^0.21.0":
-  version "0.21.0"
-  resolved "https://registry.yarnpkg.com/@canonical/typescript-config/-/typescript-config-0.21.0.tgz#ed0c697247d1bbb03e593f4b1772a1b7c85982d1"
-  integrity sha512-DNQuLS1npGlUVSzNjFwGrQye2Nd3aV1GUZjbSdO7YG/Jxad3/ZL20x/qZBj4ULQhdxJegauIxc8gAL6M0ir33Q==
+"@canonical/typescript-config@^0.23.0":
+  version "0.23.0"
+  resolved "https://registry.yarnpkg.com/@canonical/typescript-config/-/typescript-config-0.23.0.tgz#45788db046ce874120423ed245f898c996be88a0"
+  integrity sha512-JpsN+mJckBAPcyNEubuQvl50LPUjjTmcsNIFhegzSX6hRPOgtSFW3YuQFBDnN4+fCVBuz4x45xHPeWvDgXHqJA==
 
 "@csstools/color-helpers@^5.1.0":
   version "5.1.0"
