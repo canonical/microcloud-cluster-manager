@@ -70,8 +70,8 @@ echo "combining ui coverage reports..."
 cd ui
 yarn test-combine-coverage-reports
 cd ..
-cp ui/coverage/playwright-report/cobertura-coverage.xml test/coverage/coverage-ui.xml
-cp -R ui/coverage/playwright-report test/coverage
+cp ui/coverage/playwright-report/cobertura-coverage.xml scripts/coverage/coverage-ui.xml
+cp -R ui/coverage/playwright-report scripts/coverage
 
 # kill app processes
 echo "stopping services..."
@@ -93,7 +93,7 @@ gocover-cobertura < "${GOCOVERDIR}"/coverage.out > "${GOCOVERDIR}"/coverage-go.x
 # move coverage reports to .coverage folder for TICS
 rm -rf .cover
 mkdir -p .cover
-cp test/coverage/coverage-go.xml .cover/coverage-go.xml
-cp test/coverage/coverage-ui.xml .cover/coverage-ui.xml
+cp scripts/coverage/coverage-go.xml .cover/coverage-go.xml
+cp scripts/coverage/coverage-ui.xml .cover/coverage-ui.xml
 
 echo "done."
