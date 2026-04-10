@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { isWidthBelow } from "util/helpers";
+import { isDimensionBelow } from "util/helpers";
 import { useListener } from "@canonical/react-components";
 
-const isSmallScreen = () => isWidthBelow(620);
-const isMediumScreen = () => isWidthBelow(820);
+const isSmallScreen = () => isDimensionBelow(620);
+const isMediumScreen = () => isDimensionBelow(820);
 
 export const useMenuCollapsed = () => {
   const [menuCollapsed, setMenuCollapsed] = useState(isMediumScreen());

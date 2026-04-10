@@ -1,0 +1,9 @@
+.not-authorized {
+  text-align: center;
+  width: 100%;
+
+  .not-authorized__icon {
+    margin-right: $sph--small;
+    margin-top: $sph--x-small;
+  }
+}

@@ -66,6 +66,8 @@ type AuthenticationResult struct {
 	Subject string
 	Email   string
 	Name    string
+	Claims  *oidc.IDTokenClaims
+	Groups  []string
 }
 
 // AuthError represents an authentication error. If an error of this type is returned, the caller should call
@@ -141,66 +143,96 @@ func (o *Verifier) Auth(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	// When authenticating via the UI, we expect that there will be ID and refresh tokens present in the request cookies.
-	result, err := o.authenticateIDToken(ctx, w, idToken, refreshToken)
+	result, _, err := o.authenticateIDToken(ctx, w, idToken, refreshToken)
+
 	if err != nil {
 		return false, err
 	}
 
+	extractIdpGroups(result.Claims, result)
 	setUserInfoInRequest(result, r)
 
 	return true, nil
 }
 
-// authenticateIDToken verifies the identity token and returns the ID token subject. If no identity token is given (or
+// getAuthenticationResult creates an AuthenticationResult from the given OIDC claims.
+func getAuthenticationResult(claims *oidc.IDTokenClaims) *AuthenticationResult {
+	return &AuthenticationResult{
+		Subject: claims.Subject,
+		Email:   claims.Email,
+		Name:    claims.Name,
+		Claims:  claims,
+	}
+}
+
+// extractIdpGroups extracts the user's groups from the OIDC claims and sets the Groups field in the AuthenticationResult
+// if the user is in the "admin" group.
+func extractIdpGroups(claims *oidc.IDTokenClaims, result *AuthenticationResult) {
+	raw, ok := claims.Claims["mcm-idp-groups"]
+	if !ok {
+		logger.Log.Info(`AUTHN "mcm-idp-groups" OIDC groups claim missing`)
+		return
+	}
+
+	rawSlice, ok := raw.([]any)
+	if !ok {
+		logger.Log.Info("AUTHN OIDC groups claim malformed")
+		return
+	}
+	groups := make([]string, 0, len(rawSlice))
+	for _, v := range rawSlice {
+		s, ok := v.(string)
+		if !ok {
+			logger.Log.Info("AUTHN OIDC groups claim malformed")
+			return
+		}
+		groups = append(groups, s)
+	}
+	result.Groups = groups
+}
+
+// authenticateIDToken verifies the identity token and returns the authentication result and the ID token. If no identity token is given (or
 // verification fails) it will attempt to refresh the ID token.
-func (o *Verifier) authenticateIDToken(ctx context.Context, w http.ResponseWriter, idToken string, refreshToken string) (result *AuthenticationResult, e error) {
+func (o *Verifier) authenticateIDToken(ctx context.Context, w http.ResponseWriter, token string, refreshToken string) (result *AuthenticationResult, idToken string, e error) {
 	var claims *oidc.IDTokenClaims
 	var err error
-	if idToken != "" {
+	if token != "" {
 		// Try to verify the ID token.
-		claims, err = rp.VerifyIDToken[*oidc.IDTokenClaims](ctx, idToken, o.relyingParty.IDTokenVerifier())
+		claims, err = rp.VerifyIDToken[*oidc.IDTokenClaims](ctx, token, o.relyingParty.IDTokenVerifier())
 		if err == nil {
-			return &AuthenticationResult{
-				Subject: claims.Subject,
-				Email:   claims.Email,
-				Name:    claims.Name,
-			}, nil
+			return getAuthenticationResult(claims), token, nil
 		}
 	}
 
 	// If ID token verification failed (or it wasn't provided, try refreshing the token).
 	tokens, err := rp.RefreshTokens[*oidc.IDTokenClaims](ctx, o.relyingParty, refreshToken, "", "")
 	if err != nil {
-		return nil, AuthError{Err: fmt.Errorf("Failed to refresh ID tokens: %w", err)}
+		return nil, "", AuthError{Err: fmt.Errorf("Failed to refresh ID tokens: %w", err)}
 	}
 
 	idTokenAny := tokens.Extra("id_token")
 	if idTokenAny == nil {
-		return nil, AuthError{Err: errors.New("ID tokens missing from OIDC refresh response")}
+		return nil, "", AuthError{Err: errors.New("ID tokens missing from OIDC refresh response")}
 	}
 
 	idToken, ok := idTokenAny.(string)
 	if !ok {
-		return nil, AuthError{Err: errors.New("Malformed ID tokens in OIDC refresh response")}
+		return nil, "", AuthError{Err: errors.New("Malformed ID tokens in OIDC refresh response")}
 	}
 
 	// Verify the refreshed ID token.
 	claims, err = rp.VerifyIDToken[*oidc.IDTokenClaims](ctx, idToken, o.relyingParty.IDTokenVerifier())
 	if err != nil {
-		return nil, AuthError{Err: fmt.Errorf("Failed to verify refreshed ID token: %w", err)}
+		return nil, "", AuthError{Err: fmt.Errorf("Failed to verify refreshed ID token: %w", err)}
 	}
 
 	// Updated the cookies
 	err = o.WriteTokenToCookies(w, idToken, tokens.RefreshToken)
 	if err != nil {
-		return nil, AuthError{Err: fmt.Errorf("Failed to update login cookies: %w", err)}
+		return nil, "", AuthError{Err: fmt.Errorf("Failed to update login cookies: %w", err)}
 	}
 
-	return &AuthenticationResult{
-		Subject: claims.Subject,
-		Email:   claims.Email,
-		Name:    claims.Name,
-	}, nil
+	return getAuthenticationResult(claims), idToken, nil
 }
 
 // Login is a http.Handler than initiates the login flow for the UI.
@@ -567,8 +599,9 @@ func getCallbackURL(host string) string {
 
 func setUserInfoInRequest(authResult *AuthenticationResult, r *http.Request) {
 	userInfo := &types.UserInfo{
-		Email: authResult.Email,
-		Name:  authResult.Name,
+		Email:  authResult.Email,
+		Name:   authResult.Name,
+		Groups: authResult.Groups,
 	}
 
 	userInfoCtx := context.WithValue(r.Context(), types.UserInfoKey, userInfo)

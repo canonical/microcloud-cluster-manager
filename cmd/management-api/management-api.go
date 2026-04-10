@@ -19,6 +19,7 @@ import (
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/middleware"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 )
@@ -71,6 +72,15 @@ func Run() (err error) {
 	}
 
 	// =========================================================================
+	// Initialize authorization support
+
+	authorizor, err := auth.NewManagementAPIAuthorizor()
+
+	if err != nil {
+		return fmt.Errorf("authorizor error: %w", err)
+	}
+
+	// =========================================================================
 	// Database Support
 
 	logger.Log.Infow("startup", "status", "initializing database support", "host", cfg.DBHost)
@@ -106,7 +116,7 @@ func Run() (err error) {
 	a := api.NewAPI(api.APIConfig{
 		Shutdown:  shutdown,
 		DB:        db,
-		Auth:      oidcVerifier,
+		Auth:      types.Auth{Authenticator: oidcVerifier, Authorizor: authorizor},
 		EnvConfig: cfg,
 	})
 

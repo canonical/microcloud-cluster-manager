@@ -14,8 +14,9 @@ var Status = types.RouteGroup{
 	Prefix: "status",
 	Endpoints: []types.Endpoint{
 		{
-			Method:  http.MethodGet,
-			Handler: statusGet,
+			Method:            http.MethodGet,
+			Handler:           statusGet,
+			AllowUnauthorized: true,
 		},
 	},
 }

@@ -205,7 +205,7 @@ make dev-rock
 
 ## End-to-end (e2e) tests
 
-You can run both backend and frontend e2e tests against the running development cluster with the following command:
+The e2e tests steps through the OIDC authentication flow using a pre-configured auth0 account with admin access. You can run both backend and frontend e2e tests against the running development cluster with the following command:
 
 ### Backend e2e tests
 
@@ -215,7 +215,7 @@ make test-e2e
 
 ### UI e2e tests
 
-The UI e2e tests steps through the OIDC authentication flow using a pre-configured auth0 account. For the tests to work locally, you will need to create a file at the path `ui/.env.local` containing the following variables:
+For the tests to work locally, you will need to create a file at the path `ui/.env.local` containing the following variables:
 
 ```
 OIDC_USER="cluster-manager-e2e-tests@example.org"

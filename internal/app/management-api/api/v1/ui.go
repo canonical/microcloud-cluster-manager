@@ -22,9 +22,10 @@ var UI = types.RouteGroup{
 	Prefix: "",
 	Endpoints: []types.Endpoint{
 		{
-			Path:    "ui/{path:.*}",
-			Method:  http.MethodGet,
-			Handler: serveUI,
+			Path:              "ui/{path:.*}",
+			Method:            http.MethodGet,
+			Handler:           serveUI,
+			AllowUnauthorized: true,
 		},
 	},
 }
@@ -35,19 +36,22 @@ var UIRoot = types.RouteGroup{
 	Prefix: "",
 	Endpoints: []types.Endpoint{
 		{
-			Path:    "ui",
-			Method:  http.MethodGet,
-			Handler: redirectToUI,
+			Path:              "ui",
+			Method:            http.MethodGet,
+			Handler:           redirectToUI,
+			AllowUnauthorized: true,
 		},
 		{
-			Path:    "",
-			Method:  http.MethodGet,
-			Handler: redirectToUI,
+			Path:              "",
+			Method:            http.MethodGet,
+			Handler:           redirectToUI,
+			AllowUnauthorized: true,
 		},
 		{
-			Path:    "/",
-			Method:  http.MethodGet,
-			Handler: redirectToUI,
+			Path:              "/",
+			Method:            http.MethodGet,
+			Handler:           redirectToUI,
+			AllowUnauthorized: true,
 		},
 	},
 }

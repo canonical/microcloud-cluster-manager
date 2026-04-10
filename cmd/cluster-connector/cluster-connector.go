@@ -22,6 +22,7 @@ import (
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/seed"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/middleware"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 )
@@ -130,6 +131,14 @@ func Run() (err error) {
 	mtlsAuthenticator := auth.NewMtlsAuthenticator(db)
 
 	// =========================================================================
+	// Initialize authorizor support
+
+	authorizor, err := auth.NewClusterConnectorAuthorizor()
+	if err != nil {
+		return fmt.Errorf("authorizor error: %w", err)
+	}
+
+	// =========================================================================
 	// Initialize rate limiting support
 	tokenBucketRateLimiter := rate_limit.NewRateLimiter(cfg.RateLimitRefillRate, cfg.RateLimitBucketSize, cfg.RateLimitClientActiveInterval, cfg.RateLimitMaxClients, cfg.RateLimitCleanupInterval, cfg.RateLimitLogInterval)
 
@@ -147,7 +156,7 @@ func Run() (err error) {
 		Shutdown:    shutdown,
 		DB:          db,
 		EnvConfig:   cfg,
-		Auth:        mtlsAuthenticator,
+		Auth:        types.Auth{Authenticator: mtlsAuthenticator, Authorizor: authorizor},
 		RateLimiter: tokenBucketRateLimiter,
 	})
 

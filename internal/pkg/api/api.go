@@ -23,7 +23,7 @@ type Handler func(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 type APIConfig struct {
 	Shutdown    chan os.Signal
 	DB          *database.DB
-	Auth        types.Authenticator
+	Auth        types.Auth
 	RateLimiter types.RateLimiter
 	EnvConfig   *config.Config
 }
@@ -34,7 +34,7 @@ type API struct {
 	mux         *mux.Router
 	shutdown    chan os.Signal
 	db          *database.DB
-	auth        types.Authenticator
+	auth        types.Auth
 	rateLimiter types.RateLimiter
 	envConfig   *config.Config
 }
@@ -70,7 +70,7 @@ func (a *API) UseGlobalMiddleWares(mw ...mux.MiddlewareFunc) {
 // RegisterRoutes adds the routes to the router.
 func (a *API) RegisterRoutes(routes []types.RouteGroup) {
 	rc := types.RouteConfig{
-		Auth:        a.auth,
+		Auth:        types.Auth{Authenticator: a.auth.Authenticator, Authorizor: a.auth.Authorizor},
 		RateLimiter: a.rateLimiter,
 		DB:          a.db,
 		Env:         a.envConfig,
