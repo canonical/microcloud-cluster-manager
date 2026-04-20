@@ -15,7 +15,7 @@ require (
 	github.com/prometheus/common v0.67.5
 	github.com/prometheus/prometheus v0.311.2
 	github.com/spf13/cobra v1.10.2
-	github.com/zitadel/oidc/v3 v3.47.2
+	github.com/zitadel/oidc/v3 v3.47.4
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.50.0
