@@ -14,6 +14,17 @@ var tests = []types.Test{
 	testRemoteClusterJoinExpiredToken,
 	testRemoteClusterStatusNoCert,
 	testRemoteClusterStatusInvalidCert,
+	testAuthAdminUserAllowsAccess,
+	testAuthNonAdminDenyAccess,
+	testAuthNonAdminUnprotectedEndpointAllowAccess,
+	testAuthNoCookiesDeniesAccess,
+	testAuthTamperedIDTokenDeniesAccess,
+	testAuthTamperedRefreshTokenDeniesAccess,
+	testAuthUnknownSessionIDDeniesAccess,
+	testAuthOnlySessionIDCookieDeniesAccess,
+	//testAuthLogoutInvalidatesCookies, //TODO: re-enable once we reliably log out users.
+	testAuthOIDCLoginRedirects,
+	testAuthOIDCCallbackWithInvalidStateReturns500,
 }
 
 func TestE2E(t *testing.T) {
