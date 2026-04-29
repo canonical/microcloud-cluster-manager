@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/canonical/lxd/lxd/response"
@@ -37,6 +38,7 @@ type API struct {
 	auth        types.Auth
 	rateLimiter types.RateLimiter
 	envConfig   *config.Config
+	tunnelStore *types.TunnelStore
 }
 
 // NewAPI creates a new API.
@@ -53,6 +55,10 @@ func NewAPI(cfg APIConfig) *API {
 		auth:        cfg.Auth,
 		rateLimiter: cfg.RateLimiter,
 		envConfig:   cfg.EnvConfig,
+		tunnelStore: &types.TunnelStore{
+			Mu:              sync.RWMutex{},
+			TunnelByCluster: make(map[int]*types.Tunnel),
+		},
 	}
 }
 
@@ -74,6 +80,7 @@ func (a *API) RegisterRoutes(routes []types.RouteGroup) {
 		RateLimiter: a.rateLimiter,
 		DB:          a.db,
 		Env:         a.envConfig,
+		TunnelStore: a.tunnelStore,
 	}
 
 	registerRoutes(a.mux, routes, rc)

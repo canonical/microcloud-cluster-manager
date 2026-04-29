@@ -2,9 +2,11 @@ package v1
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -44,6 +46,11 @@ var RemoteCluster = types.RouteGroup{
 			Path:    "{remoteClusterName}",
 			Method:  http.MethodPatch,
 			Handler: remoteClusterPatch,
+		},
+		{
+			Path:    "{remoteClusterName}/tunnel/{path:.*}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterTunnel,
 		},
 	},
 }
@@ -241,6 +248,7 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 			InstanceStatuses:   instanceStatuses,
 			StoragePoolUsages:  storagePoolUsages,
 			UIURL:              e.UIURL,
+			TunnelConnected:    e.TunnelMemberURL != "",
 			JoinedAt:           e.ClusterJoinedAt,
 			CreatedAt:          e.ClusterCreatedAt,
 			LastStatusUpdateAt: e.ClusterUpdatedAt,
@@ -252,4 +260,92 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 	})
 
 	return remoteClusters, nil
+}
+
+func remoteClusterTunnel(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		var clusterDetails *store.RemoteClusterDetail
+		err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
+			cluster, err := store.GetRemoteCluster(ctx, tx, remoteClusterName)
+			if err != nil {
+				return err
+			}
+
+			clusterDetails, err = store.GetRemoteClusterDetail(ctx, tx, cluster.ID)
+			return err
+		})
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if clusterDetails.TunnelMemberURL == "" {
+			return response.BadRequest(fmt.Errorf("remote cluster does not have an active tunnel")).Render(w, r)
+		}
+
+		reqUrl := clusterDetails.TunnelMemberURL + r.URL.Path
+
+		// make http request to url
+		req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, reqUrl, nil)
+		if err != nil {
+			return response.InternalError(fmt.Errorf("failed to create request: %w", err)).Render(w, r)
+		}
+
+		// get access token for current user and attach it as Authorization header
+		accessToken := ""
+		err = rc.DB.Transaction(context.Background(), func(ctx context.Context, tx *sqlx.Tx) error {
+			var err error
+			userId := 1 // todo: this needs to be dynamic
+			accessToken, err = store.GetUserAccessToken(ctx, tx, userId)
+
+			return err
+		})
+		if err != nil {
+			return response.InternalError(fmt.Errorf("failed to get user access token: %w", err)).Render(w, r)
+		}
+		if accessToken == "" {
+			return response.BadRequest(fmt.Errorf("user access token not found")).Render(w, r)
+		}
+
+		req.Header.Set("Authorization", "Bearer "+accessToken)
+
+		// send request
+		client := &http.Client{
+			Timeout: 30 * time.Second,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return response.InternalError(fmt.Errorf("failed to send request: %w", err)).Render(w, r)
+		}
+
+		defer func() {
+			err := resp.Body.Close()
+			if err != nil {
+				fmt.Printf("failed to close response body: %v", err)
+			}
+		}()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return response.InternalError(fmt.Errorf("failed to read response body: %w", err)).Render(w, r)
+		}
+
+		w.WriteHeader(resp.StatusCode)
+		_, err = w.Write(body)
+		if err != nil {
+			return response.InternalError(fmt.Errorf("failed to write response body: %w", err)).Render(w, r)
+		}
+
+		return nil
+	}
 }

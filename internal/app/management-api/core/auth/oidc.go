@@ -14,10 +14,12 @@ import (
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/lxd/util"
 	"github.com/canonical/lxd/shared"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/google/uuid"
 	"github.com/gorilla/securecookie"
+	"github.com/jmoiron/sqlx"
 	"github.com/zitadel/oidc/v3/pkg/client/rp"
 	httphelper "github.com/zitadel/oidc/v3/pkg/http"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
@@ -268,7 +270,7 @@ func (o *Verifier) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 // Callback is a http.HandlerFunc which implements the code exchange required on the /oidc/callback endpoint.
-func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL string) {
+func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL string, rc types.RouteConfig) {
 	err := o.ensureConfig(r.Context(), r)
 	if err != nil {
 		logger.Log.Info("AUTHN invalid OIDC configuration")
@@ -287,6 +289,25 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 			err = response.ErrorResponse(http.StatusInternalServerError, err.Error()).Render(w, r)
 			if err != nil {
 				logger.Log.Errorw("Failed rendering internal server error response due to failed writing of OIDC tokens to cookies: %w", err)
+			}
+			return
+		}
+
+		//store access token in the database
+		err = rc.DB.Transaction(context.Background(), func(ctx context.Context, tx *sqlx.Tx) error {
+			var err error
+			_, err = store.UpsertUserToken(ctx, tx, store.UserToken{
+				ID:          1, // todo: this needs to be dynamic
+				AccessToken: tokens.AccessToken,
+			})
+
+			return err
+		})
+		if err != nil {
+			logger.Log.Info("AUTHN failed to write OIDC tokens to database")
+			err = response.ErrorResponse(http.StatusInternalServerError, err.Error()).Render(w, r)
+			if err != nil {
+				logger.Log.Errorw("Failed rendering internal server error response due to failed writing of OIDC tokens to database: %w", err)
 			}
 			return
 		}

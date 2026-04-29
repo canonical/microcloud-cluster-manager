@@ -81,7 +81,7 @@ func callback(rc types.RouteConfig) types.EndpointHandler {
 		}
 
 		callbackHandler := func(w http.ResponseWriter) error {
-			verifier.Callback(w, r, stateToken.RedirectURL)
+			verifier.Callback(w, r, stateToken.RedirectURL, rc)
 			return nil
 		}
 
