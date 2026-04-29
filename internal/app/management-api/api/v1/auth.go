@@ -77,7 +77,7 @@ func callback(rc types.RouteConfig) types.EndpointHandler {
 		stateToken, err := auth.DecodeStateToken(state)
 		if err != nil {
 			logger.Log.Info("AUTHN invalid OIDC state token")
-			return response.InternalError(err).Render(w, r)
+			return response.Forbidden(nil).Render(w, r)
 		}
 
 		callbackHandler := func(w http.ResponseWriter) error {

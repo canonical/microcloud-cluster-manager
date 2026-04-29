@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
@@ -13,9 +12,6 @@ import (
 
 // FindToken search for a token by remote cluster name.
 func FindToken(env *Environment, remoteClusterName string) (models.RemoteClusterToken, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
 	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
 	if err != nil {
 		return models.RemoteClusterToken{}, err
@@ -26,14 +22,9 @@ func FindToken(env *Environment, remoteClusterName string) (models.RemoteCluster
 		return models.RemoteClusterToken{}, err
 	}
 
-	tlsClient, err := NewTLSHTTPClient(api.URL{}, nil, certPublicKey, env.ManagementAPIHost())
-	if err != nil {
-		return models.RemoteClusterToken{}, err
-	}
-
 	output := &[]models.RemoteClusterToken{}
 	path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster-join-token")
-	err = tlsClient.Query(ctx, http.MethodGet, path, nil, output, headers)
+	_, err = QueryManagementAPI(env, http.MethodGet, path, nil, output, headers)
 	if err != nil {
 		return models.RemoteClusterToken{}, err
 	}
@@ -80,9 +71,6 @@ func DecodeRemoteClusterJoinToken(token string) (models.RemoteClusterTokenBody, 
 
 // createRemoteClusterJoinToken sets up a unix http client and sends a request to the Cluster Manager to create a remote cluster join token.
 func createRemoteClusterJoinToken(env *Environment, remoteClusterName string, expiry time.Time) (token string, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
 	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
 	if err != nil {
 		return "", err
@@ -93,20 +81,14 @@ func createRemoteClusterJoinToken(env *Environment, remoteClusterName string, ex
 		return "", err
 	}
 
-	tlsClient, err := NewTLSHTTPClient(api.URL{}, nil, certPublicKey, env.ManagementAPIHost())
-	if err != nil {
-		return "", err
-	}
-
 	input := models.RemoteClusterTokenPost{ClusterName: remoteClusterName}
 	if expiry != (time.Time{}) {
 		input.Expiry = expiry
 	}
 
 	output := &models.RemoteClusterTokenPostResponse{}
-
 	path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster-join-token")
-	err = tlsClient.Query(ctx, http.MethodPost, path, input, output, headers)
+	_, err = QueryManagementAPI(env, http.MethodPost, path, input, output, headers)
 	if err != nil {
 		return "", err
 	}
@@ -116,19 +98,16 @@ func createRemoteClusterJoinToken(env *Environment, remoteClusterName string, ex
 
 // DeleteRemoteClusterJoinToken deletes a remote cluster join token by remote cluster name.
 func DeleteRemoteClusterJoinToken(env *Environment, remoteClusterName string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
 	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
 	if err != nil {
 		return err
 	}
 
-	tlsClient, err := NewTLSHTTPClient(api.URL{}, nil, certPublicKey, env.ManagementAPIHost())
+	headers, err := env.ManagementAPILoginHeaders(certPublicKey)
 	if err != nil {
 		return err
 	}
-
 	path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster-join-token", remoteClusterName)
-	return tlsClient.Query(ctx, http.MethodDelete, path, nil, nil, nil)
+	_, err = QueryManagementAPI(env, http.MethodDelete, path, nil, nil, headers)
+	return err
 }

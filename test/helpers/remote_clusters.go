@@ -16,9 +16,6 @@ import (
 
 // FindRemoteCluster search for a remote cluster by name.
 func FindRemoteCluster(env *Environment, remoteClusterName string) (*models.RemoteCluster, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
 	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
 	if err != nil {
 		return nil, err
@@ -29,14 +26,9 @@ func FindRemoteCluster(env *Environment, remoteClusterName string) (*models.Remo
 		return nil, err
 	}
 
-	tlsClient, err := NewTLSHTTPClient(api.URL{}, nil, certPublicKey, env.ManagementAPIHost())
-	if err != nil {
-		return nil, err
-	}
-
 	output := &models.RemoteCluster{}
 	path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster", remoteClusterName)
-	err = tlsClient.Query(ctx, http.MethodGet, path, nil, output, headers)
+	_, err = QueryManagementAPI(env, http.MethodGet, path, nil, output, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -46,21 +38,18 @@ func FindRemoteCluster(env *Environment, remoteClusterName string) (*models.Remo
 
 // DeleteRemoteCluster deletes a remote cluster by name.
 func DeleteRemoteCluster(env *Environment, remoteClusterName string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
 	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
 	if err != nil {
 		return err
 	}
 
-	tlsClient, err := NewTLSHTTPClient(api.URL{}, nil, certPublicKey, env.ManagementAPIHost())
+	headers, err := env.ManagementAPILoginHeaders(certPublicKey)
 	if err != nil {
 		return err
 	}
-
 	path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster", remoteClusterName)
-	return tlsClient.Query(ctx, http.MethodDelete, path, nil, nil, nil)
+	_, err = QueryManagementAPI(env, http.MethodDelete, path, nil, nil, headers)
+	return err
 }
 
 func GetRandomName(baseName string) string {
@@ -103,7 +92,8 @@ func SendJoinRequest(env *Environment, tokenData models.RemoteClusterTokenBody) 
 
 	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-cluster")
 
-	return tlsClient.Query(ctx, http.MethodPost, path, input, nil, nil)
+	_, err = tlsClient.Query(ctx, http.MethodPost, path, input, nil, nil)
+	return err
 }
 
 // RegisterRemoteCluster creates a remote cluster join token and sends a join request to Cluster Manager.
@@ -143,7 +133,7 @@ func SendStatusUpdate(env *Environment, tokenData models.RemoteClusterTokenBody,
 
 	var output models.RemoteClusterStatusPostResponse
 	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-cluster", "status")
-	err = tlsClient.Query(ctx, http.MethodPost, path, statusData, &output, nil)
+	_, err = tlsClient.Query(ctx, http.MethodPost, path, statusData, &output, nil)
 	return &output, err
 }
 
@@ -214,9 +204,6 @@ func QueryPrometheus(env *Environment, query string) (string, error) {
 }
 
 func getConfiguration(env *Environment) (*models.Configuration, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
 	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
 	if err != nil {
 		return nil, err
@@ -227,13 +214,9 @@ func getConfiguration(env *Environment) (*models.Configuration, error) {
 		return nil, err
 	}
 
-	tlsClient, err := NewTLSHTTPClient(api.URL{}, nil, certPublicKey, env.ManagementAPIHost())
-	if err != nil {
-		return nil, err
-	}
 	output := &models.Configuration{}
 	path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "configuration")
-	err = tlsClient.Query(ctx, http.MethodGet, path, nil, output, headers)
+	_, err = QueryManagementAPI(env, http.MethodGet, path, nil, output, headers)
 	if err != nil {
 		return nil, err
 	}

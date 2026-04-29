@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/canonical/lxd/shared"
-	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/auth"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 )
@@ -106,40 +105,8 @@ func GetContextWithUserInfo(groups []string) context.Context {
 	return ctx
 }
 
-// DoRequestWithCookies makes a request to an endpoint with the provided cookies,
-// and returns the HTTP status code.
-func DoRequestWithCookies(env *Environment, path string, method string, cookies []*http.Cookie) (int, error) {
-	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
-	if err != nil {
-		return 0, fmt.Errorf("failed to get management API cert: %w", err)
-	}
-
-	tlsClient, err := NewTLSHTTPClient(api.URL{}, nil, certPublicKey, env.ManagementAPIHost())
-	if err != nil {
-		return 0, fmt.Errorf("failed to create TLS client: %w", err)
-	}
-
-	fullPath := fmt.Sprintf("https://%s%s", env.ManagementAPIHostPort(), path)
-	req, err := http.NewRequestWithContext(context.Background(), method, fullPath, nil)
-	if err != nil {
-		return 0, fmt.Errorf("failed to build request: %w", err)
-	}
-
-	for _, c := range cookies {
-		req.AddCookie(c)
-	}
-
-	resp, err := tlsClient.Do(req)
-	if err != nil {
-		return 0, fmt.Errorf("request failed: %w", err)
-	}
-
-	defer resp.Body.Close()
-	return resp.StatusCode, nil
-}
-
-// GetValidCookies performs a full login and returns the resulting session cookies.
-func GetValidCookies(env *Environment, username string, password string) ([]*http.Cookie, error) {
+// GetCookies performs a full login and returns the resulting session cookies.
+func GetCookies(env *Environment, username string, password string) ([]*http.Cookie, error) {
 	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get management API cert: %w", err)
@@ -151,4 +118,13 @@ func GetValidCookies(env *Environment, username string, password string) ([]*htt
 	}
 
 	return cookies, nil
+}
+
+func AddCookiesToRequest(cookies []*http.Cookie) func(*http.Request) error {
+	return func(r *http.Request) error {
+		for _, cookie := range cookies {
+			r.AddCookie(cookie)
+		}
+		return nil
+	}
 }

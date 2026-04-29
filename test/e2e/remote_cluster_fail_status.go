@@ -54,10 +54,10 @@ func testRemoteClusterStatusInvalidCert(env *helpers.Environment) (testName stri
 			}
 
 			err = sendStatusUpdateInvalidCert(env, *tokenData)
-			if err != nil && err.Error() == "Not Found" {
+			if err != nil && err.Error() == "Forbidden" {
 				err = nil
 			} else {
-				err = errors.New("expected not found error not received")
+				err = errors.New("expected forbidden error not received")
 			}
 
 			helpers.LogTestOutcome(t, condition, err)
@@ -85,7 +85,8 @@ func sendStatusUpdateNoCert(env *helpers.Environment, tokenData models.RemoteClu
 	}
 
 	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-cluster", "status")
-	return tlsClient.Query(ctx, http.MethodPost, path, nil, nil, nil)
+	_, err = tlsClient.Query(ctx, http.MethodPost, path, nil, nil, nil)
+	return err
 }
 
 // sendStatusUpdateInvalidCert sends a status update to the Cluster Manager with a client certificate that was not sent with the join request.
@@ -105,6 +106,7 @@ func sendStatusUpdateInvalidCert(env *helpers.Environment, tokenData models.Remo
 		return err
 	}
 
-	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-clusters", "status")
-	return tlsClient.Query(ctx, http.MethodPost, path, nil, nil, nil)
+	path := api.NewURL().Scheme("https").Host(tokenData.Addresses[0]).Path("1.0", "remote-cluster", "status")
+	_, err = tlsClient.Query(ctx, http.MethodPost, path, nil, nil, nil)
+	return err
 }

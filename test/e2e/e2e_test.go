@@ -22,9 +22,8 @@ var tests = []types.Test{
 	testAuthTamperedRefreshTokenDeniesAccess,
 	testAuthUnknownSessionIDDeniesAccess,
 	testAuthOnlySessionIDCookieDeniesAccess,
-	//testAuthLogoutInvalidatesCookies, //TODO: re-enable once we reliably log out users.
 	testAuthOIDCLoginRedirects,
-	testAuthOIDCCallbackWithInvalidStateReturns500,
+	testAuthOIDCCallbackWithInvalidStateReturns403,
 }
 
 func TestE2E(t *testing.T) {

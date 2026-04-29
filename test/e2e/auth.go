@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/test/helpers"
@@ -17,13 +18,14 @@ import (
 func testAuthAdminUserAllowsAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
 	return "admin user is granted access to authenticated endpoint", func(t *testing.T) {
 		const condition = "Should return 200 when admin session cookies are present"
-		cookies, err := helpers.GetValidCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
+		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
 		if err != nil {
 			helpers.LogTestOutcome(t, condition, err)
 			return
 		}
 
-		statusCode, err := helpers.DoRequestWithCookies(env, "/1.0/remote-cluster", http.MethodGet, cookies)
+		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(cookies))
 		if err != nil {
 			helpers.LogTestOutcome(t, condition, fmt.Errorf("request error: %w", err))
 			return
@@ -42,38 +44,37 @@ func testAuthAdminUserAllowsAccess(env *helpers.Environment) (testName string, t
 func testAuthNonAdminDenyAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
 	return "non-admin user is denied access to authenticated endpoint", func(t *testing.T) {
 		const condition = "Should return 403 when non-admin session cookies are present"
-		cookies, err := helpers.GetValidCookies(env, "cluster-manager-e2e-lower-permission@example.org", "cluster-manager-e2e-password")
+		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-lower-permission@example.org", "cluster-manager-e2e-password")
 		if err != nil {
 			helpers.LogTestOutcome(t, condition, err)
 			return
 		}
 
-		statusCode, err := helpers.DoRequestWithCookies(env, "/1.0/remote-cluster", http.MethodGet, cookies)
-		if err != nil {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("request error: %w", err))
+		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(cookies))
+
+		if err != nil && api.StatusErrorCheck(err, http.StatusForbidden) {
+			helpers.LogTestOutcome(t, condition, nil)
 			return
 		}
 
-		if statusCode != http.StatusForbidden {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
-			return
-		}
-
-		helpers.LogTestOutcome(t, condition, nil)
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403 got %d: %w", statusCode, err))
 	}
 }
 
 // testAuthNonAdminUnprotectedEndpointAllowAccess verifies that a non-admin user is granted access to an unprotected endpoint.
 func testAuthNonAdminUnprotectedEndpointAllowAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
 	return "non-admin user is granted access to unprotected endpoint", func(t *testing.T) {
-		const condition = "Should return 200 when non-admin session cookies are present"
-		cookies, err := helpers.GetValidCookies(env, "cluster-manager-e2e-lower-permission@example.org", "cluster-manager-e2e-password")
+		const condition = "Should return 200 when non-admin session cookies are present on unprotected endpoint"
+		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-lower-permission@example.org", "cluster-manager-e2e-password")
 		if err != nil {
 			helpers.LogTestOutcome(t, condition, err)
 			return
 		}
 
-		statusCode, err := helpers.DoRequestWithCookies(env, "/1.0/status", http.MethodGet, cookies)
+		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "status")
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(cookies))
+
 		if err != nil {
 			helpers.LogTestOutcome(t, condition, fmt.Errorf("request error: %w", err))
 			return
@@ -93,18 +94,14 @@ func testAuthNoCookiesDeniesAccess(env *helpers.Environment) (testName string, t
 	return "requests with no cookies are rejected", func(t *testing.T) {
 		const condition = "Should return 403 when no cookies are present"
 
-		statusCode, err := helpers.DoRequestWithCookies(env, "/1.0/remote-cluster", http.MethodGet, nil)
-		if err != nil {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("request error: %w", err))
+		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, nil)
+
+		if err != nil && api.StatusErrorCheck(err, http.StatusForbidden) {
+			helpers.LogTestOutcome(t, condition, nil)
 			return
 		}
-
-		if statusCode != http.StatusForbidden {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
-			return
-		}
-
-		helpers.LogTestOutcome(t, condition, nil)
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
 	}
 }
 
@@ -114,7 +111,7 @@ func testAuthNoCookiesDeniesAccess(env *helpers.Environment) (testName string, t
 func testAuthTamperedIDTokenDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
 	return "tampered ID token cookie is rejected", func(t *testing.T) {
 		const condition = "Should return 403 when the ID token cookie has been tampered with"
-		cookies, err := helpers.GetValidCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
+		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
 		if err != nil {
 			helpers.LogTestOutcome(t, condition, err)
 			return
@@ -131,18 +128,14 @@ func testAuthTamperedIDTokenDeniesAccess(env *helpers.Environment) (testName str
 			tampered[i] = &cloned
 		}
 
-		statusCode, err := helpers.DoRequestWithCookies(env, "/1.0/remote-cluster", http.MethodGet, tampered)
-		if err != nil {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("request error: %w", err))
+		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(tampered))
+
+		if err != nil && api.StatusErrorCheck(err, http.StatusForbidden) {
+			helpers.LogTestOutcome(t, condition, nil)
 			return
 		}
-
-		if statusCode != http.StatusForbidden {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
-			return
-		}
-
-		helpers.LogTestOutcome(t, condition, nil)
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
 	}
 }
 
@@ -153,7 +146,7 @@ func testAuthTamperedRefreshTokenDeniesAccess(env *helpers.Environment) (testNam
 	return "tampered refresh token cookie is rejected", func(t *testing.T) {
 		const condition = "Should return 403 when both the ID token and refresh token cookies are tampered"
 
-		cookies, err := helpers.GetValidCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
+		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
 		if err != nil {
 			helpers.LogTestOutcome(t, condition, err)
 			return
@@ -169,18 +162,14 @@ func testAuthTamperedRefreshTokenDeniesAccess(env *helpers.Environment) (testNam
 			tampered[i] = &cloned
 		}
 
-		statusCode, err := helpers.DoRequestWithCookies(env, "/1.0/remote-cluster", http.MethodGet, tampered)
-		if err != nil {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("request error: %w", err))
+		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(tampered))
+
+		if err != nil && api.StatusErrorCheck(err, http.StatusForbidden) {
+			helpers.LogTestOutcome(t, condition, nil)
 			return
 		}
-
-		if statusCode != http.StatusForbidden {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
-			return
-		}
-
-		helpers.LogTestOutcome(t, condition, nil)
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
 	}
 }
 
@@ -190,7 +179,7 @@ func testAuthTamperedRefreshTokenDeniesAccess(env *helpers.Environment) (testNam
 func testAuthUnknownSessionIDDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
 	return "unknown session ID causes decryption failure and is rejected", func(t *testing.T) {
 		const condition = "Should return 403 when the session ID is a valid UUID but unknown to the server"
-		cookies, err := helpers.GetValidCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
+		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
 		if err != nil {
 			helpers.LogTestOutcome(t, condition, err)
 			return
@@ -208,18 +197,14 @@ func testAuthUnknownSessionIDDeniesAccess(env *helpers.Environment) (testName st
 			tampered[i] = &cloned
 		}
 
-		statusCode, err := helpers.DoRequestWithCookies(env, "/1.0/remote-cluster", http.MethodGet, tampered)
-		if err != nil {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("request error: %w", err))
+		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(tampered))
+
+		if err != nil && api.StatusErrorCheck(err, http.StatusForbidden) {
+			helpers.LogTestOutcome(t, condition, nil)
 			return
 		}
-
-		if statusCode != http.StatusForbidden {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
-			return
-		}
-
-		helpers.LogTestOutcome(t, condition, nil)
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
 	}
 }
 
@@ -234,116 +219,17 @@ func testAuthOnlySessionIDCookieDeniesAccess(env *helpers.Environment) (testName
 			{Name: "session_id", Value: uuid.New().String()},
 		}
 
-		statusCode, err := helpers.DoRequestWithCookies(env, "/1.0/remote-cluster", http.MethodGet, cookies)
-		if err != nil {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("request error: %w", err))
+		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(cookies))
+
+		if err != nil && api.StatusErrorCheck(err, http.StatusForbidden) {
+			helpers.LogTestOutcome(t, condition, nil)
 			return
 		}
 
-		if statusCode != http.StatusForbidden {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
-			return
-		}
-
-		helpers.LogTestOutcome(t, condition, nil)
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
 	}
 }
-
-// testAuthLogoutInvalidatesCookies verifies that after a successful logout the
-// cookies no longer grant access to a protected endpoint.
-// func testAuthLogoutInvalidatesCookies(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
-// 	return "cookies are invalidated after logout", func(t *testing.T) {
-// 		var condition string
-
-// 		condition = "Should be able to log in and access authenticated endpoint before logout"
-// 		cookies, err := helpers.GetValidCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
-// 		if err != nil {
-// 			helpers.LogTestOutcome(t, condition, err)
-// 			return
-// 		}
-
-// 		statusCode, err := helpers.DoRequestWithCookies(env, "/1.0/remote-cluster", http.MethodGet, cookies)
-// 		if err != nil {
-// 			helpers.LogTestOutcome(t, condition, fmt.Errorf("request error: %w", err))
-// 			return
-// 		}
-
-// 		if statusCode != http.StatusOK {
-// 			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 200 before logout, got %d", statusCode))
-// 			return
-// 		}
-
-// 		helpers.LogTestOutcome(t, condition, nil)
-
-// 		condition = "Should invalidate session cookies after calling /oidc/logout"
-// 		certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
-// 		if err != nil {
-// 			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to get cert: %w", err))
-// 			return
-// 		}
-
-// 		tlsClient, err := helpers.NewTLSHTTPClient(api.URL{}, nil, certPublicKey, env.ManagementAPIHost())
-// 		if err != nil {
-// 			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to create TLS client: %w", err))
-// 			return
-// 		}
-
-// 		logoutURL := fmt.Sprintf("https://%s/oidc/logout", env.ManagementAPIHostPort())
-// 		logoutReq, err := http.NewRequestWithContext(context.Background(), http.MethodGet, logoutURL, nil)
-// 		if err != nil {
-// 			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to build logout request: %w", err))
-// 			return
-// 		}
-
-// 		for _, c := range cookies {
-// 			logoutReq.AddCookie(c)
-// 		}
-
-// 		// Do not follow redirects so we can inspect the Set-Cookie headers directly.
-// 		tlsClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-// 			return http.ErrUseLastResponse
-// 		}
-
-// 		logoutResp, err := tlsClient.Do(logoutReq)
-// 		if err != nil && !errors.Is(err, http.ErrUseLastResponse) {
-// 			helpers.LogTestOutcome(t, condition, fmt.Errorf("logout request failed: %w", err))
-// 			return
-// 		}
-
-// 		defer logoutResp.Body.Close()
-
-// 		// Verify that the response expires the relevant cookies.
-// 		expiredCookies := map[string]bool{}
-// 		for _, sc := range logoutResp.Cookies() {
-// 			if sc.Expires.Equal(time.Unix(0, 0)) || sc.MaxAge < 0 {
-// 				expiredCookies[sc.Name] = true
-// 			}
-// 		}
-
-// 		for _, name := range []string{"oidc_identity", "oidc_refresh", "session_id"} {
-// 			if !expiredCookies[name] {
-// 				helpers.LogTestOutcome(t, condition, fmt.Errorf("cookie %q was not expired by logout response", name))
-// 				return
-// 			}
-// 		}
-
-// 		helpers.LogTestOutcome(t, condition, nil)
-
-// 		condition = "Should return 403 when using original cookies after logout"
-// 		statusCode, err = helpers.DoRequestWithCookies(env, "/1.0/remote-cluster", http.MethodGet, cookies)
-// 		if err != nil {
-// 			helpers.LogTestOutcome(t, condition, fmt.Errorf("request error: %w", err))
-// 			return
-// 		}
-
-// 		if statusCode != http.StatusForbidden {
-// 			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403 after logout, got %d", statusCode))
-// 			return
-// 		}
-
-// 		helpers.LogTestOutcome(t, condition, nil)
-// 	}
-// }
 
 // testAuthOIDCLoginRedirects verifies that the /oidc/login endpoint responds with
 // a redirect to the identity provider.
@@ -369,26 +255,30 @@ func testAuthOIDCLoginRedirects(env *helpers.Environment) (testName string, test
 		}
 
 		loginURL := fmt.Sprintf("https://%s/oidc/login", env.ManagementAPIHostPort())
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, loginURL, nil)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, loginURL, nil)
 		if err != nil {
 			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to build request: %w", err))
 			return
 		}
 
-		resp, err := tlsClient.Do(req)
+		res, err := tlsClient.Do(req)
 		if err != nil && !errors.Is(err, http.ErrUseLastResponse) {
 			helpers.LogTestOutcome(t, condition, fmt.Errorf("request failed: %w", err))
 			return
 		}
 
-		defer resp.Body.Close()
+		defer res.Body.Close()
 
-		if resp.StatusCode != http.StatusFound && resp.StatusCode != http.StatusMovedPermanently && resp.StatusCode != http.StatusSeeOther {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected a redirect (3xx), got %d", resp.StatusCode))
+		if res.StatusCode != http.StatusFound && res.StatusCode != http.StatusMovedPermanently && res.StatusCode != http.StatusSeeOther {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected a redirect (3xx), got %d", res.StatusCode))
 			return
 		}
 
-		location := resp.Header.Get("Location")
+		location := res.Header.Get("Location")
 		if location == "" {
 			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected a Location header in redirect response, got none"))
 			return
@@ -398,44 +288,19 @@ func testAuthOIDCLoginRedirects(env *helpers.Environment) (testName string, test
 	}
 }
 
-// testAuthOIDCCallbackWithInvalidStateReturns500 verifies that hitting the callback
+// testAuthOIDCCallbackWithInvalidStateReturns403 verifies that hitting the callback
 // endpoint with a malformed state parameter returns an error response.
-func testAuthOIDCCallbackWithInvalidStateReturns500(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
+func testAuthOIDCCallbackWithInvalidStateReturns403(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
 	return "/oidc/callback with malformed state returns an error", func(t *testing.T) {
 		condition := "Should return an error response for a malformed state parameter"
 
-		certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
-		if err != nil {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to get cert: %w", err))
+		oidcCallbackURL := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("oidc", "callback")
+		oidcCallbackURL.RawQuery = "state=not-valid-base64%%21%%21&code=fakecode"
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, oidcCallbackURL, nil, nil, nil)
+		if err != nil && statusCode == http.StatusForbidden {
+			helpers.LogTestOutcome(t, condition, nil)
 			return
 		}
-
-		tlsClient, err := helpers.NewTLSHTTPClient(api.URL{}, nil, certPublicKey, env.ManagementAPIHost())
-		if err != nil {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to create TLS client: %w", err))
-			return
-		}
-
-		callbackURL := fmt.Sprintf("https://%s/oidc/callback?state=not-valid-base64%%21%%21&code=fakecode", env.ManagementAPIHostPort())
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, callbackURL, nil)
-		if err != nil {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to build request: %w", err))
-			return
-		}
-
-		resp, err := tlsClient.Do(req)
-		if err != nil {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("request failed: %w", err))
-			return
-		}
-
-		defer resp.Body.Close()
-
-		if resp.StatusCode == http.StatusOK {
-			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected a non-200 error response for invalid state, got 200"))
-			return
-		}
-
-		helpers.LogTestOutcome(t, condition, nil)
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected a 403 error response for invalid state, got %d", statusCode))
 	}
 }
