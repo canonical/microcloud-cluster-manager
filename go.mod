@@ -1,6 +1,6 @@
 module github.com/canonical/microcloud-cluster-manager
 
-go 1.25.7
+go 1.26.2
 
 require (
 	github.com/canonical/lxd v0.0.0-20260105151203-f0abf58d180f

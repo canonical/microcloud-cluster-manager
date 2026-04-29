@@ -30,7 +30,7 @@ parts:
     source: .
     source-type: local
     build-snaps:
-      - go/1.25/stable # for go build
+      - go/1.26/stable # for go build
       - node/22/stable # for ui assets
     build-packages:
       - make

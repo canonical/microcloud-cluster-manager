@@ -41,7 +41,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version: 1.25.x
+          go-version: 1.26.x
 
       - name: Lint Backend
         run: make lint-backend
@@ -164,7 +164,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version: 1.25.x
+          go-version: 1.26.x
 
       - name: Run backend unit tests
         run: make test-unit
@@ -181,7 +181,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version: 1.25.x
+          go-version: 1.26.x
 
       - name: Run backend
         run: |
@@ -203,7 +203,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version: 1.25.x
+          go-version: 1.26.x
 
       - name: Run backend
         run: |
