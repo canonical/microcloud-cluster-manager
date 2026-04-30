@@ -2,12 +2,13 @@ import type { FC } from "react";
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import NoMatch from "pages/NoMatch";
-import Settings from "pages/Settings";
 import { useAuth } from "context/auth";
 import { logout } from "util/helpers";
-import ClusterDetail from "pages/clusters/ClusterDetail";
+import { Spinner } from "@canonical/react-components";
 
 const ClusterList = lazy(async () => import("pages/clusters/ClusterList"));
+const ClusterDetail = lazy(async () => import("pages/clusters/ClusterDetail"));
+const Settings = lazy(async () => import("pages/Settings"));
 const Login = lazy(async () => import("pages/Login"));
 
 const App: FC = () => {
@@ -44,7 +45,11 @@ const App: FC = () => {
   }
 
   return (
-    <Suspense>
+    <Suspense
+      fallback={
+        <Spinner className="u-loader" text="Loading..." isMainComponent />
+      }
+    >
       <Routes>{isAuthenticated ? loggedInRoutes : preLoginRoutes}</Routes>
     </Suspense>
   );
