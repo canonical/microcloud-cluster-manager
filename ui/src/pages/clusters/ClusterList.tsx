@@ -67,13 +67,13 @@ const ClusterList: FC = () => {
 
   const tabs: string[] = ["Active", "Tokens"];
 
-  const { data: clusters = [], isLoading } = useQuery({
+  const { data: clusters = [], isLoading: isClustersLoading } = useQuery({
     queryKey: [queryKeys.clusters],
     queryFn: fetchClusters,
     enabled: !activeTab,
   });
 
-  const { data: tokens = [] } = useQuery({
+  const { data: tokens = [], isLoading: isTokensLoading } = useQuery({
     queryKey: [queryKeys.tokens],
     queryFn: fetchTokens,
     enabled: activeTab === "tokens",
@@ -165,8 +165,8 @@ const ClusterList: FC = () => {
   });
 
   const isEmptyState =
-    (clusters.length === 0 && !activeTab) ||
-    (activeTab === "tokens" && tokens.length === 0);
+    (!activeTab && !isClustersLoading && clusters.length === 0) ||
+    (activeTab === "tokens" && !isTokensLoading && tokens.length === 0);
   const hasSearchInput =
     !activeTab && !isEmptyState && selectedNames.length === 0;
   const hasSelectedClusters = !activeTab && selectedNames.length > 0;
@@ -238,7 +238,7 @@ const ClusterList: FC = () => {
               <ClusterListActive
                 clusters={filteredClusters}
                 isEmptyState={isEmptyState}
-                isLoading={isLoading}
+                isLoading={isClustersLoading}
                 processingNames={processingNames}
                 selectedNames={selectedNames}
                 setSelectedNames={setSelectedNames}
