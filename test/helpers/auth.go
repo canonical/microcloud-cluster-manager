@@ -104,3 +104,27 @@ func GetContextWithUserInfo(groups []string) context.Context {
 	ctx := context.WithValue(context.Background(), types.UserInfoKey, userInfo)
 	return ctx
 }
+
+// GetCookies performs a full login and returns the resulting session cookies.
+func GetCookies(env *Environment, username string, password string) ([]*http.Cookie, error) {
+	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get management API cert: %w", err)
+	}
+
+	cookies, err := LoginToManagementAPI(env, username, password, certPublicKey)
+	if err != nil {
+		return nil, fmt.Errorf("login failed: %w", err)
+	}
+
+	return cookies, nil
+}
+
+func AddCookiesToRequest(cookies []*http.Cookie) func(*http.Request) error {
+	return func(r *http.Request) error {
+		for _, cookie := range cookies {
+			r.AddCookie(cookie)
+		}
+		return nil
+	}
+}

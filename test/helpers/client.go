@@ -70,8 +70,27 @@ func NewTLSHTTPClient(url api.URL, clientCert *shared.CertInfo, serverCert *x509
 	}, nil
 }
 
+// QueryManagementAPI makes a request to an endpoint using the http client (unix or tls).
+func QueryManagementAPI(env *Environment, method string, path *api.URL, input any, output any, adjustHeaders func(*http.Request) error) (int, error) {
+	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get management API cert: %w", err)
+	}
+
+	tlsClient, err := NewTLSHTTPClient(api.URL{}, nil, certPublicKey, env.ManagementAPIHost())
+	if err != nil {
+		return 0, fmt.Errorf("failed to create TLS client: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	statusCode, err := tlsClient.Query(ctx, method, path, input, output, adjustHeaders)
+	return statusCode, err
+}
+
 // Query makes a query using the http client (unix or tls).
-func (c *Client) Query(ctx context.Context, method string, path *api.URL, input any, output any, adjustHeaders func(*http.Request) error) error {
+func (c *Client) Query(ctx context.Context, method string, path *api.URL, input any, output any, adjustHeaders func(*http.Request) error) (int, error) {
 	// Merge the provided URL with the one we have for the client.
 	url := api.NewURL()
 	url.URL.Host = c.url.URL.Host
@@ -98,40 +117,36 @@ func (c *Client) Query(ctx context.Context, method string, path *api.URL, input 
 	// Make the request
 	req, err := makeRequest(ctx, method, url, input)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if adjustHeaders != nil {
 		err := adjustHeaders(req)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 
 	// Perform the request
 	rawResponse, err := c.Do(req)
 	if err != nil {
-		return err
+		return 0, err
 	}
+	defer rawResponse.Body.Close()
 
 	// Decode the response assuming LXD response structure
 	parsedResponse, err := parseResponse(rawResponse)
 	if err != nil {
-		return err
+		return rawResponse.StatusCode, err
 	}
 
-	defer rawResponse.Body.Close()
 	_, err = io.Copy(io.Discard, rawResponse.Body)
 	if err != nil {
 		logger.Error("Failed to read response body", logger.Ctx{"error": err})
 	}
 
 	err = json.Unmarshal(parsedResponse.Metadata, &output)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return rawResponse.StatusCode, err
 }
 
 func makeRequest(ctx context.Context, method string, url *api.URL, data any) (req *http.Request, err error) {
