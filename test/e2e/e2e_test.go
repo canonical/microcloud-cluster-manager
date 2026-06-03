@@ -17,13 +17,16 @@ var tests = []types.Test{
 	testAuthAdminUserAllowsAccess,
 	testAuthNonAdminDenyAccess,
 	testAuthNonAdminUnprotectedEndpointAllowAccess,
-	testAuthNoCookiesDeniesAccess,
-	testAuthTamperedIDTokenDeniesAccess,
-	testAuthTamperedRefreshTokenDeniesAccess,
-	testAuthUnknownSessionIDDeniesAccess,
-	testAuthOnlySessionIDCookieDeniesAccess,
+	testAuthTamperedSessionTokenDeniesAccess,
 	testAuthOIDCLoginRedirects,
 	testAuthOIDCCallbackWithInvalidStateReturns403,
+	testAuthExpiredSessionCorrectSignatureAllowsAccess,
+	testAuthMissingSessionCookieDeniesAccess,
+	testAuthMissingUserSecretCookieDeniesAccess,
+	testAuthTamperedUserSecretCookieDeniesAccess,
+	testAuthValidSignatureUnknownSessionIDDeniesAccess,
+	testAuthExpiredSessionMissingUserSecretDeniesAccess,
+	testAuthLoggedOutSessionDeniesAccess,
 }
 
 func TestE2E(t *testing.T) {

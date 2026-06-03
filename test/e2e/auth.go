@@ -10,6 +10,7 @@ import (
 
 	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/test/helpers"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -89,39 +90,22 @@ func testAuthNonAdminUnprotectedEndpointAllowAccess(env *helpers.Environment) (t
 	}
 }
 
-// testAuthNoCookiesDeniesAccess verifies that requests with no session cookies are rejected.
-func testAuthNoCookiesDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
-	return "requests with no cookies are rejected", func(t *testing.T) {
-		const condition = "Should return 403 when no cookies are present"
-
-		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
-		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, nil)
-
-		if err != nil && api.StatusErrorCheck(err, http.StatusForbidden) {
-			helpers.LogTestOutcome(t, condition, nil)
-			return
-		}
-		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
-	}
-}
-
-// testAuthTamperedIDTokenDeniesAccess verifies that a request with a tampered
-// ID token cookie (invalid signature) is rejected even when the session ID and
-// refresh token cookies are present.
-func testAuthTamperedIDTokenDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
-	return "tampered ID token cookie is rejected", func(t *testing.T) {
-		const condition = "Should return 403 when the ID token cookie has been tampered with"
+// testAuthTamperedSessionTokenDeniesAccess verifies that a request with a tampered
+// session token cookie (invalid signature) is rejected.
+func testAuthTamperedSessionTokenDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
+	return "tampered session token cookie is rejected", func(t *testing.T) {
+		const condition = "Should return 401 when the session token cookie has been tampered with"
 		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
 		if err != nil {
 			helpers.LogTestOutcome(t, condition, err)
 			return
 		}
 
-		// Replace the encrypted ID token with a different value while keeping session ID intact.
+		// Replace the session token with a different value while keeping session ID intact.
 		tampered := make([]*http.Cookie, len(cookies))
 		for i, c := range cookies {
 			cloned := *c
-			if cloned.Name == "oidc_identity" {
+			if cloned.Name == "oidc_session" {
 				cloned.Value = "tampered.invalid.cookie.value"
 			}
 
@@ -131,103 +115,149 @@ func testAuthTamperedIDTokenDeniesAccess(env *helpers.Environment) (testName str
 		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
 		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(tampered))
 
-		if err != nil && api.StatusErrorCheck(err, http.StatusForbidden) {
+		if err != nil && api.StatusErrorCheck(err, http.StatusUnauthorized) {
 			helpers.LogTestOutcome(t, condition, nil)
 			return
 		}
-		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 401, got %d", statusCode))
 	}
 }
 
-// testAuthTamperedRefreshTokenDeniesAccess verifies that a request where both the
-// ID token and the refresh token have been tampered with is rejected.
-// This forces the refresh path in authenticateIDToken by providing a tampered ID token.
-func testAuthTamperedRefreshTokenDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
-	return "tampered refresh token cookie is rejected", func(t *testing.T) {
-		const condition = "Should return 403 when both the ID token and refresh token cookies are tampered"
-
+// testAuthMissingUserSecretCookieDeniesAccess verifies that a request with a valid oidc_session
+// cookie but no user_secret cookie is rejected. The server needs the user_secret to decrypt
+// the stored OIDC tokens for the session.
+func testAuthMissingUserSecretCookieDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
+	return "request with valid oidc_session but missing user_secret cookie is rejected", func(t *testing.T) {
+		const condition = "Should return 401 when user_secret cookie is absent"
 		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
 		if err != nil {
 			helpers.LogTestOutcome(t, condition, err)
 			return
 		}
 
-		tampered := make([]*http.Cookie, len(cookies))
-		for i, c := range cookies {
-			cloned := *c
-			if cloned.Name == "oidc_identity" || cloned.Name == "oidc_refresh" {
-				cloned.Value = "tampered.invalid.cookie.value"
+		// Keep every cookie except user_secret.
+		stripped := make([]*http.Cookie, 0, len(cookies))
+		for _, c := range cookies {
+			if c.Name != "user_secret" {
+				stripped = append(stripped, c)
 			}
-
-			tampered[i] = &cloned
 		}
 
 		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
-		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(tampered))
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(stripped))
 
-		if err != nil && api.StatusErrorCheck(err, http.StatusForbidden) {
+		if err != nil && api.StatusErrorCheck(err, http.StatusUnauthorized) {
 			helpers.LogTestOutcome(t, condition, nil)
 			return
 		}
-		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
+
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 401, got %d", statusCode))
 	}
 }
 
-// testAuthUnknownSessionIDDeniesAccess verifies that a session ID that does not
-// match any known session (i.e. generates a different HKDF-derived cookie key) causes
-// cookie decryption to fail and the request to be rejected.
-func testAuthUnknownSessionIDDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
-	return "unknown session ID causes decryption failure and is rejected", func(t *testing.T) {
-		const condition = "Should return 403 when the session ID is a valid UUID but unknown to the server"
+// testAuthMissingSessionCookieDeniesAccess verifies that a request carrying the user_secret
+// cookie but no oidc_session cookie is rejected.
+func testAuthMissingSessionCookieDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
+	return "request with user_secret but missing oidc_session cookie is rejected", func(t *testing.T) {
+		const condition = "Should return 401 when oidc_session cookie is absent"
 		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
 		if err != nil {
 			helpers.LogTestOutcome(t, condition, err)
 			return
 		}
 
-		// Replace the session ID with a randomly generated UUID that was never issued.
-		unknownSessionID := uuid.New().String()
-		tampered := make([]*http.Cookie, len(cookies))
-		for i, c := range cookies {
-			cloned := *c
-			if cloned.Name == "session_id" {
-				cloned.Value = unknownSessionID
+		// Keep every cookie except oidc_session.
+		stripped := make([]*http.Cookie, 0, len(cookies))
+		for _, c := range cookies {
+			if c.Name != "oidc_session" {
+				stripped = append(stripped, c)
 			}
-
-			tampered[i] = &cloned
 		}
 
 		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
-		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(tampered))
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(stripped))
 
-		if err != nil && api.StatusErrorCheck(err, http.StatusForbidden) {
+		if err != nil && api.StatusErrorCheck(err, http.StatusUnauthorized) {
 			helpers.LogTestOutcome(t, condition, nil)
 			return
 		}
-		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
+
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 401, got %d", statusCode))
 	}
 }
 
-// testAuthOnlySessionIDCookieDeniesAccess verifies that presenting only a session ID
-// cookie with no ID token or refresh token results in a rejection.
-func testAuthOnlySessionIDCookieDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
-	return "session ID cookie only (no tokens) is rejected", func(t *testing.T) {
-		const condition = "Should return 403 when only the session ID cookie is present"
+// testAuthExpiredSessionMissingUserSecretDeniesAccess verifies that an expired session token
+// with a correct signature but no user_secret cookie is rejected. The session renewal path
+// also requires the user_secret to decrypt the stored refresh token.
+func testAuthExpiredSessionMissingUserSecretDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
+	return "expired session token with correct signature but missing user_secret cookie is rejected", func(t *testing.T) {
+		const condition = "Should return 401 when session token is expired and user_secret cookie is absent"
+		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, err)
+			return
+		}
 
-		// Use a freshly generated session ID so the server can parse it.
-		cookies := []*http.Cookie{
-			{Name: "session_id", Value: uuid.New().String()},
+		var sessionToken string
+		for _, c := range cookies {
+			if c.Name == "oidc_session" {
+				sessionToken = c.Value
+				break
+			}
+		}
+
+		if sessionToken == "" {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("oidc_session cookie not found after login"))
+			return
+		}
+
+		parsedClaims := &jwt.RegisteredClaims{}
+		_, _, err = jwt.NewParser().ParseUnverified(sessionToken, parsedClaims)
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to parse session JWT: %w", err))
+			return
+		}
+
+		sessionID, err := uuid.Parse(parsedClaims.Subject)
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to parse session ID from JWT subject: %w", err))
+			return
+		}
+
+		signingKey, err := helpers.DeriveSessionSigningKey(sessionID, env.ManagementAPICert().PrivateKey())
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, err)
+			return
+		}
+
+		expiredSigned, err := helpers.CreateExpiredSessionToken(sessionID, signingKey)
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, err)
+			return
+		}
+
+		// Replace oidc_session with the expired token and drop user_secret entirely.
+		modified := make([]*http.Cookie, 0, len(cookies))
+		for _, c := range cookies {
+			if c.Name == "user_secret" {
+				continue
+			}
+			cloned := *c
+			if cloned.Name == "oidc_session" {
+				cloned.Value = expiredSigned
+			}
+			modified = append(modified, &cloned)
 		}
 
 		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
-		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(cookies))
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(modified))
 
-		if err != nil && api.StatusErrorCheck(err, http.StatusForbidden) {
+		if err != nil && api.StatusErrorCheck(err, http.StatusUnauthorized) {
 			helpers.LogTestOutcome(t, condition, nil)
 			return
 		}
 
-		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 403, got %d", statusCode))
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 401, got %d", statusCode))
 	}
 }
 
@@ -285,6 +315,224 @@ func testAuthOIDCLoginRedirects(env *helpers.Environment) (testName string, test
 		}
 
 		helpers.LogTestOutcome(t, condition, nil)
+	}
+}
+
+// testAuthExpiredSessionCorrectSignatureAllowsAccess verifies that a session token that is expired
+// but bears a correct signature triggers transparent session renewal and still grants access,
+// provided the refresh token stored in the session is still valid.
+func testAuthExpiredSessionCorrectSignatureAllowsAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
+	return "expired session token with correct signature and valid refresh token triggers transparent renewal", func(t *testing.T) {
+		// NOTE: The server only permits access when the session token is expired with a correct signature AND
+		// the underlying refresh token is still valid. A correctly signed but expired token alone is not
+		// sufficient — if the refresh token were also expired, the server would return 401.
+		// This test relies on a freshly issued session so that the refresh token is guaranteed to be valid.
+		const condition = "Should return 200 when session token is expired but correctly signed and the refresh token is still valid"
+		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, err)
+			return
+		}
+
+		// Find the oidc_session cookie that contains the signed session JWT.
+		var sessionToken string
+		for _, c := range cookies {
+			if c.Name == "oidc_session" {
+				sessionToken = c.Value
+				break
+			}
+		}
+
+		if sessionToken == "" {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("oidc_session cookie not found after login"))
+			return
+		}
+
+		// Parse the JWT without verification to extract the session ID from the sub claim.
+		parsedClaims := &jwt.RegisteredClaims{}
+		_, _, err = jwt.NewParser().ParseUnverified(sessionToken, parsedClaims)
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to parse session JWT: %w", err))
+			return
+		}
+
+		sessionID, err := uuid.Parse(parsedClaims.Subject)
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to parse session ID from JWT subject: %w", err))
+			return
+		}
+
+		signingKey, err := helpers.DeriveSessionSigningKey(sessionID, env.ManagementAPICert().PrivateKey())
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, err)
+			return
+		}
+
+		expiredTokenSigned, err := helpers.CreateExpiredSessionToken(sessionID, signingKey)
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, err)
+			return
+		}
+
+		// Swap the oidc_session cookie for the expired-but-correctly-signed token.
+		modifiedCookies := make([]*http.Cookie, len(cookies))
+		for i, c := range cookies {
+			cloned := *c
+			if cloned.Name == "oidc_session" {
+				cloned.Value = expiredTokenSigned
+			}
+			modifiedCookies[i] = &cloned
+		}
+
+		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(modifiedCookies))
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("request error: %w", err))
+			return
+		}
+
+		if statusCode != http.StatusOK {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 200, got %d", statusCode))
+			return
+		}
+
+		helpers.LogTestOutcome(t, condition, nil)
+	}
+}
+
+// testAuthTamperedUserSecretCookieDeniesAccess verifies that a request with a valid oidc_session
+// but a tampered user_secret cookie is rejected. The server decodes user_secret using a per-session
+// securecookie key, so any modification invalidates the MAC.
+func testAuthTamperedUserSecretCookieDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
+	return "tampered user_secret cookie is rejected", func(t *testing.T) {
+		const condition = "Should return 401 when user_secret cookie has been tampered with"
+		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, err)
+			return
+		}
+
+		tampered := make([]*http.Cookie, len(cookies))
+		for i, c := range cookies {
+			cloned := *c
+			if cloned.Name == "user_secret" {
+				cloned.Value = "tampered.invalid.user.secret.value"
+			}
+			tampered[i] = &cloned
+		}
+
+		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(tampered))
+
+		if err != nil && api.StatusErrorCheck(err, http.StatusUnauthorized) {
+			helpers.LogTestOutcome(t, condition, nil)
+			return
+		}
+
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 401, got %d", statusCode))
+	}
+}
+
+// testAuthValidSignatureUnknownSessionIDDeniesAccess verifies that a session token signed
+// with the correct HKDF key for a freshly generated session ID (one that does not exist in the
+// database) is rejected. The server should fail the database lookup and return 401.
+func testAuthValidSignatureUnknownSessionIDDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
+	return "correctly signed session token for unknown session ID is rejected", func(t *testing.T) {
+		const condition = "Should return 401 when session ID is not found in the database"
+		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, err)
+			return
+		}
+
+		// Generate a fresh session ID that has never been stored in the database.
+		unknownSessionID, err := uuid.NewV7()
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to generate session ID: %w", err))
+			return
+		}
+
+		signingKey, err := helpers.DeriveSessionSigningKey(unknownSessionID, env.ManagementAPICert().PrivateKey())
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, err)
+			return
+		}
+
+		claims := &jwt.RegisteredClaims{
+			Subject:   unknownSessionID.String(),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+		signedToken, err := token.SignedString(signingKey)
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("failed to sign session JWT: %w", err))
+			return
+		}
+
+		// Replace only the oidc_session cookie; keep user_secret so cookie parsing proceeds.
+		modified := make([]*http.Cookie, len(cookies))
+		for i, c := range cookies {
+			cloned := *c
+			if cloned.Name == "oidc_session" {
+				cloned.Value = signedToken
+			}
+			modified[i] = &cloned
+		}
+
+		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(modified))
+
+		if err != nil && api.StatusErrorCheck(err, http.StatusUnauthorized) {
+			helpers.LogTestOutcome(t, condition, nil)
+			return
+		}
+
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 401, got %d", statusCode))
+	}
+}
+
+// testAuthLoggedOutSessionDeniesAccess verifies that cookies from a session that has been
+// logged out are rejected on subsequent requests. After logout the session is deleted from
+// the database, so replaying the original cookies must return 401.
+func testAuthLoggedOutSessionDeniesAccess(env *helpers.Environment) (testName string, testFunc func(t *testing.T)) {
+	return "cookies from a logged-out session are rejected", func(t *testing.T) {
+		const condition = "Should return 401 when cookies belong to an already logged-out session"
+		cookies, err := helpers.GetCookies(env, "cluster-manager-e2e-tests@example.org", "cluster-manager-e2e-password")
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, err)
+			return
+		}
+
+		// Confirm the session is valid before logging out.
+		path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster")
+		statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(cookies))
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("pre-logout request error: %w", err))
+			return
+		}
+
+		if statusCode != http.StatusOK {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 200 before logout, got %d", statusCode))
+			return
+		}
+
+		// Log out, which deletes the session from the database.
+		err = helpers.LogoutFromManagementAPI(env, cookies)
+		if err != nil {
+			helpers.LogTestOutcome(t, condition, fmt.Errorf("logout failed: %w", err))
+			return
+		}
+
+		// Replay the original cookies — the session no longer exists server-side.
+		statusCode, err = helpers.QueryManagementAPI(env, http.MethodGet, path, nil, nil, helpers.AddCookiesToRequest(cookies))
+
+		if err != nil && api.StatusErrorCheck(err, http.StatusUnauthorized) {
+			helpers.LogTestOutcome(t, condition, nil)
+			return
+		}
+
+		helpers.LogTestOutcome(t, condition, fmt.Errorf("expected 401 after logout, got %d: %w", statusCode, err))
 	}
 }
 

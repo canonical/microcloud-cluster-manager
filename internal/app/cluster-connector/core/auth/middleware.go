@@ -23,7 +23,7 @@ func AuthMiddleware(rc types.RouteConfig) mux.MiddlewareFunc {
 				return
 			}
 
-			_, err := verifier.Auth(r.Context(), w, r)
+			err := verifier.Auth(r.Context(), w, r)
 			if err != nil {
 				err := response.Forbidden(nil).Render(w, r)
 				if err != nil {

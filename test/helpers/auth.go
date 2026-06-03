@@ -2,17 +2,24 @@ package helpers
 
 import (
 	"context"
+	"crypto/sha512"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/canonical/lxd/shared"
+	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/auth"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"golang.org/x/crypto/hkdf"
 )
 
 func LoginToManagementAPI(e *Environment, username string, password string, serverCert *x509.Certificate) ([]*http.Cookie, error) {
@@ -120,6 +127,47 @@ func GetCookies(env *Environment, username string, password string) ([]*http.Coo
 	return cookies, nil
 }
 
+// LogoutFromManagementAPI calls the /oidc/logout endpoint with the given session cookies,
+// deleting the session from the server. Redirects are not followed.
+func LogoutFromManagementAPI(env *Environment, cookies []*http.Cookie) error {
+	certPublicKey, err := env.ManagementAPICert().PublicKeyX509()
+	if err != nil {
+		return fmt.Errorf("failed to get management API cert: %w", err)
+	}
+
+	tlsClient, err := NewTLSHTTPClient(api.URL{}, nil, certPublicKey, env.ManagementAPIHost())
+	if err != nil {
+		return fmt.Errorf("failed to create TLS client: %w", err)
+	}
+
+	tlsClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
+	logoutURL := fmt.Sprintf("https://%s/oidc/logout", env.ManagementAPIHostPort())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, logoutURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to build logout request: %w", err)
+	}
+
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	res, err := tlsClient.Do(req)
+	if err != nil && !errors.Is(err, http.ErrUseLastResponse) {
+		return fmt.Errorf("logout request failed: %w", err)
+	}
+
+	defer res.Body.Close()
+	_, _ = io.Copy(io.Discard, res.Body)
+	return nil
+}
+
 func AddCookiesToRequest(cookies []*http.Cookie) func(*http.Request) error {
 	return func(r *http.Request) error {
 		for _, cookie := range cookies {
@@ -127,4 +175,40 @@ func AddCookiesToRequest(cookies []*http.Cookie) func(*http.Request) error {
 		}
 		return nil
 	}
+}
+
+// DeriveSessionSigningKey derives the signing key for a session token using HKDF-SHA512.
+// It uses the same derivation method as the server:
+// HKDF-SHA512(privateKey, sessionIDBytes, "SESSION_ID_TOKEN_INTEGRITY", 64).
+func DeriveSessionSigningKey(sessionID uuid.UUID, privateKeyBytes []byte) ([]byte, error) {
+	salt, err := sessionID.MarshalBinary()
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal session ID: %w", err)
+	}
+
+	prk := hkdf.Extract(sha512.New, privateKeyBytes, salt)
+	kdf := hkdf.Expand(sha512.New, prk, []byte("SESSION_ID_TOKEN_INTEGRITY"))
+	signingKey := make([]byte, 64)
+	if _, err = io.ReadFull(kdf, signingKey); err != nil {
+		return nil, fmt.Errorf("failed to derive session token signing key: %w", err)
+	}
+
+	return signingKey, nil
+}
+
+// CreateExpiredSessionToken creates a session token that is expired but bears a correct signature.
+// The token is signed with the provided key and has an expiry one hour in the past.
+func CreateExpiredSessionToken(sessionID uuid.UUID, signingKey []byte) (string, error) {
+	expiredClaims := &jwt.RegisteredClaims{
+		Subject:   sessionID.String(),
+		IssuedAt:  jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(-1 * time.Hour)),
+	}
+	expiredToken := jwt.NewWithClaims(jwt.SigningMethodHS512, expiredClaims)
+	expiredTokenSigned, err := expiredToken.SignedString(signingKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign expired session JWT: %w", err)
+	}
+
+	return expiredTokenSigned, nil
 }

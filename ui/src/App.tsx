@@ -3,8 +3,8 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import NoMatch from "pages/NoMatch";
 import { useAuth } from "context/auth";
-import { logout } from "util/helpers";
 import { Spinner } from "@canonical/react-components";
+import { logout } from "util/helpers";
 
 const ClusterList = lazy(async () => import("pages/clusters/ClusterList"));
 const ClusterDetail = lazy(async () => import("pages/clusters/ClusterDetail"));

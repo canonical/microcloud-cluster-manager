@@ -28,7 +28,7 @@ type Auth struct {
 
 // Authenticator represents the interface that each service in cluster manager must implement for securing their respective APIs.
 type Authenticator interface {
-	Auth(ctx context.Context, w http.ResponseWriter, r *http.Request) (bool, error)
+	Auth(ctx context.Context, w http.ResponseWriter, r *http.Request) error
 }
 
 // Authorizor represents the interface that each service in cluster manager must implement for enforcing authorization based on entitlements.
