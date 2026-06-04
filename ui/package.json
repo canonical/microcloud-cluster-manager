@@ -29,9 +29,9 @@
     "@tanstack/react-query": "5.90.16",
     "@use-it/event-listener": "0.1.7",
     "formik": "2.4.9",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "react-router-dom": "7.12.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-router-dom": "7.16.0",
     "vanilla-framework": "4.51.0",
     "yup": "1.7.1"
   },
