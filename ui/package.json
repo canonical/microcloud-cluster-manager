@@ -60,7 +60,7 @@
     "concurrently": "9.2.1",
     "convert-source-map": "2.0.0",
     "dotenv": "17.2.3",
-    "esbuild": "0.28.0",
+    "esbuild": "0.28.1",
     "eslint": "9.39.2",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.4",
