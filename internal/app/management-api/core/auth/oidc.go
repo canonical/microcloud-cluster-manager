@@ -14,8 +14,12 @@ import (
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/lxd/util"
 	"github.com/canonical/lxd/shared"
+	"github.com/canonical/lxd/shared/api"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/config"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/gorilla/securecookie"
 	"github.com/zitadel/oidc/v3/pkg/client/rp"
@@ -25,14 +29,18 @@ import (
 )
 
 const (
-	// cookieNameIDToken is the identifier used to set and retrieve the identity token.
-	cookieNameIDToken = "oidc_identity"
+	// cookieNameSessionToken is used to identify the session. It does not need to be encrypted.
+	cookieNameSessionToken = "oidc_session"
 
-	// cookieNameRefreshToken is the identifier used to set and retrieve the refresh token.
-	cookieNameRefreshToken = "oidc_refresh"
+	// cookieNameUserSecret is the identifier used to set and retrieve the user secret for encrypting tunnel data.
+	cookieNameUserSecret = "user_secret"
 
-	// cookieNameSessionID is used to identify the session. It does not need to be encrypted.
-	cookieNameSessionID = "session_id"
+	// SessionCookieExpiryBuffer extends browser cookie retention after session JWT expiry.
+	// This helps ensure clients still send stale cookies so the server can respond with a deterministic re-authentication path.
+	SessionCookieExpiryBuffer = time.Hour * 24 * 7
+
+	// OIDCSessionExpiry is the duration for the session JWT expiry.
+	OIDCSessionExpiry = time.Hour * 24 * 7
 )
 
 const (
@@ -59,15 +67,13 @@ type Verifier struct {
 	// and will be refreshed. This refreshes the cookie encryption keys that the relying party uses.
 	configExpiry         time.Time
 	configExpiryInterval time.Duration
+
+	sessionHandler *SessionHandler
 }
 
-// AuthenticationResult represents an authenticated OIDC client.
-type AuthenticationResult struct {
-	Subject string
-	Email   string
-	Name    string
-	Claims  *oidc.IDTokenClaims
-	Groups  []string
+// sessionTokenClaims represents claims for the signed session token.
+type sessionTokenClaims struct {
+	jwt.RegisteredClaims
 }
 
 // AuthError represents an authentication error. If an error of this type is returned, the caller should call
@@ -120,119 +126,282 @@ func DecodeStateToken(token string) (StateToken, error) {
 	return stateToken, nil
 }
 
-// Auth extracts OIDC tokens from the request, verifies them, and returns the subject.
-func (o *Verifier) Auth(ctx context.Context, w http.ResponseWriter, r *http.Request) (bool, error) {
+// Auth extracts and verifies the session token from the request cookie.
+// If the session token is expired or invalid, it returns an error which can be used to trigger the OIDC login flow on the client.
+func (o *Verifier) Auth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	err := o.ensureConfig(ctx, r)
 	if err != nil {
-		return false, fmt.Errorf("Authorization failed: %w", err)
+		return AuthError{Err: fmt.Errorf("Failed to ensure config: %w", err)}
 	}
 
-	_, idToken, refreshToken, err := o.getCookies(r)
+	sessionCookie, err := r.Cookie(cookieNameSessionToken)
 	if err != nil {
-		// Cookies are present but we failed to decrypt them. They may have been tampered with, so delete them to force
-		// the user to log in again.
-		err := o.setCookies(w, nil, uuid.UUID{}, "", "", true)
-		if err != nil {
-			return false, fmt.Errorf("Failed to delete invalid login cookies: %w", err)
+		return AuthError{Err: fmt.Errorf("Failed to get session cookie: %w", err)}
+	}
+
+	claims, sessionID, userSecret, encryptedAccessToken, err := o.authenticate(ctx, w, r, sessionCookie.Value)
+	if err != nil {
+		return AuthError{Err: err}
+	}
+
+	groups := extractIdpGroups(claims)
+	setUserInfoInRequest(claims.Email, claims.Name, groups, r)
+
+	provider := &SessionCredentialsProvider{
+		verifier:             o,
+		sessionID:            sessionID,
+		userSecret:           userSecret,
+		encryptedAccessToken: encryptedAccessToken,
+	}
+
+	providerCtx := context.WithValue(r.Context(), SessionCredentialsProviderKey, provider)
+	*r = *r.WithContext(providerCtx)
+
+	return nil
+}
+
+// authenticate resolves a session token to verified OIDC claims, handling the expired-session renewal path.
+func (o *Verifier) authenticate(ctx context.Context, w http.ResponseWriter, r *http.Request, sessionToken string) (*oidc.IDTokenClaims, uuid.UUID, string, string, error) {
+	sessionID, err := o.verifySessionAndGetID(sessionToken)
+	if err != nil {
+		if !errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, uuid.Nil, "", "", fmt.Errorf("Failed to verify session token: %w", err)
 		}
-		return false, fmt.Errorf("Failed to retrieve login information: %w", err)
+
+		claims, newSessionID, userSecret, encryptedAccessToken, err := o.handleExpiredSession(ctx, r, w, sessionID)
+		if err != nil {
+			return nil, uuid.Nil, "", "", fmt.Errorf("Failed to handle expired session: %w", err)
+		}
+
+		return claims, newSessionID, userSecret, encryptedAccessToken, nil
 	}
 
-	if idToken == "" && refreshToken == "" {
-		return false, fmt.Errorf("No ID or refresh tokens present in request")
+	userSecret, err := o.getUserSecretFromCookie(r, sessionID)
+	if err != nil {
+		return nil, uuid.Nil, "", "", fmt.Errorf("Failed to get user secret: %w", err)
 	}
 
-	// When authenticating via the UI, we expect that there will be ID and refresh tokens present in the request cookies.
-	result, _, err := o.authenticateIDToken(ctx, w, idToken, refreshToken)
+	session, err := o.sessionHandler.GetSessionByID(r.Context(), sessionID)
+	if api.StatusErrorCheck(err, http.StatusNotFound) {
+		o.deleteCookies(w)
+	}
 
 	if err != nil {
-		return false, err
+		return nil, uuid.Nil, "", "", fmt.Errorf("Failed to get session: %w", err)
 	}
 
-	extractIdpGroups(result.Claims, result)
-	setUserInfoInRequest(result, r)
+	// Decrypt tokens stored in the database using the per-user secret from the cookie.
+	idToken, _, refreshToken, err := DecryptTokens(session.EncryptedTokens, userSecret)
 
-	return true, nil
+	if err != nil {
+		return nil, uuid.Nil, "", "", err
+	}
+
+	claims, err := rp.VerifyIDToken[*oidc.IDTokenClaims](ctx, idToken, o.relyingParty.IDTokenVerifier())
+	if err != nil {
+		claims, encryptedTokens, _, err := o.refreshTokens(ctx, refreshToken, userSecret)
+		if err != nil {
+			return nil, uuid.Nil, "", "", err
+		}
+
+		_, err = o.sessionHandler.UpdateSessionTokens(ctx, session, encryptedTokens)
+		if err != nil {
+			return nil, uuid.Nil, "", "", fmt.Errorf("Failed to update session tokens: %w", err)
+		}
+
+		return claims, sessionID, userSecret, encryptedTokens.AccessToken, nil
+	}
+
+	return claims, sessionID, userSecret, session.EncryptedTokens.AccessToken, nil
 }
 
-// getAuthenticationResult creates an AuthenticationResult from the given OIDC claims.
-func getAuthenticationResult(claims *oidc.IDTokenClaims) *AuthenticationResult {
-	return &AuthenticationResult{
-		Subject: claims.Subject,
-		Email:   claims.Email,
-		Name:    claims.Name,
-		Claims:  claims,
+// verifySessionAndGetID verifies a signed session token and returns the embedded session ID.
+func (o *Verifier) verifySessionAndGetID(sessionToken string) (uuid.UUID, error) {
+	claims := &sessionTokenClaims{}
+	parser := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS512.Alg()}))
+	var sessionID uuid.UUID
+	var err error
+
+	_, err = parser.ParseWithClaims(sessionToken, claims, func(token *jwt.Token) (any, error) {
+		typedClaims, ok := token.Claims.(*sessionTokenClaims)
+		if !ok {
+			return nil, errors.New("Malformed session JWT claims")
+		}
+
+		sessionIDClaim := typedClaims.Subject
+		if sessionIDClaim == "" {
+			return nil, errors.New("Missing session ID in JWT payload")
+		}
+
+		sessionID, err = uuid.Parse(sessionIDClaim)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid session ID in JWT payload: %w", err)
+		}
+
+		key, err := o.getSessionSigningKey(sessionID)
+		if err != nil {
+			return nil, err
+		}
+
+		return key, nil
+	})
+
+	if err != nil {
+		return sessionID, fmt.Errorf("Invalid session JWT: %w", err)
+	}
+
+	return sessionID, nil
+}
+
+// handleExpiredSession attempts to start a new session based on details saved in an existing session.
+// It returns refreshed OIDC claims and session metadata so the caller can complete request context setup.
+func (o *Verifier) handleExpiredSession(ctx context.Context, r *http.Request, w http.ResponseWriter, sessionID uuid.UUID) (*oidc.IDTokenClaims, uuid.UUID, string, string, error) {
+	defer func() {
+		err := o.sessionHandler.DeleteSession(ctx, sessionID)
+		if err != nil && !api.StatusErrorCheck(err, http.StatusNotFound) {
+			logger.Log.Infof("Failed deleting session after expired session handling: %v", err)
+		}
+	}()
+
+	session, err := o.sessionHandler.GetSessionByID(ctx, sessionID)
+	if err != nil {
+		return nil, uuid.Nil, "", "", fmt.Errorf("Failed to get session for expired session handling: %w", err)
+	}
+
+	userSecret, err := o.getUserSecretFromCookie(r, sessionID)
+	if err != nil {
+		return nil, uuid.Nil, "", "", fmt.Errorf("Failed to get user secret: %w", err)
+	}
+
+	idToken, _, refreshToken, err := DecryptTokens(session.EncryptedTokens, userSecret)
+
+	if err != nil {
+		return nil, uuid.Nil, "", "", fmt.Errorf("Failed to decrypt tokens for expired session handling: %w", err)
+	}
+
+	claims, err := rp.VerifyIDToken[*oidc.IDTokenClaims](ctx, idToken, o.relyingParty.IDTokenVerifier())
+	if err != nil {
+		var encryptedTokens EncryptedTokenSet
+		claims, encryptedTokens, _, err = o.refreshTokens(ctx, refreshToken, userSecret)
+		if err != nil {
+			return nil, uuid.Nil, "", "", fmt.Errorf("Failed to refresh tokens: %w", err)
+		}
+
+		session, err = o.sessionHandler.UpdateSessionTokens(ctx, session, encryptedTokens)
+		if err != nil {
+			return nil, uuid.Nil, "", "", fmt.Errorf("Failed to update session tokens: %w", err)
+		}
+	}
+
+	newSessionID, expiry, err := o.sessionHandler.StartSession(r, claims, session.EncryptedTokens)
+	if err != nil {
+		return nil, uuid.Nil, "", "", fmt.Errorf("Failed to start session: %w", err)
+	}
+
+	err = o.setCookies(w, *newSessionID, userSecret, *expiry)
+	if err != nil {
+		return nil, uuid.Nil, "", "", err
+	}
+
+	return claims, *newSessionID, userSecret, session.EncryptedTokens.AccessToken, nil
+}
+
+// deleteCookies expires all session-related cookies in the response, effectively deleting them on the client.
+func (o *Verifier) deleteCookies(w http.ResponseWriter) {
+	for _, name := range []string{cookieNameSessionToken, cookieNameUserSecret} {
+		http.SetCookie(w, &http.Cookie{
+			Name:     name,
+			Path:     "/",
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+			Value:    "",
+			Expires:  time.Unix(0, 0),
+		})
 	}
 }
 
-// extractIdpGroups extracts the user's groups from the OIDC claims and sets the Groups field in the AuthenticationResult
-// if the user is in the "admin" group.
-func extractIdpGroups(claims *oidc.IDTokenClaims, result *AuthenticationResult) {
+// refreshTokens fetches a new token set using the refresh token, verifies the refreshed ID token,
+// and re-encrypts all tokens with the user secret. It should only be called after rp.VerifyIDToken
+// has already failed. Persistence of the returned EncryptedTokenSet is the caller's responsibility.
+func (o *Verifier) refreshTokens(ctx context.Context, refreshToken, userSecret string) (*oidc.IDTokenClaims, EncryptedTokenSet, string, error) {
+	if refreshToken == "" {
+		return nil, EncryptedTokenSet{}, "", errors.New("Missing refresh token")
+	}
+
+	tokens, err := rp.RefreshTokens[*oidc.IDTokenClaims](ctx, o.relyingParty, refreshToken, "", "")
+	if err != nil {
+		return nil, EncryptedTokenSet{}, "", fmt.Errorf("Failed to refresh ID tokens: %w", err)
+	}
+
+	refreshedIDToken, refreshedAccessToken, refreshedRefreshToken, err := extractTokensFromRefreshResponse(tokens, refreshToken)
+	if err != nil {
+		return nil, EncryptedTokenSet{}, "", fmt.Errorf("Failed to extract refreshed tokens from OIDC response: %w", err)
+	}
+
+	claims, err := rp.VerifyIDToken[*oidc.IDTokenClaims](ctx, refreshedIDToken, o.relyingParty.IDTokenVerifier())
+	if err != nil {
+		return nil, EncryptedTokenSet{}, "", fmt.Errorf("Failed to verify refreshed ID token: %w", err)
+	}
+
+	encryptedTokens, err := EncryptTokens(refreshedIDToken, refreshedAccessToken, refreshedRefreshToken, userSecret)
+	if err != nil {
+		return nil, EncryptedTokenSet{}, "", fmt.Errorf("Failed to encrypt refreshed tokens: %w", err)
+	}
+
+	return claims, encryptedTokens, refreshedAccessToken, nil
+}
+
+// extractTokensFromRefreshResponse extracts token strings from the OIDC refresh response.
+func extractTokensFromRefreshResponse(tokens *oidc.Tokens[*oidc.IDTokenClaims], oldRefreshToken string) (idToken, accessToken, refreshToken string, err error) {
+	idTokenAny := tokens.Extra("id_token")
+	if idTokenAny == nil {
+		return "", "", "", errors.New("ID tokens missing from OIDC refresh response")
+	}
+
+	refreshedIDToken, ok := idTokenAny.(string)
+	if !ok {
+		return "", "", "", errors.New("Malformed ID tokens in OIDC refresh response")
+	}
+
+	refreshedAccessToken := tokens.AccessToken
+	if refreshedAccessToken == "" {
+		return "", "", "", errors.New("Access token missing from OIDC refresh response")
+	}
+
+	refreshedRefreshToken := tokens.RefreshToken
+	if refreshedRefreshToken == "" {
+		// Some providers don't return a new refresh token on refresh; keep the previous value.
+		refreshedRefreshToken = oldRefreshToken
+	}
+
+	return refreshedIDToken, refreshedAccessToken, refreshedRefreshToken, nil
+}
+
+// extractIdpGroups extracts the user's groups from the OIDC claims.
+func extractIdpGroups(claims *oidc.IDTokenClaims) []string {
 	raw, ok := claims.Claims["mcm-idp-groups"]
 	if !ok {
 		logger.Log.Info(`AUTHN "mcm-idp-groups" OIDC groups claim missing`)
-		return
+		return nil
 	}
 
 	rawSlice, ok := raw.([]any)
 	if !ok {
 		logger.Log.Info("AUTHN OIDC groups claim malformed")
-		return
+		return nil
 	}
 	groups := make([]string, 0, len(rawSlice))
 	for _, v := range rawSlice {
 		s, ok := v.(string)
 		if !ok {
 			logger.Log.Info("AUTHN OIDC groups claim malformed")
-			return
+			return nil
 		}
 		groups = append(groups, s)
 	}
-	result.Groups = groups
-}
 
-// authenticateIDToken verifies the identity token and returns the authentication result and the ID token. If no identity token is given (or
-// verification fails) it will attempt to refresh the ID token.
-func (o *Verifier) authenticateIDToken(ctx context.Context, w http.ResponseWriter, token string, refreshToken string) (result *AuthenticationResult, idToken string, e error) {
-	var claims *oidc.IDTokenClaims
-	var err error
-	if token != "" {
-		// Try to verify the ID token.
-		claims, err = rp.VerifyIDToken[*oidc.IDTokenClaims](ctx, token, o.relyingParty.IDTokenVerifier())
-		if err == nil {
-			return getAuthenticationResult(claims), token, nil
-		}
-	}
-
-	// If ID token verification failed (or it wasn't provided, try refreshing the token).
-	tokens, err := rp.RefreshTokens[*oidc.IDTokenClaims](ctx, o.relyingParty, refreshToken, "", "")
-	if err != nil {
-		return nil, "", AuthError{Err: fmt.Errorf("Failed to refresh ID tokens: %w", err)}
-	}
-
-	idTokenAny := tokens.Extra("id_token")
-	if idTokenAny == nil {
-		return nil, "", AuthError{Err: errors.New("ID tokens missing from OIDC refresh response")}
-	}
-
-	idToken, ok := idTokenAny.(string)
-	if !ok {
-		return nil, "", AuthError{Err: errors.New("Malformed ID tokens in OIDC refresh response")}
-	}
-
-	// Verify the refreshed ID token.
-	claims, err = rp.VerifyIDToken[*oidc.IDTokenClaims](ctx, idToken, o.relyingParty.IDTokenVerifier())
-	if err != nil {
-		return nil, "", AuthError{Err: fmt.Errorf("Failed to verify refreshed ID token: %w", err)}
-	}
-
-	// Updated the cookies
-	err = o.WriteTokenToCookies(w, idToken, tokens.RefreshToken)
-	if err != nil {
-		return nil, "", AuthError{Err: fmt.Errorf("Failed to update login cookies: %w", err)}
-	}
-
-	return getAuthenticationResult(claims), idToken, nil
+	return groups
 }
 
 // Login is a http.Handler than initiates the login flow for the UI.
@@ -252,19 +421,33 @@ func (o *Verifier) Login(w http.ResponseWriter, r *http.Request, stateTokenStr s
 	handler(w, r)
 }
 
-// Logout deletes the ID and refresh token cookies and redirects the user to the login page.
+// Logout always deletes the session cookie. If the caller is logged in with a valid session cookie, then that session is
+// deleted from the database.
 func (o *Verifier) Logout(w http.ResponseWriter, r *http.Request) {
-	err := o.setCookies(w, nil, uuid.UUID{}, "", "", true)
+	defer func() {
+		o.deleteCookies(w)
+		http.Redirect(w, r, "/ui/login/", http.StatusFound)
+	}()
+
+	sessionCookie, err := r.Cookie(cookieNameSessionToken)
+
 	if err != nil {
-		logger.Log.Errorw("Failed to delete login information: %w", err)
-		err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to delete login information: %w", err).Error()).Render(w, r)
-		if err != nil {
-			logger.Log.Errorw("Failed rendering internal server error response due to failed deletion of login information: %w", err)
-		}
+		// Not logged in.
 		return
 	}
 
-	http.Redirect(w, r, "/ui/login", http.StatusFound)
+	sessionID, err := o.verifySessionAndGetID(sessionCookie.Value)
+	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
+		// Not logged in.
+		return
+	}
+
+	err = o.sessionHandler.DeleteSession(r.Context(), sessionID)
+
+	if err != nil {
+		logger.Log.Errorw("Failed to delete session information", "error", err)
+		return
+	}
 }
 
 // Callback is a http.HandlerFunc which implements the code exchange required on the /oidc/callback endpoint.
@@ -279,14 +462,53 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 		return
 	}
 
-	handler := rp.CodeExchangeHandler(func(w http.ResponseWriter, r *http.Request, tokens *oidc.Tokens[*oidc.IDTokenClaims], state string, rp rp.RelyingParty) {
-		err := o.WriteTokenToCookies(w, tokens.IDToken, tokens.RefreshToken)
+	handler := rp.CodeExchangeHandler(func(w http.ResponseWriter, r *http.Request, tokens *oidc.Tokens[*oidc.IDTokenClaims], state string, relyingParty rp.RelyingParty) {
+		verifiedClaims, err := rp.VerifyIDToken[*oidc.IDTokenClaims](r.Context(), tokens.IDToken, o.relyingParty.IDTokenVerifier())
+		if err != nil {
+			logger.Log.Info("AUTHN failed to verify OIDC ID token")
+			err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to verify ID token: %w", err).Error()).Render(w, r)
+			if err != nil {
+				logger.Log.Errorw("Failed rendering internal server error response due to failed ID token verification: %w", err)
+			}
+			return
+		}
+
+		userSecret, err := config.CreateUserSecret()
+		if err != nil {
+			logger.Log.Info("AUTHN failed to generate user secret")
+			err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to generate user secret: %w", err).Error()).Render(w, r)
+			if err != nil {
+				logger.Log.Errorw("Failed rendering internal server error response due to failed user secret generation: %w", err)
+			}
+			return
+		}
+		encryptedTokens, err := EncryptTokens(tokens.IDToken, tokens.AccessToken, tokens.RefreshToken, userSecret)
+		if err != nil {
+			logger.Log.Infof("AUTHN failed to encrypt tokens %v", err)
+			err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to encrypt tokens: %w", err).Error()).Render(w, r)
+			if err != nil {
+				logger.Log.Errorw("Failed rendering internal server error response due to failed token encryption: %w", err)
+			}
+			return
+		}
+
+		sessionID, expiry, err := o.sessionHandler.StartSession(r, verifiedClaims, encryptedTokens)
+		if err != nil {
+			logger.Log.Infof("AUTHN failed to start session, %v", err)
+			err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to start session: %w", err).Error()).Render(w, r)
+			if err != nil {
+				logger.Log.Errorw("Failed rendering internal server error response due to failed session start: %w", err)
+			}
+			return
+		}
+
+		err = o.setCookies(w, *sessionID, userSecret, *expiry)
 
 		if err != nil {
-			logger.Log.Info("AUTHN failed to write OIDC tokens to cookies")
+			logger.Log.Infof("AUTHN failed to set cookies, %v", err)
 			err = response.ErrorResponse(http.StatusInternalServerError, err.Error()).Render(w, r)
 			if err != nil {
-				logger.Log.Errorw("Failed rendering internal server error response due to failed writing of OIDC tokens to cookies: %w", err)
+				logger.Log.Errorw("Failed rendering internal server error response due to failed cookie setting: %w", err)
 			}
 			return
 		}
@@ -300,21 +522,40 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 	handler(w, r)
 }
 
-// WriteTokenToCookies writes the ID and refresh tokens to the response cookies based on a new session ID.
-// The cookies are encrypted using the cluster private key.
-func (o *Verifier) WriteTokenToCookies(w http.ResponseWriter, idToken string, refreshToken string) error {
-	sessionID := uuid.New()
-	secureCookie, err := o.secureCookieFromSession(sessionID)
+// getSignedSession creates a signed JWT with the value session ID.
+func (o *Verifier) getSignedSession(sessionID uuid.UUID, expiry time.Time) (string, error) {
+	key, err := o.getSessionSigningKey(sessionID)
 	if err != nil {
-		return fmt.Errorf("Failed to create new session: %w", err)
+		return "", err
 	}
 
-	err = o.setCookies(w, secureCookie, sessionID, idToken, refreshToken, false)
-	if err != nil {
-		return fmt.Errorf("Failed to update login cookies: %w", err)
+	claims := &sessionTokenClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   sessionID.String(),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(expiry),
+		},
 	}
 
-	return nil
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+
+	signedToken, err := token.SignedString(key)
+	if err != nil {
+		return "", fmt.Errorf("Failed to sign session JWT: %w", err)
+	}
+
+	return signedToken, nil
+}
+
+// getSessionSigningKey derives a 64-byte signing key for a session token using the management API private key and
+// the session ID as HKDF salt.
+func (o *Verifier) getSessionSigningKey(sessionID uuid.UUID) ([]byte, error) {
+	salt, err := sessionID.MarshalBinary()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to marshal session ID as binary: %w", err)
+	}
+
+	return deriveHKDFKey(o.clusterCert().PrivateKey(), salt, "SESSION_ID_TOKEN_INTEGRITY", 64)
 }
 
 // ExpireConfig sets the expiry time of the current configuration to zero. This forces the verifier to reconfigure the
@@ -387,156 +628,98 @@ func (o *Verifier) setRelyingParty(ctx context.Context, r *http.Request) error {
 	return nil
 }
 
-// getCookies gets the sessionID, identity and refresh tokens from the request cookies and decrypts them.
-func (o *Verifier) getCookies(r *http.Request) (sessionIDPtr *uuid.UUID, idToken string, refreshToken string, err error) {
-	sessionIDCookie, err := r.Cookie(cookieNameSessionID)
-	if err != nil && !errors.Is(err, http.ErrNoCookie) {
-		return nil, "", "", fmt.Errorf("Failed to get session ID cookie from request: %w", err)
-	}
-
-	if sessionIDCookie == nil {
-		return nil, "", "", nil
-	}
-
-	sessionID, err := uuid.Parse(sessionIDCookie.Value)
+// getUserSecretFromCookie retrieves and decrypts the user secret from the request cookies.
+func (o *Verifier) getUserSecretFromCookie(r *http.Request, sessionID uuid.UUID) (string, error) {
+	cookie, err := r.Cookie(cookieNameUserSecret)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("Invalid session ID cookie: %w", err)
+		return "", fmt.Errorf("Failed to get user secret cookie: %w", err)
 	}
 
-	secureCookie, err := o.secureCookieFromSession(sessionID)
+	sc, err := o.secureCookieFromSession(sessionID)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("Failed to decrypt cookies: %w", err)
+		return "", fmt.Errorf("Failed to create secure cookie for user secret: %w", err)
 	}
 
-	idTokenCookie, err := r.Cookie(cookieNameIDToken)
-	if err != nil && !errors.Is(err, http.ErrNoCookie) {
-		return nil, "", "", fmt.Errorf("Failed to get ID token cookie from request: %w", err)
+	var userSecret string
+	err = sc.Decode(cookieNameUserSecret, cookie.Value, &userSecret)
+	if err != nil {
+		return "", fmt.Errorf("Failed to decode user secret cookie: %w", err)
 	}
 
-	if idTokenCookie != nil {
-		err = secureCookie.Decode(cookieNameIDToken, idTokenCookie.Value, &idToken)
-		if err != nil {
-			return nil, "", "", fmt.Errorf("Failed to decrypt ID token cookie: %w", err)
-		}
-	}
-
-	refreshTokenCookie, err := r.Cookie(cookieNameRefreshToken)
-	if err != nil && !errors.Is(err, http.ErrNoCookie) {
-		return nil, "", "", fmt.Errorf("Failed to get refresh token cookie from request: %w", err)
-	}
-
-	if refreshTokenCookie != nil {
-		err = secureCookie.Decode(cookieNameRefreshToken, refreshTokenCookie.Value, &refreshToken)
-		if err != nil {
-			return nil, "", "", fmt.Errorf("Failed to decrypt refresh token cookie: %w", err)
-		}
-	}
-
-	return &sessionID, idToken, refreshToken, nil
+	return userSecret, nil
 }
 
-// setCookies encrypts the session, ID, and refresh tokens and sets them in the HTTP response. Cookies are only set if they are
-// non-empty. If isDelete is true, the values are set to empty strings and the cookie expiry is set to unix zero time.
-func (*Verifier) setCookies(w http.ResponseWriter, secureCookie *securecookie.SecureCookie, sessionID uuid.UUID, idToken string, refreshToken string, isDelete bool) error {
-	idTokenCookie := http.Cookie{
-		Name:     cookieNameIDToken,
-		Path:     "/",
-		Secure:   true,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-	}
+// setCookies sets the session token and user secret cookies in the response.
+func (o *Verifier) setCookies(w http.ResponseWriter, sessionID uuid.UUID, userSecret string, expiry time.Time) error {
+	cookieExpiry := expiry.Add(SessionCookieExpiryBuffer)
 
-	refreshTokenCookie := http.Cookie{
-		Name:     cookieNameRefreshToken,
-		Path:     "/",
-		Secure:   true,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-	}
-
-	sessionIDCookie := http.Cookie{
-		Name:     cookieNameSessionID,
-		Path:     "/",
-		Secure:   true,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-	}
-
-	if isDelete {
-		idTokenCookie.Expires = time.Unix(0, 0)
-		refreshTokenCookie.Expires = time.Unix(0, 0)
-		sessionIDCookie.Expires = time.Unix(0, 0)
-
-		http.SetCookie(w, &idTokenCookie)
-		http.SetCookie(w, &refreshTokenCookie)
-		http.SetCookie(w, &sessionIDCookie)
-		return nil
-	}
-
-	encodedIDTokenCookie, err := secureCookie.Encode(cookieNameIDToken, idToken)
+	sc, err := o.secureCookieFromSession(sessionID)
 	if err != nil {
-		return fmt.Errorf("Failed to encrypt ID token: %w", err)
+		return fmt.Errorf("Failed to create secure cookie for user secret: %w", err)
 	}
 
-	encodedRefreshToken, err := secureCookie.Encode(cookieNameRefreshToken, refreshToken)
+	maxAge := int(time.Until(cookieExpiry).Seconds())
+	if maxAge < 0 {
+		maxAge = 0
+	}
+
+	// Keep securecookie timestamp validation aligned with HTTP cookie expiry.
+	sc.MaxAge(maxAge)
+
+	encodedUserSecret, err := sc.Encode(cookieNameUserSecret, userSecret)
 	if err != nil {
-		return fmt.Errorf("Failed to encrypt refresh token: %w", err)
+		return fmt.Errorf("Failed to encode user secret cookie: %w", err)
 	}
 
-	sessionIDCookie.Value = sessionID.String()
-	idTokenCookie.Value = encodedIDTokenCookie
-	refreshTokenCookie.Value = encodedRefreshToken
+	sessionToken, err := o.getSignedSession(sessionID, expiry)
+	if err != nil {
+		return fmt.Errorf("Failed to create session token: %w", err)
+	}
 
-	http.SetCookie(w, &idTokenCookie)
-	http.SetCookie(w, &refreshTokenCookie)
-	http.SetCookie(w, &sessionIDCookie)
+	http.SetCookie(w, &http.Cookie{
+		Name:     cookieNameUserSecret,
+		Value:    encodedUserSecret,
+		Path:     "/",
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		Expires:  cookieExpiry,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     cookieNameSessionToken,
+		Path:     "/",
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		Value:    sessionToken,
+		Expires:  cookieExpiry,
+	})
+
 	return nil
 }
 
-// secureCookieFromSession returns a *securecookie.SecureCookie that is secure, unique to each client, and possible to
-// decrypt on all cluster members.
-//
-// To do this we use the cluster private key as an input seed to HKDF (https://datatracker.ietf.org/doc/html/rfc5869) and
-// use the given sessionID uuid.UUID as a salt. The session ID can then be stored as a plaintext cookie so that we can
-// regenerate the keys upon the next request.
-//
+// secureCookieFromSession returns a *securecookie.SecureCookie that is secure, unique to each client, and
+// reproducible on all cluster members. Keys are derived from the cluster private key and the session ID using
+// HKDF-SHA-512 (https://datatracker.ietf.org/doc/html/rfc5869), scoped to distinct purposes via the info parameter.
 // Warning: Changes to this function might cause all existing OIDC users to be logged out of LXD (but not logged out of
 // the IdP).
 func (o *Verifier) secureCookieFromSession(sessionID uuid.UUID) (*securecookie.SecureCookie, error) {
-	// Get the sessionID as a binary so that we can use it as a salt.
 	salt, err := sessionID.MarshalBinary()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to marshal session ID as binary: %w", err)
 	}
 
-	// Get the current cluster private key.
 	clusterPrivateKey := o.clusterCert().PrivateKey()
 
-	// Extract a pseudo-random key from the cluster private key.
-	prk := hkdf.Extract(sha512.New, clusterPrivateKey, salt)
-
-	// Get an io.Reader from which we can read a secure key. We will use this key as the hash key for the cookie.
-	// The hash key is used to verify the integrity of decrypted values using HMAC. The HKDF "info" is set to "INTEGRITY"
-	// to indicate the intended usage of the key and prevent decryption in other contexts
-	// (see https://datatracker.ietf.org/doc/html/rfc5869#section-3.2).
-	keyDerivationFunc := hkdf.Expand(sha512.New, prk, []byte("INTEGRITY"))
-
-	// Read 64 bytes of the derived key. The securecookie library recommends 64 bytes for the hash key (https://github.com/gorilla/securecookie).
-	cookieHashKey := make([]byte, 64)
-	_, err = io.ReadFull(keyDerivationFunc, cookieHashKey)
+	// 64-byte HMAC key for integrity verification (https://github.com/gorilla/securecookie).
+	cookieHashKey, err := deriveHKDFKey(clusterPrivateKey, salt, "INTEGRITY", 64)
 	if err != nil {
 		return nil, fmt.Errorf("Failed creating secure cookie hash key: %w", err)
 	}
 
-	// Get an io.Reader from which we can read a secure key. We will use this key as the block key for the cookie.
-	// The block key is used by securecookie to perform AES encryption. The HKDF "info" is set to "ENCRYPTION"
-	// to indicate the intended usage of the key and prevent decryption in other contexts
-	// (see https://datatracker.ietf.org/doc/html/rfc5869#section-3.2).
-	keyDerivationFunc = hkdf.Expand(sha512.New, prk, []byte("ENCRYPTION"))
-
-	// Read 32 bytes of the derived key. Given 32 bytes for the block key the securecookie library will use AES-256 for encryption.
-	cookieBlockKey := make([]byte, 32)
-	_, err = io.ReadFull(keyDerivationFunc, cookieBlockKey)
+	// 32-byte key for AES-256 encryption.
+	cookieBlockKey, err := deriveHKDFKey(clusterPrivateKey, salt, "ENCRYPTION", 32)
 	if err != nil {
 		return nil, fmt.Errorf("Failed creating secure cookie block key: %w", err)
 	}
@@ -550,7 +733,7 @@ func (o *Verifier) Host() string {
 }
 
 // NewVerifier returns a Verifier.
-func NewVerifier(issuer string, clientID string, clientSecret string, audience string, cert *shared.CertInfo) (*Verifier, error) {
+func NewVerifier(issuer string, clientID string, clientSecret string, audience string, cert *shared.CertInfo, db *database.DB) (*Verifier, error) {
 	// Setup a http client for communicating with the OIDC provider.
 	httpClientFunc := func() (*http.Client, error) {
 		client, err := util.HTTPClient("", http.ProxyFromEnvironment)
@@ -588,20 +771,36 @@ func NewVerifier(issuer string, clientID string, clientSecret string, audience s
 		clusterCert:          certFunc,
 		configExpiryInterval: defaultConfigExpiryInterval,
 		httpClientFunc:       httpClientFunc,
+		sessionHandler:       NewSessionHandler(db),
 	}
 
 	return verifier, nil
+}
+
+// deriveHKDFKey derives a cryptographic key of the specified length from ikm (input key material) using HKDF-SHA-512.
+// salt differentiates derived keys per session; info scopes the key to a specific purpose, preventing cross-context reuse.
+// See https://datatracker.ietf.org/doc/html/rfc5869 for the HKDF specification.
+func deriveHKDFKey(ikm, salt []byte, info string, length int) ([]byte, error) {
+	prk := hkdf.Extract(sha512.New, ikm, salt)
+	kdf := hkdf.Expand(sha512.New, prk, []byte(info))
+	key := make([]byte, length)
+	_, err := io.ReadFull(kdf, key)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to derive HKDF key for %q: %w", info, err)
+	}
+
+	return key, nil
 }
 
 func getCallbackURL(host string) string {
 	return fmt.Sprintf("https://%s/oidc/callback", host)
 }
 
-func setUserInfoInRequest(authResult *AuthenticationResult, r *http.Request) {
+func setUserInfoInRequest(email, name string, groups []string, r *http.Request) {
 	userInfo := &types.UserInfo{
-		Email:  authResult.Email,
-		Name:   authResult.Name,
-		Groups: authResult.Groups,
+		Email:  email,
+		Name:   name,
+		Groups: groups,
 	}
 
 	userInfoCtx := context.WithValue(r.Context(), types.UserInfoKey, userInfo)

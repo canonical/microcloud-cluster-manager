@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/canonical/lxd/lxd/response"
@@ -16,7 +17,7 @@ func AuthMiddleware(rc types.RouteConfig) mux.MiddlewareFunc {
 	middlewareFunc := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.TLS == nil {
-				err := response.Forbidden(nil).Render(w, r)
+				err := response.Forbidden(fmt.Errorf("TLS is required")).Render(w, r)
 				if err != nil {
 					logger.Log.Errorw("Failed rendering forbidden response due to missing TLS: %w", err)
 				}
@@ -24,18 +25,18 @@ func AuthMiddleware(rc types.RouteConfig) mux.MiddlewareFunc {
 			}
 
 			if verifier == nil || !ok {
-				err := response.Forbidden(nil).Render(w, r)
+				err := response.InternalError(nil).Render(w, r)
 				if err != nil {
-					logger.Log.Errorw("Failed rendering forbidden response due to invalid verifier: %w", err)
+					logger.Log.Errorw("Failed rendering internal server error response due to invalid verifier: %w", err)
 				}
 				return
 			}
 
-			_, err := verifier.Auth(r.Context(), w, r)
+			err := verifier.Auth(r.Context(), w, r)
 			if err != nil {
-				err := response.Forbidden(nil).Render(w, r)
+				err := response.Unauthorized(nil).Render(w, r)
 				if err != nil {
-					logger.Log.Errorw("Failed rendering forbidden response due to authentication error: %w", err)
+					logger.Log.Errorw("Failed rendering unauthorized response due to authentication error: %w", err)
 				}
 				return
 			}

@@ -57,30 +57,6 @@ func Run() (err error) {
 	defer logger.Log.Infow("shutdown complete")
 
 	// =========================================================================
-	// Initialize authentication support
-
-	oidcVerifier, err := auth.NewVerifier(
-		cfg.OIDCIssuer,
-		cfg.OIDCClientID,
-		cfg.OIDCClientSecret,
-		cfg.OIDCAudience,
-		cfg.ManagementAPICert,
-	)
-
-	if err != nil {
-		return fmt.Errorf("oidc verifier error: %w", err)
-	}
-
-	// =========================================================================
-	// Initialize authorization support
-
-	authorizor, err := auth.NewManagementAPIAuthorizor()
-
-	if err != nil {
-		return fmt.Errorf("authorizor error: %w", err)
-	}
-
-	// =========================================================================
 	// Database Support
 
 	logger.Log.Infow("startup", "status", "initializing database support", "host", cfg.DBHost)
@@ -100,8 +76,37 @@ func Run() (err error) {
 	}
 	defer func() {
 		logger.Log.Infow("shutdown", "status", "stopping database support", "host", cfg.DBHost)
-		err = db.Close()
+		dbCloseError := db.Close()
+		if dbCloseError != nil && err == nil {
+			logger.Log.Errorw("shutdown", "status", "error closing database", "error", dbCloseError)
+			err = dbCloseError
+		}
 	}()
+
+	// =========================================================================
+	// Initialize authentication support
+
+	oidcVerifier, err := auth.NewVerifier(
+		cfg.OIDCIssuer,
+		cfg.OIDCClientID,
+		cfg.OIDCClientSecret,
+		cfg.OIDCAudience,
+		cfg.ManagementAPICert,
+		db,
+	)
+
+	if err != nil {
+		return fmt.Errorf("oidc verifier error: %w", err)
+	}
+
+	// =========================================================================
+	// Initialize authorization support
+
+	authorizor, err := auth.NewManagementAPIAuthorizor()
+
+	if err != nil {
+		return fmt.Errorf("authorizor error: %w", err)
+	}
 
 	// =========================================================================
 	// Initialize api

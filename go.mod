@@ -5,6 +5,7 @@ go 1.26.2
 require (
 	github.com/canonical/lxd v0.0.0-20260105151203-f0abf58d180f
 	github.com/getkin/kin-openapi v0.140.0
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang/snappy v1.0.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1

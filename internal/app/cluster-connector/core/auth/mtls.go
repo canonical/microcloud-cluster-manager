@@ -34,20 +34,20 @@ func NewMtlsAuthenticator(db *database.DB) *MtlsAuthenticator {
 }
 
 // Auth authenticates a request using mutual TLS.
-func (ma *MtlsAuthenticator) Auth(ctx context.Context, w http.ResponseWriter, r *http.Request) (bool, error) {
+func (ma *MtlsAuthenticator) Auth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
-		return false, fmt.Errorf("tls is required")
+		return fmt.Errorf("tls is required")
 	}
 
 	if len(r.TLS.PeerCertificates) != 1 {
-		return false, fmt.Errorf("expected exactly one peer certificate")
+		return fmt.Errorf("expected exactly one peer certificate")
 	}
 
 	if ma.cache.Expired() {
 		err := ma.cache.RebuildCache(ctx, ma.db)
 
 		if err != nil {
-			return false, err
+			return fmt.Errorf("failed to rebuild cache: %w", err)
 		}
 	}
 
@@ -57,14 +57,14 @@ func (ma *MtlsAuthenticator) Auth(ctx context.Context, w http.ResponseWriter, r 
 
 	if !trusted {
 		logger.Log.Info("AUTHN untrusted peer certificate presented for mTLS")
-		return false, fmt.Errorf("invalid cluster certificate")
+		return fmt.Errorf("invalid cluster certificate")
 	}
 
 	remoteClusterCert, _ := ma.cache.GetCertificateEntry(fingerprint)
 	request.SetContextValue(r, CtxRemoteClusterID, remoteClusterCert.ClusterID)
 
 	logger.Log.Info("AUTHN peer certificate for mTLS authenticated successfully")
-	return true, nil
+	return nil
 }
 
 // Cache returns the certificates cache.

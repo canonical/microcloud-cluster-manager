@@ -12,6 +12,13 @@ type UserInfo struct {
 	Groups []string `json:"groups"`
 }
 
+// EncryptedTokenSet stores encrypted OIDC tokens.
+type EncryptedTokenSet struct {
+	IDToken      string
+	AccessToken  string
+	RefreshToken string
+}
+
 // APIRoot represents environment data for the Cluster Manager.
 type APIRoot struct {
 	UserInfo
