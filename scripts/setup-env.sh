@@ -18,7 +18,7 @@ if [ ! -d "$KEY_DIR" ]; then
     -out $KEY_DIR/tls.crt \
     -subj "/C=GB/ST=London/L=London/O=Microcloud Cluster Manager/OU=dev/CN=ma.lxd-cm.local" \
     -days 3000 \
-    -addext "subjectAltName=DNS:ma.lxd-cm.local,DNS:cc.lxd-cm.local"
+    -addext "subjectAltName=DNS:ma.lxd-cm.local,DNS:cc.lxd-cm.local,IP:127.0.0.1,IP:127.0.1.1"
 
   cp $KEY_DIR/tls.crt $KEY_DIR/ca.crt
 fi

@@ -10,4 +10,5 @@ var APIRoutes = []types.RouteGroup{
 	apiV1.Status,
 	apiV1.RemoteCluster,
 	apiV1.RemoteClusterProtected,
+	apiV1.RemoteClusterInternal,
 }
