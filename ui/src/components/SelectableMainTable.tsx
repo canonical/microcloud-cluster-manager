@@ -96,6 +96,7 @@ const SelectableMainTable: FC<Props> = ({
             label={<div className="u-off-screen">Select all</div>}
             labelClassName="multiselect-checkbox"
             checked={isAllSelected}
+            className="multiselect-checkbox"
             indeterminate={isSomeSelected && !isAllSelected}
             onChange={isSomeSelected ? selectNone : selectPage}
             disabled={disableSelect || disableSelectAll}
