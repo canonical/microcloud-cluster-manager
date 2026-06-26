@@ -945,10 +945,10 @@
     hashery "^1.5.0"
     keyv "^5.6.0"
 
-"@canonical/react-components@4.6.1":
-  version "4.6.1"
-  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-4.6.1.tgz#21db35df83c121b9411d759d707dc26f406f259b"
-  integrity sha512-iuqCO+yJZ1R/0XQamT3+e84QLLhsmF5NDix7mQv8j6XoRGE+pBV+d6dNcxTNpk6YN5T/HSZw5R5D3q1DjGpF6Q==
+"@canonical/react-components@4.6.2":
+  version "4.6.2"
+  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-4.6.2.tgz#21af420f2f3c87cb4edde4dd906e49390f141bee"
+  integrity sha512-q1S1ddkMe16TH47mtKwU/tbYnzqmDKCDYNCAeKUEtp+BwJZk51HcaTqnDQhZ7gjSqwu1aVZSsNaoZ6pd+d5J1A==
   dependencies:
     "@types/jest" "30.0.0"
     "@types/node" "20.19.30"
@@ -6256,10 +6256,10 @@ v8-to-istanbul@9.3.0:
     "@types/istanbul-lib-coverage" "^2.0.1"
     convert-source-map "^2.0.0"
 
-vanilla-framework@4.52.0:
-  version "4.52.0"
-  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.52.0.tgz#ed1b5603a146b081f730e50b2e7df92d93582ba7"
-  integrity sha512-R4AtNYdYYfYEnQa1A+ya6ADHf7R66XvDkk4d0pnxIjtdLGp9zgNf2U2xcOazO2VxQ377cedOcvQjdO6ZlLksAw==
+vanilla-framework@4.55.1:
+  version "4.55.1"
+  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.55.1.tgz#3f4be9ebd298a0407272acae439047e253db770f"
+  integrity sha512-fa9lTFPDPZjKRgVbE90WNJmEI9grUiJVGDXsEY1Wo785zkYHoSc0PiPNpc4GOq36PWBEPn+ggo6iszBMPQBAvw==
 
 vite-plugin-istanbul@7.2.1:
   version "7.2.1"
