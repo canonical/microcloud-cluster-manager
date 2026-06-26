@@ -5,10 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/query"
 	"github.com/jmoiron/sqlx"
 )
@@ -35,7 +33,7 @@ func GetRemoteClusterTokenID(ctx context.Context, tx *sqlx.Tx, name string) (int
 	var id int
 	err := tx.QueryRowContext(ctx, q, name).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
-		return -1, api.StatusErrorf(http.StatusNotFound, "remote cluster token not found")
+		return -1, NotFoundErrorf("remote cluster token not found")
 	}
 
 	if err != nil {
@@ -49,7 +47,7 @@ func GetRemoteClusterTokenID(ctx context.Context, tx *sqlx.Tx, name string) (int
 func RemoteClusterTokenExists(ctx context.Context, tx *sqlx.Tx, name string) (bool, error) {
 	_, err := GetRemoteClusterTokenID(ctx, tx, name)
 	if err != nil {
-		if api.StatusErrorCheck(err, http.StatusNotFound) {
+		if IsNotFound(err) {
 			return false, nil
 		}
 
@@ -113,7 +111,7 @@ func GetRemoteClusterToken(ctx context.Context, tx *sqlx.Tx, name string) (*Remo
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, api.StatusErrorf(http.StatusNotFound, "remote cluster token not found")
+		return nil, NotFoundErrorf("remote cluster token not found")
 	}
 
 	if err != nil {
@@ -131,7 +129,7 @@ func CreateRemoteClusterToken(ctx context.Context, tx *sqlx.Tx, data RemoteClust
 	}
 
 	if exists {
-		return nil, api.StatusErrorf(http.StatusConflict, "this \"remote_cluster_tokens\" entry already exists")
+		return nil, AlreadyExistsErrorf("this \"remote_cluster_tokens\" entry already exists")
 	}
 
 	q := `
@@ -181,7 +179,7 @@ func DeleteRemoteClusterToken(ctx context.Context, tx *sqlx.Tx, name string) err
 	}
 
 	if n == 0 {
-		return api.StatusErrorf(http.StatusNotFound, "no remote cluster token found with name: %s", name)
+		return NotFoundErrorf("no remote cluster token found with name: %s", name)
 	} else if n > 1 {
 		return fmt.Errorf("deleted %d remote cluster tokens instead of 1", n)
 	}

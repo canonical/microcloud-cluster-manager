@@ -14,9 +14,9 @@ import (
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/lxd/util"
 	"github.com/canonical/lxd/shared"
-	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/config"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/golang-jwt/jwt/v5"
@@ -182,7 +182,7 @@ func (o *Verifier) authenticate(ctx context.Context, w http.ResponseWriter, r *h
 	}
 
 	session, err := o.sessionHandler.GetSessionByID(r.Context(), sessionID)
-	if api.StatusErrorCheck(err, http.StatusNotFound) {
+	if store.IsNotFound(err) {
 		o.deleteCookies(w)
 	}
 
@@ -258,7 +258,7 @@ func (o *Verifier) verifySessionAndGetID(sessionToken string) (uuid.UUID, error)
 func (o *Verifier) handleExpiredSession(ctx context.Context, r *http.Request, w http.ResponseWriter, sessionID uuid.UUID) (*oidc.IDTokenClaims, uuid.UUID, string, string, error) {
 	defer func() {
 		err := o.sessionHandler.DeleteSession(ctx, sessionID)
-		if err != nil && !api.StatusErrorCheck(err, http.StatusNotFound) {
+		if err != nil && !store.IsNotFound(err) {
 			logger.Log.Infof("Failed deleting session after expired session handling: %v", err)
 		}
 	}()

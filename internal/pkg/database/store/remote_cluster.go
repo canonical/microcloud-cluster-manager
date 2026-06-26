@@ -5,10 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/query"
 	"github.com/jmoiron/sqlx"
 )
@@ -37,7 +35,7 @@ func GetRemoteClusterID(ctx context.Context, tx *sqlx.Tx, name string) (int, err
 	var id int
 	err := tx.QueryRowContext(ctx, q, name).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
-		return -1, api.StatusErrorf(http.StatusNotFound, "remote cluster not found")
+		return -1, NotFoundErrorf("remote cluster not found")
 	}
 
 	if err != nil {
@@ -51,7 +49,7 @@ func GetRemoteClusterID(ctx context.Context, tx *sqlx.Tx, name string) (int, err
 func RemoteClusterExists(ctx context.Context, tx *sqlx.Tx, name string) (bool, error) {
 	_, err := GetRemoteClusterID(ctx, tx, name)
 	if err != nil {
-		if api.StatusErrorCheck(err, http.StatusNotFound) {
+		if IsNotFound(err) {
 			return false, nil
 		}
 
@@ -119,7 +117,7 @@ func GetRemoteCluster(ctx context.Context, tx *sqlx.Tx, name string) (*RemoteClu
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, api.StatusErrorf(http.StatusNotFound, "remote cluster not found")
+		return nil, NotFoundErrorf("remote cluster not found")
 	}
 
 	if err != nil {
@@ -137,7 +135,7 @@ func CreateRemoteCluster(ctx context.Context, tx *sqlx.Tx, data RemoteCluster) (
 	}
 
 	if exists {
-		return nil, api.StatusErrorf(http.StatusConflict, "This \"remote_clusters\" entry already exists")
+		return nil, AlreadyExistsErrorf("This \"remote_clusters\" entry already exists")
 	}
 
 	q := `
@@ -190,7 +188,7 @@ func DeleteRemoteCluster(ctx context.Context, tx *sqlx.Tx, name string) error {
 	}
 
 	if n == 0 {
-		return api.StatusErrorf(http.StatusNotFound, "no remote cluster found with name: %s", name)
+		return NotFoundErrorf("no remote cluster found with name: %s", name)
 	} else if n > 1 {
 		return fmt.Errorf("deleted %d remote clusters instead of 1", n)
 	}

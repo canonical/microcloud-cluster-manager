@@ -6,10 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/query"
 	"github.com/jmoiron/sqlx"
@@ -93,7 +91,7 @@ func GetRemoteClusterDetailID(ctx context.Context, tx *sqlx.Tx, remoteClusterID 
 	var id int
 	err := tx.QueryRowContext(ctx, q, remoteClusterID).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
-		return -1, api.StatusErrorf(http.StatusNotFound, "detail for remote cluster not found")
+		return -1, NotFoundErrorf("detail for remote cluster not found")
 	}
 
 	if err != nil {
@@ -107,7 +105,7 @@ func GetRemoteClusterDetailID(ctx context.Context, tx *sqlx.Tx, remoteClusterID 
 func RemoteClusterDetailExists(ctx context.Context, tx *sqlx.Tx, remoteClusterID int) (bool, error) {
 	_, err := GetRemoteClusterDetailID(ctx, tx, remoteClusterID)
 	if err != nil {
-		if api.StatusErrorCheck(err, http.StatusNotFound) {
+		if IsNotFound(err) {
 			return false, nil
 		}
 
@@ -152,7 +150,7 @@ func GetRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID in
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, api.StatusErrorf(http.StatusNotFound, "detail for remote cluster not found")
+		return nil, NotFoundErrorf("detail for remote cluster not found")
 	}
 
 	if err != nil {
@@ -170,7 +168,7 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 	}
 
 	if exists {
-		return nil, api.StatusErrorf(http.StatusConflict, "This \"remote_cluster_details\" entry already exists")
+		return nil, AlreadyExistsErrorf("This \"remote_cluster_details\" entry already exists")
 	}
 
 	q := `
@@ -394,7 +392,7 @@ func GetRemoteClusterWithDetailByName(ctx context.Context, tx *sqlx.Tx, remoteCl
 	}
 
 	if len(remoteClusterDetails) == 0 {
-		return nil, api.StatusErrorf(http.StatusNotFound, "remote cluster with name %s not found", remoteClusterName)
+		return nil, NotFoundErrorf("remote cluster with name %s not found", remoteClusterName)
 	}
 
 	return &remoteClusterDetails[0], nil
@@ -409,7 +407,7 @@ func GetRemoteClusterWithDetailByID(ctx context.Context, tx *sqlx.Tx, remoteClus
 	}
 
 	if len(remoteClusterDetails) == 0 {
-		return nil, api.StatusErrorf(http.StatusNotFound, "remote cluster with ID %d not found", remoteClusterID)
+		return nil, NotFoundErrorf("remote cluster with ID %d not found", remoteClusterID)
 	}
 
 	return &remoteClusterDetails[0], nil
