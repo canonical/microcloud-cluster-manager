@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	sharedapi "github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
@@ -56,7 +55,7 @@ func (s *SessionHandler) StartSession(r *http.Request, claims *oidc.IDTokenClaim
 		}
 
 		err = store.DeleteIdentitySessions(ctx, tx, identity.ID)
-		if err != nil && !sharedapi.StatusErrorCheck(err, http.StatusNotFound) {
+		if err != nil && !store.IsNotFound(err) {
 			return fmt.Errorf("Failed to delete old sessions by identity ID: %w", err)
 		}
 
@@ -101,7 +100,7 @@ func getOrCreateIdentity(ctx context.Context, tx *sqlx.Tx, claims *oidc.IDTokenC
 		return identity, nil
 	}
 
-	if !sharedapi.StatusErrorCheck(err, http.StatusNotFound) {
+	if !store.IsNotFound(err) {
 		return nil, fmt.Errorf("Failed to get identity: %w", err)
 	}
 
@@ -132,7 +131,7 @@ func (s *SessionHandler) GetSessionByID(ctx context.Context, sessionID uuid.UUID
 	err := s.db.Transaction(ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		var err error
 		session, err = store.GetSessionByID(ctx, tx, sessionID.String())
-		if sharedapi.StatusErrorCheck(err, http.StatusNotFound) {
+		if store.IsNotFound(err) {
 			return err
 		}
 		if err != nil {

@@ -5,10 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/jmoiron/sqlx"
 )
@@ -33,7 +31,7 @@ func GetSessionIDByIdentityID(ctx context.Context, tx *sqlx.Tx, identityID int) 
 	var id string
 	err := tx.QueryRowContext(ctx, q, identityID).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", api.StatusErrorf(http.StatusNotFound, "session not found")
+		return "", NotFoundErrorf("session not found")
 	}
 
 	if err != nil {
@@ -47,7 +45,7 @@ func GetSessionIDByIdentityID(ctx context.Context, tx *sqlx.Tx, identityID int) 
 func SessionExistsForIdentity(ctx context.Context, tx *sqlx.Tx, identityID int) (bool, error) {
 	_, err := GetSessionIDByIdentityID(ctx, tx, identityID)
 	if err != nil {
-		if api.StatusErrorCheck(err, http.StatusNotFound) {
+		if IsNotFound(err) {
 			return false, nil
 		}
 
@@ -77,7 +75,7 @@ func GetSessionByID(ctx context.Context, tx *sqlx.Tx, sessionID string) (*Sessio
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, api.StatusErrorf(http.StatusNotFound, "session not found")
+		return nil, NotFoundErrorf("session not found")
 	}
 
 	if err != nil {
@@ -95,7 +93,7 @@ func CreateSession(ctx context.Context, tx *sqlx.Tx, data Session) (*Session, er
 	}
 
 	if exists {
-		return nil, api.StatusErrorf(http.StatusConflict, "this \"sessions\" entry already exists")
+		return nil, AlreadyExistsErrorf("this \"sessions\" entry already exists")
 	}
 
 	q := `
@@ -157,7 +155,7 @@ func UpdateSession(ctx context.Context, tx *sqlx.Tx, data Session) error {
 	}
 
 	if rows == 0 {
-		return api.StatusErrorf(http.StatusNotFound, "session not found")
+		return NotFoundErrorf("session not found")
 	}
 
 	if rows > 1 {
@@ -185,7 +183,7 @@ func DeleteSession(ctx context.Context, tx *sqlx.Tx, sessionID string) error {
 	}
 
 	if n == 0 {
-		return api.StatusErrorf(http.StatusNotFound, "no session found for session ID: %s", sessionID)
+		return NotFoundErrorf("no session found for session ID: %s", sessionID)
 	} else if n > 1 {
 		return fmt.Errorf("deleted %d sessions instead of 1", n)
 	}
@@ -211,7 +209,7 @@ func DeleteIdentitySessions(ctx context.Context, tx *sqlx.Tx, identityID int) er
 	}
 
 	if n == 0 {
-		return api.StatusErrorf(http.StatusNotFound, "no session found for identity ID: %d", identityID)
+		return NotFoundErrorf("no session found for identity ID: %d", identityID)
 	}
 
 	return nil

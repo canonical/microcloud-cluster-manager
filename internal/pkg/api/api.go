@@ -10,10 +10,19 @@ import (
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/config"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/gorilla/mux"
 )
+
+// InitializeSmartErrorMappings maps project-specific store errors to HTTP status codes used by SmartError.
+func InitializeSmartErrorMappings() {
+	response.Init(false, map[int][]error{
+		http.StatusNotFound: {store.ErrNotFound},
+		http.StatusConflict: {store.ErrAlreadyExists},
+	})
+}
 
 // A Handler is a type that handles an http request within our own little mini
 // framework.

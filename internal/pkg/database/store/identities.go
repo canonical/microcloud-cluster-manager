@@ -5,10 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/canonical/lxd/shared/api"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -35,7 +33,7 @@ func GetIdentityBySubject(ctx context.Context, tx *sqlx.Tx, subject string) (*Id
 	var id int
 	err := tx.QueryRowContext(ctx, q, subject).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, api.StatusErrorf(http.StatusNotFound, "identity not found")
+		return nil, NotFoundErrorf("identity not found")
 	}
 
 	if err != nil {
@@ -49,7 +47,7 @@ func GetIdentityBySubject(ctx context.Context, tx *sqlx.Tx, subject string) (*Id
 func IdentityExists(ctx context.Context, tx *sqlx.Tx, subject string) (bool, error) {
 	_, err := GetIdentityBySubject(ctx, tx, subject)
 	if err != nil {
-		if api.StatusErrorCheck(err, http.StatusNotFound) {
+		if IsNotFound(err) {
 			return false, nil
 		}
 
@@ -80,7 +78,7 @@ func GetIdentity(ctx context.Context, tx *sqlx.Tx, subject string) (*Identity, e
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, api.StatusErrorf(http.StatusNotFound, "identity not found")
+		return nil, NotFoundErrorf("identity not found")
 	}
 
 	if err != nil {
@@ -98,7 +96,7 @@ func CreateIdentity(ctx context.Context, tx *sqlx.Tx, data Identity) (*Identity,
 	}
 
 	if exists {
-		return nil, api.StatusErrorf(http.StatusConflict, "this \"identities\" entry already exists")
+		return nil, AlreadyExistsErrorf("this \"identities\" entry already exists")
 	}
 
 	q := `
@@ -164,7 +162,7 @@ func UpdateIdentity(ctx context.Context, tx *sqlx.Tx, data Identity) (*Identity,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, api.StatusErrorf(http.StatusNotFound, "identity not found")
+		return nil, NotFoundErrorf("identity not found")
 	}
 
 	if err != nil {

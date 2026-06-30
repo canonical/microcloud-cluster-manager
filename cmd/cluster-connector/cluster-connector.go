@@ -146,6 +146,7 @@ func Run() (err error) {
 	// Initialize api
 
 	logger.Log.Infow("startup", "status", "initializing API")
+	api.InitializeSmartErrorMappings()
 
 	// Make a channel to listen for an interrupt or terminate signal from the OS.
 	// Use a buffered channel because the signal package requires it.
