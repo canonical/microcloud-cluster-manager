@@ -17,24 +17,25 @@ import (
 
 // RemoteClusterDetail represents detailed information about a remote LXD cluster.
 type RemoteClusterDetail struct {
-	ID                int             `db:"id"`                    // Primary key
-	RemoteClusterID   int             `db:"remote_cluster_id"`     // Foreign key to remote_clusters
-	CephCount         int64           `db:"ceph_count"`            // Number of members
-	CephStatuses      json.RawMessage `db:"ceph_statuses"`         // JSON array of ceph statuses
-	CPUTotalCount     int64           `db:"cpu_total_count"`       // Total CPU count
-	CPULoad1          string          `db:"cpu_load_1"`            // CPU load (1 minute average)
-	CPULoad5          string          `db:"cpu_load_5"`            // CPU load (5 minute average)
-	CPULoad15         string          `db:"cpu_load_15"`           // CPU load (15 minute average)
-	MemoryTotalAmount int64           `db:"memory_total_amount"`   // Total memory in bytes
-	MemoryUsage       int64           `db:"memory_usage"`          // Memory usage in bytes
-	InstanceCount     int64           `db:"instance_count"`        // Number of instances
-	InstanceStatuses  json.RawMessage `db:"instance_statuses"`     // JSON array of instance statuses
-	MemberCount       int64           `db:"member_count"`          // Number of members
-	MemberStatuses    json.RawMessage `db:"member_statuses"`       // JSON array of member statuses
-	StoragePoolUsages json.RawMessage `json:"storage_pool_usages"` // JSON array of storage pool usages
-	UIURL             string          `db:"ui_url"`                // UI URL
-	CreatedAt         time.Time       `db:"created_at"`            // Creation timestamp
-	UpdatedAt         time.Time       `db:"updated_at"`            // Update timestamp
+	ID                     int             `db:"id"`                        // Primary key
+	RemoteClusterID        int             `db:"remote_cluster_id"`         // Foreign key to remote_clusters
+	CephCount              int64           `db:"ceph_count"`                // Number of members
+	CephStatuses           json.RawMessage `db:"ceph_statuses"`             // JSON array of ceph statuses
+	CPUTotalCount          int64           `db:"cpu_total_count"`           // Total CPU count
+	CPULoad1               string          `db:"cpu_load_1"`                // CPU load (1 minute average)
+	CPULoad5               string          `db:"cpu_load_5"`                // CPU load (5 minute average)
+	CPULoad15              string          `db:"cpu_load_15"`               // CPU load (15 minute average)
+	MemoryTotalAmount      int64           `db:"memory_total_amount"`       // Total memory in bytes
+	MemoryUsage            int64           `db:"memory_usage"`              // Memory usage in bytes
+	InstanceCount          int64           `db:"instance_count"`            // Number of instances
+	InstanceStatuses       json.RawMessage `db:"instance_statuses"`         // JSON array of instance statuses
+	MemberCount            int64           `db:"member_count"`              // Number of members
+	MemberStatuses         json.RawMessage `db:"member_statuses"`           // JSON array of member statuses
+	StoragePoolUsages      json.RawMessage `db:"storage_pool_usages"`       // JSON array of storage pool usages
+	UIURL                  string          `db:"ui_url"`                    // UI URL
+	TunnelManagerMemberURL string          `db:"tunnel_manager_member_url"` // Cluster manager member url that holds the tunnel
+	CreatedAt              time.Time       `db:"created_at"`                // Creation timestamp
+	UpdatedAt              time.Time       `db:"updated_at"`                // Update timestamp
 }
 
 // Put updates the RemoteClusterDetail with the provided payload.
@@ -55,30 +56,31 @@ func (r *RemoteClusterDetail) Put(payload models.RemoteClusterStatusPost) {
 
 // RemoteClusterWithDetail is a struct that contains all the information about a remote cluster directly queried from the database.
 type RemoteClusterWithDetail struct {
-	ID                 int             `db:"id"`
-	Name               string          `db:"name"`
-	Description        string          `db:"description"`
-	ClusterCertificate string          `db:"cluster_certificate"`
-	DiskThreshold      int64           `db:"disk_threshold"`
-	MemoryThreshold    int64           `db:"memory_threshold"`
-	ClusterCreatedAt   time.Time       `db:"created_at"`
-	Status             string          `db:"status"`
-	CephCount          int64           `db:"ceph_count"`
-	CephStatuses       json.RawMessage `db:"ceph_statuses"`
-	CPUTotalCount      int64           `db:"cpu_total_count"`
-	CPULoad1           string          `db:"cpu_load_1"`
-	CPULoad5           string          `db:"cpu_load_5"`
-	CPULoad15          string          `db:"cpu_load_15"`
-	MemoryTotalAmount  int64           `db:"memory_total_amount"`
-	MemoryUsage        int64           `db:"memory_usage"`
-	InstanceCount      int64           `db:"instance_count"`
-	InstanceStatuses   json.RawMessage `db:"instance_statuses"`
-	MemberCount        int64           `db:"member_count"`
-	MemberStatuses     json.RawMessage `db:"member_statuses"`
-	StoragePoolUsages  json.RawMessage `json:"storage_pool_usages"`
-	UIURL              string          `db:"ui_url"`
-	ClusterJoinedAt    time.Time       `db:"joined_at"`
-	ClusterUpdatedAt   time.Time       `db:"updated_at"`
+	ID                     int             `db:"id"`
+	Name                   string          `db:"name"`
+	Description            string          `db:"description"`
+	ClusterCertificate     string          `db:"cluster_certificate"`
+	DiskThreshold          int64           `db:"disk_threshold"`
+	MemoryThreshold        int64           `db:"memory_threshold"`
+	ClusterCreatedAt       time.Time       `db:"created_at"`
+	Status                 string          `db:"status"`
+	CephCount              int64           `db:"ceph_count"`
+	CephStatuses           json.RawMessage `db:"ceph_statuses"`
+	CPUTotalCount          int64           `db:"cpu_total_count"`
+	CPULoad1               string          `db:"cpu_load_1"`
+	CPULoad5               string          `db:"cpu_load_5"`
+	CPULoad15              string          `db:"cpu_load_15"`
+	MemoryTotalAmount      int64           `db:"memory_total_amount"`
+	MemoryUsage            int64           `db:"memory_usage"`
+	InstanceCount          int64           `db:"instance_count"`
+	InstanceStatuses       json.RawMessage `db:"instance_statuses"`
+	MemberCount            int64           `db:"member_count"`
+	MemberStatuses         json.RawMessage `db:"member_statuses"`
+	StoragePoolUsages      json.RawMessage `db:"storage_pool_usages"`
+	UIURL                  string          `db:"ui_url"`
+	TunnelManagerMemberURL string          `db:"tunnel_manager_member_url"`
+	ClusterJoinedAt        time.Time       `db:"joined_at"`
+	ClusterUpdatedAt       time.Time       `db:"updated_at"`
 }
 
 // GetRemoteClusterDetailID returns the ID of the detail entry for a remote cluster.
@@ -124,7 +126,7 @@ func GetRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID in
 			id, remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, 
 			cpu_load_15, memory_total_amount, memory_usage, 
 			instance_count, instance_statuses, member_count, 
-			member_statuses, storage_pool_usages, ui_url, created_at, updated_at
+			member_statuses, storage_pool_usages, ui_url, tunnel_manager_member_url, created_at, updated_at
         FROM remote_cluster_details
 		WHERE remote_cluster_id = $1;
     `
@@ -147,6 +149,7 @@ func GetRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID in
 		&result.MemberStatuses,
 		&result.StoragePoolUsages,
 		&result.UIURL,
+		&result.TunnelManagerMemberURL,
 		&result.CreatedAt,
 		&result.UpdatedAt,
 	)
@@ -175,11 +178,11 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 
 	q := `
         INSERT INTO remote_cluster_details 
-			(remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url)
+			(remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url, tunnel_manager_member_url)
         VALUES 
-			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING 
-			id, remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url, created_at, updated_at;
+			id, remote_cluster_id, ceph_count, ceph_statuses, cpu_total_count, cpu_load_1, cpu_load_5, cpu_load_15, memory_total_amount, memory_usage, instance_count, instance_statuses, member_count, member_statuses, storage_pool_usages, ui_url, tunnel_manager_member_url, created_at, updated_at;
     `
 
 	var result RemoteClusterDetail
@@ -199,6 +202,7 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 		data.MemberStatuses,
 		data.StoragePoolUsages,
 		data.UIURL,
+		data.TunnelManagerMemberURL,
 	).Scan(
 		&result.ID,
 		&result.RemoteClusterID,
@@ -216,6 +220,7 @@ func CreateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, data RemoteClus
 		&result.MemberStatuses,
 		&result.StoragePoolUsages,
 		&result.UIURL,
+		&result.TunnelManagerMemberURL,
 		&result.CreatedAt,
 		&result.UpdatedAt,
 	)
@@ -250,8 +255,9 @@ func UpdateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID
             member_statuses = $12,
             storage_pool_usages = $13,
             ui_url = $14,
+            tunnel_manager_member_url = $15,
             updated_at = NOW()
-        WHERE id = $15;
+        WHERE id = $16;
     `
 
 	result, err := tx.ExecContext(ctx, q,
@@ -269,6 +275,41 @@ func UpdateRemoteClusterDetail(ctx context.Context, tx *sqlx.Tx, remoteClusterID
 		data.MemberStatuses,
 		data.StoragePoolUsages,
 		data.UIURL,
+		data.TunnelManagerMemberURL,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("update remote_cluster_details entry failed: %w", err)
+	}
+
+	n, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("fetch affected rows: %w", err)
+	}
+
+	if n != 1 {
+		return fmt.Errorf("query updated %d rows instead of 1", n)
+	}
+
+	return nil
+}
+
+// UpdateRemoteClusterTunnel updates the tunnel member URL for a remote cluster detail entry.
+func UpdateRemoteClusterTunnel(ctx context.Context, tx *sqlx.Tx, remoteClusterID int, tunnelManagerMemberURL string) error {
+	id, err := GetRemoteClusterDetailID(ctx, tx, remoteClusterID)
+	if err != nil {
+		return err
+	}
+
+	q := `
+        UPDATE remote_cluster_details
+        SET tunnel_manager_member_url = $1,
+            updated_at = NOW()
+        WHERE id = $2;
+    `
+
+	result, err := tx.ExecContext(ctx, q,
+		tunnelManagerMemberURL,
 		id,
 	)
 	if err != nil {
@@ -310,6 +351,7 @@ var baseDetailQuery = `
 		remote_cluster_details.member_statuses,
 		remote_cluster_details.storage_pool_usages,
 		remote_cluster_details.ui_url,
+		remote_cluster_details.tunnel_manager_member_url,
 		remote_cluster_details.updated_at,
 		COALESCE(
 			(SELECT value::bigint FROM remote_cluster_config cfg
@@ -353,6 +395,7 @@ func getRemoteClusterWithDetails(ctx context.Context, tx *sqlx.Tx, sql string, a
 			&c.MemberStatuses,
 			&c.StoragePoolUsages,
 			&c.UIURL,
+			&c.TunnelManagerMemberURL,
 			&c.ClusterUpdatedAt,
 			&c.DiskThreshold,
 			&c.MemoryThreshold,

@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/canonical/lxd/lxd/response"
@@ -27,8 +28,7 @@ func RequestTrace(next http.Handler) http.Handler {
 			TraceID: id.String(),
 			Now:     time.Now(),
 		}
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, request.RequestKey(), &v)
+		ctx := context.WithValue(r.Context(), request.RequestKey(), &v)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -36,6 +36,12 @@ func RequestTrace(next http.Handler) http.Handler {
 // LogRequest is a middleware that logs a request/response cycle.
 func LogRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip logging wrapper for WebSocket upgrade requests to preserve Hijacker
+		if strings.ToLower(r.Header.Get("Upgrade")) == "websocket" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		ctx := r.Context()
 		// If the context is missing this value, we can't log anything
 		v, err := request.GetValues(ctx)
@@ -57,7 +63,7 @@ func LogRequest(next http.Handler) http.Handler {
 		)
 
 		// Create a custom response writer to capture status code
-		rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK, req: r}
 		next.ServeHTTP(rw, r)
 
 		logger.Log.Infow(
@@ -72,10 +78,11 @@ func LogRequest(next http.Handler) http.Handler {
 	})
 }
 
-// Custom response writer to capture status code.
+// Custom response writer to capture status code and request context.
 type responseWriter struct {
 	http.ResponseWriter
 	statusCode int
+	req        *http.Request
 }
 
 // WriteHeader captures the status code.

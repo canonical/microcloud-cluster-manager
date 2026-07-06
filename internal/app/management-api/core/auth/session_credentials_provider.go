@@ -34,6 +34,15 @@ func (p *SessionCredentialsProvider) GetAccessToken() (string, error) {
 	return accessToken, nil
 }
 
+// GetUserSecret returns the user secret used for encrypting and decrypting tokens for the session credentials.
+func (p *SessionCredentialsProvider) GetUserSecret() (string, error) {
+	if p.userSecret == "" {
+		return "", fmt.Errorf("Missing user secret")
+	}
+
+	return p.userSecret, nil
+}
+
 // RefreshSessionTokens refreshes OIDC tokens, persists them, and returns the refreshed token.
 func (p *SessionCredentialsProvider) RefreshSessionTokens(ctx context.Context) (string, error) {
 	session, err := p.verifier.sessionHandler.GetSessionByID(ctx, p.sessionID)

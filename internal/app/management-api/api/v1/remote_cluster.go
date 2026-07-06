@@ -2,18 +2,23 @@ package v1
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
 	"time"
 
 	"github.com/canonical/lxd/lxd/response"
+	"github.com/canonical/lxd/shared"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/auth"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -44,6 +49,21 @@ var RemoteCluster = types.RouteGroup{
 			Path:    "{remoteClusterName}",
 			Method:  http.MethodPatch,
 			Handler: remoteClusterPatch,
+		},
+		{
+			Path:    "{remoteClusterName}/tunnel/{path:.*}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterTunnel,
+		},
+		{
+			Path:    "{remoteClusterName}/tunnel/{path:.*}",
+			Method:  http.MethodPost,
+			Handler: remoteClusterTunnel,
+		},
+		{
+			Path:    "{remoteClusterName}/tunnel/{path:.*}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterTunnel,
 		},
 	},
 }
@@ -241,6 +261,7 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 			InstanceStatuses:   instanceStatuses,
 			StoragePoolUsages:  storagePoolUsages,
 			UIURL:              e.UIURL,
+			TunnelRegistered:   e.TunnelManagerMemberURL != "",
 			JoinedAt:           e.ClusterJoinedAt,
 			CreatedAt:          e.ClusterCreatedAt,
 			LastStatusUpdateAt: e.ClusterUpdatedAt,
@@ -252,4 +273,127 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 	})
 
 	return remoteClusters, nil
+}
+
+func remoteClusterTunnel(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		var clusterDetails *store.RemoteClusterDetail
+		err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
+			cluster, err := store.GetRemoteCluster(ctx, tx, remoteClusterName)
+			if err != nil {
+				return err
+			}
+
+			clusterDetails, err = store.GetRemoteClusterDetail(ctx, tx, cluster.ID)
+			return err
+		})
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if clusterDetails.TunnelManagerMemberURL == "" {
+			return response.BadRequest(fmt.Errorf("remote cluster does not have an active tunnel")).Render(w, r)
+		}
+
+		reqURL := clusterDetails.TunnelManagerMemberURL + r.URL.Path
+		if r.URL.RawQuery != "" {
+			reqURL += "?" + r.URL.RawQuery
+		}
+
+		sessionProvider, ok := r.Context().Value(auth.SessionCredentialsProviderKey).(*auth.SessionCredentialsProvider)
+		if !ok {
+			return response.InternalError(fmt.Errorf("failed to get session credentials provider from the request context")).Render(w, r)
+		}
+
+		accessToken, err := sessionProvider.GetAccessToken()
+		if err != nil {
+			return response.InternalError(fmt.Errorf("failed to get access token: %w", err)).Render(w, r)
+		}
+
+		userSecret, err := sessionProvider.GetUserSecret()
+		if err != nil {
+			return response.InternalError(fmt.Errorf("failed to get user secret: %w", err)).Render(w, r)
+		}
+
+		resp, err := sendTunnelRequest(r, accessToken, userSecret, reqURL, rc)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		needsTokenRefresh := resp.StatusCode == 401 || resp.StatusCode == 403
+		if needsTokenRefresh {
+			refreshCtx, cancelRefresh := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancelRefresh()
+			accessToken, err = sessionProvider.RefreshSessionTokens(refreshCtx)
+			if err != nil {
+				return response.InternalError(fmt.Errorf("failed to refresh access token: %w", err)).Render(w, r)
+			}
+
+			resp, err = sendTunnelRequest(r, accessToken, userSecret, reqURL, rc)
+			if err != nil {
+				return response.InternalError(fmt.Errorf("failed to send request after token refresh: %w", err)).Render(w, r)
+			}
+		}
+
+		defer func() {
+			err := resp.Body.Close()
+			if err != nil {
+				logger.Log.Errorf("failed to close response body: %v", err)
+			}
+		}()
+
+		for k, values := range resp.Header {
+			w.Header()[k] = append([]string(nil), values...)
+		}
+
+		w.WriteHeader(resp.StatusCode)
+		if _, err = io.Copy(w, resp.Body); err != nil {
+			logger.Log.Errorf("failed to stream response body", "err", err)
+			return nil
+		}
+
+		return nil
+	}
+}
+
+func sendTunnelRequest(r *http.Request, accessToken string, userSecret string, reqURL string, rc types.RouteConfig) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, reqURL, r.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("X-User-Secret", userSecret)
+
+	// send request
+	serverCert := rc.Env.ClusterConnectorCert.CA()
+	tlsConfig := shared.InitTLSConfig()
+	tlsConfig.Certificates = []tls.Certificate{}
+	tlsConfig.RootCAs = x509.NewCertPool()
+	tlsConfig.RootCAs.AddCert(serverCert)
+	cert := rc.Env.ManagementAPICert.KeyPair()
+	tlsConfig.GetClientCertificate = func(info *tls.CertificateRequestInfo) (*tls.Certificate, error) {
+		// GetClientCertificate is called if not nil instead of performing the default selection of an appropriate
+		// certificate from the `Certificates` list. We only have one-key pair to send, and we always want to send it
+		// because this is what uniquely identifies the caller to the server.
+		return &cert, nil
+	}
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
