@@ -1,9 +1,9 @@
 module github.com/canonical/microcloud-cluster-manager
 
-go 1.26.2
+go 1.26.5
 
 require (
-	github.com/canonical/lxd v0.0.0-20260105151203-f0abf58d180f
+	github.com/canonical/lxd v0.0.0-20260731141352-cc3af015375a
 	github.com/getkin/kin-openapi v0.145.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang/snappy v1.0.0
