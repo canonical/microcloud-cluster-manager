@@ -57,7 +57,7 @@
     "@vitest/coverage-istanbul": "4.0.16",
     "autoprefixer": "10.4.23",
     "babel-plugin-istanbul": "7.0.1",
-    "concurrently": "9.2.1",
+    "concurrently": "10.0.4",
     "convert-source-map": "2.0.0",
     "dotenv": "17.2.3",
     "esbuild": "0.28.1",
