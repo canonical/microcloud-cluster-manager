@@ -1,6 +1,6 @@
 # Cluster Manager architecture
 
-See [Architecture of the MicroCloud Cluster Manager](https://documentation.ubuntu.com/microcloud/latest/microcloud/reference/cluster-manager-architecture/) for an architecture diagram and further details.
+See [Architecture of the MicroCloud Cluster Manager](https://canonical.com/microcloud/docs/latest/reference/cluster-manager-architecture/) for an architecture diagram and further details.
 
 ## Workflows
 
