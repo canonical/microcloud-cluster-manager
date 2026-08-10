@@ -11,7 +11,7 @@ export const fetchClusters = async (): Promise<Cluster[]> => {
 export const fetchCluster = async (
   remoteClusterName: string,
 ): Promise<Cluster> => {
-  return fetch(`/1.0/remote-cluster/${remoteClusterName}`)
+  return fetch(`/1.0/remote-cluster/${encodeURIComponent(remoteClusterName)}`)
     .then(handleResponse)
     .then((data) => (data as LxdApiResponse<Cluster>).metadata);
 };
@@ -19,7 +19,7 @@ export const fetchCluster = async (
 export const deleteCluster = async (
   remoteClusterName: string,
 ): Promise<void> => {
-  await fetch(`/1.0/remote-cluster/${remoteClusterName}`, {
+  await fetch(`/1.0/remote-cluster/${encodeURIComponent(remoteClusterName)}`, {
     method: "DELETE",
   }).then(handleResponse);
 };
@@ -36,7 +36,7 @@ export const updateCluster = async (
   remoteClusterName: string,
   payload: string,
 ): Promise<void> => {
-  await fetch(`/1.0/remote-cluster/${remoteClusterName}`, {
+  await fetch(`/1.0/remote-cluster/${encodeURIComponent(remoteClusterName)}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
