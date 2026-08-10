@@ -21,9 +21,12 @@ export const createToken = async (body: string): Promise<TokenPostResponse> => {
 };
 
 export const deleteToken = async (remoteClusterName: string): Promise<void> => {
-  await fetch(`/1.0/remote-cluster-join-token/${remoteClusterName}`, {
-    method: "DELETE",
-  }).then(handleResponse);
+  await fetch(
+    `/1.0/remote-cluster-join-token/${encodeURIComponent(remoteClusterName)}`,
+    {
+      method: "DELETE",
+    },
+  ).then(handleResponse);
 };
 
 export const deleteTokenBulk = async (
