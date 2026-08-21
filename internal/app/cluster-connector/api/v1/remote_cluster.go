@@ -86,16 +86,6 @@ var RemoteClusterInternal = types.RouteGroup{
 			Method:  http.MethodGet,
 			Handler: remoteClusterTunnel,
 		},
-		{
-			Path:    "{remoteClusterName}/tunnel/{path:.*}",
-			Method:  http.MethodPost,
-			Handler: remoteClusterTunnel,
-		},
-		{
-			Path:    "{remoteClusterName}/tunnel/{path:.*}",
-			Method:  http.MethodPut,
-			Handler: remoteClusterTunnel,
-		},
 	},
 }
 
@@ -684,7 +674,8 @@ func remoteClusterTunnel(rc types.RouteConfig) types.EndpointHandler {
 		}
 
 		prefix := fmt.Sprintf("/%s/remote-cluster/%s/tunnel", rc.Env.APIVersion, url.PathEscape(remoteClusterName))
-		path := strings.TrimPrefix(r.URL.Path, prefix)
+		path := strings.TrimPrefix(r.URL.Path, prefix) + "?" + r.URL.RawQuery
+
 		req := types.ClusterManagerTunnelRequest{
 			UUID:    id.String(),
 			Method:  r.Method,
