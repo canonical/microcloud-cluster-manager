@@ -82,19 +82,9 @@ var RemoteClusterInternal = types.RouteGroup{
 	},
 	Endpoints: []types.Endpoint{
 		{
-			Path:    "{remoteClusterName}/tunnel/{path:.*}",
+			Path:    "{remoteClusterName}/cluster-links",
 			Method:  http.MethodGet,
-			Handler: remoteClusterTunnel,
-		},
-		{
-			Path:    "{remoteClusterName}/tunnel/{path:.*}",
-			Method:  http.MethodPost,
-			Handler: remoteClusterTunnel,
-		},
-		{
-			Path:    "{remoteClusterName}/tunnel/{path:.*}",
-			Method:  http.MethodPut,
-			Handler: remoteClusterTunnel,
+			Handler: remoteClusterLinks,
 		},
 	},
 }
@@ -622,117 +612,120 @@ func getClusterTunnel(rc types.RouteConfig, remoteClusterID int) *types.Tunnel {
 	return tunnel
 }
 
-func remoteClusterTunnel(rc types.RouteConfig) types.EndpointHandler {
+func remoteClusterLinks(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		path := "/1.0/cluster/links?recursion=2"
+		return sendTunnelRequest(rc, w, r, path)
+	}
+}
+
+func sendTunnelRequest(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, path string) error {
+	remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
+	}
+
+	authorizationHeader := r.Header.Get("Authorization")
+	if authorizationHeader == "" {
+		return response.SmartError(errors.New("Authorization header is missing")).Render(w, r)
+	}
+
+	userSecret := r.Header.Get("X-User-Secret")
+	if userSecret == "" {
+		return response.SmartError(errors.New("X-User-Secret header is missing")).Render(w, r)
+	}
+
+	var remoteClusterID int
+	err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
+		remoteClusterID, err = store.GetRemoteClusterID(ctx, tx, remoteClusterName)
 		if err != nil {
-			return response.SmartError(err).Render(w, r)
-		}
-
-		authorizationHeader := r.Header.Get("Authorization")
-		if authorizationHeader == "" {
-			return response.SmartError(errors.New("Authorization header is missing")).Render(w, r)
-		}
-
-		userSecret := r.Header.Get("X-User-Secret")
-		if userSecret == "" {
-			return response.SmartError(errors.New("X-User-Secret header is missing")).Render(w, r)
-		}
-
-		var remoteClusterID int
-		err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
-			remoteClusterID, err = store.GetRemoteClusterID(ctx, tx, remoteClusterName)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		})
-		if err != nil {
-			return response.SmartError(err).Render(w, r)
-		}
-
-		id, err := uuid.NewV7()
-		if err != nil {
-			logger.Log.Errorw("Failed to generate request ID", "error", err)
-			return response.SmartError(errors.New("Failed to generate request ID")).Render(w, r)
-		}
-
-		body, err := readBody(r)
-		if err != nil {
-			logger.Log.Errorw("Failed to read request body", "error", err)
-			return response.SmartError(errors.New("Failed to read request body")).Render(w, r)
-		}
-
-		rc.TunnelStore.Mu.Lock()
-		tunnel := rc.TunnelStore.TunnelByCluster[remoteClusterID]
-		rc.TunnelStore.Mu.Unlock()
-
-		if tunnel == nil {
-			return response.SmartError(errors.New("Tunnel not found")).Render(w, r)
-		}
-
-		headers := http.Header{}
-		headers.Set("Authorization", authorizationHeader)
-		session, err := getUserSession(tunnel, authorizationHeader, userSecret)
-		if err != nil {
-			return response.SmartError(errors.New("Error loading LXD session value")).Render(w, r)
-		}
-
-		if session != "" {
-			headers.Set("Cookie", "session="+session)
-		}
-
-		prefix := fmt.Sprintf("/%s/remote-cluster/%s/tunnel", rc.Env.APIVersion, url.PathEscape(remoteClusterName))
-		path := strings.TrimPrefix(r.URL.Path, prefix)
-		req := types.ClusterManagerTunnelRequest{
-			UUID:    id.String(),
-			Method:  r.Method,
-			Path:    path,
-			Headers: headers,
-			Body:    body,
-		}
-
-		// register for response
-		ch := make(chan types.ClusterManagerTunnelResponse, 1)
-		tunnel.Mu.Lock()
-		tunnel.PendingResponses[id.String()] = ch
-		tunnel.Mu.Unlock()
-		defer func() {
-			tunnel.Mu.Lock()
-			delete(tunnel.PendingResponses, id.String())
-			tunnel.Mu.Unlock()
-		}()
-
-		// send request
-		tunnel.Mu.Lock()
-		wsConn := tunnel.WsConn
-		if wsConn == nil {
-			tunnel.Mu.Unlock()
-			return response.SmartError(errors.New("Tunnel not connected")).Render(w, r)
-		}
-		err = wsConn.WriteJSON(req)
-		tunnel.Mu.Unlock()
-
-		if err != nil {
-			logger.Log.Errorw("Failed to send request over WebSocket", "error", err)
-			ensureClosed(tunnel)
-			return response.SmartError(errors.New("Failed to send request")).Render(w, r)
-		}
-
-		// Wait for response
-		select {
-		case resp := <-ch:
-			setUserSession(resp, tunnel, authorizationHeader, userSecret)
-			writeResponse(w, resp)
-		case <-time.After(15 * time.Second):
-			return response.SmartError(errors.New("Timeout")).Render(w, r)
-		case <-r.Context().Done():
-			return response.SmartError(errors.New("Client disconnected")).Render(w, r)
+			return err
 		}
 
 		return nil
+	})
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
 	}
+
+	id, err := uuid.NewV7()
+	if err != nil {
+		logger.Log.Errorw("Failed to generate request ID", "error", err)
+		return response.SmartError(errors.New("Failed to generate request ID")).Render(w, r)
+	}
+
+	body, err := readBody(r)
+	if err != nil {
+		logger.Log.Errorw("Failed to read request body", "error", err)
+		return response.SmartError(errors.New("Failed to read request body")).Render(w, r)
+	}
+
+	rc.TunnelStore.Mu.Lock()
+	tunnel := rc.TunnelStore.TunnelByCluster[remoteClusterID]
+	rc.TunnelStore.Mu.Unlock()
+
+	if tunnel == nil {
+		return response.SmartError(errors.New("Tunnel not found")).Render(w, r)
+	}
+
+	headers := http.Header{}
+	headers.Set("Authorization", authorizationHeader)
+	session, err := getUserSession(tunnel, authorizationHeader, userSecret)
+	if err != nil {
+		return response.SmartError(errors.New("Error loading LXD session value")).Render(w, r)
+	}
+
+	if session != "" {
+		headers.Set("Cookie", "session="+session)
+	}
+
+	req := types.ClusterManagerTunnelRequest{
+		UUID:    id.String(),
+		Method:  r.Method,
+		Path:    path,
+		Headers: headers,
+		Body:    body,
+	}
+
+	// register for response
+	ch := make(chan types.ClusterManagerTunnelResponse, 1)
+	tunnel.Mu.Lock()
+	tunnel.PendingResponses[id.String()] = ch
+	tunnel.Mu.Unlock()
+	defer func() {
+		tunnel.Mu.Lock()
+		delete(tunnel.PendingResponses, id.String())
+		tunnel.Mu.Unlock()
+	}()
+
+	// send request
+	tunnel.Mu.Lock()
+	wsConn := tunnel.WsConn
+	if wsConn == nil {
+		tunnel.Mu.Unlock()
+		return response.SmartError(errors.New("Tunnel not connected")).Render(w, r)
+	}
+	err = wsConn.WriteJSON(req)
+	tunnel.Mu.Unlock()
+
+	if err != nil {
+		logger.Log.Errorw("Failed to send request over WebSocket", "error", err)
+		ensureClosed(tunnel)
+		return response.SmartError(errors.New("Failed to send request")).Render(w, r)
+	}
+
+	// Wait for response
+	select {
+	case resp := <-ch:
+		setUserSession(resp, tunnel, authorizationHeader, userSecret)
+		writeResponse(w, resp)
+	case <-time.After(15 * time.Second):
+		return response.SmartError(errors.New("Timeout")).Render(w, r)
+	case <-r.Context().Done():
+		return response.SmartError(errors.New("Client disconnected")).Render(w, r)
+	}
+
+	return nil
 }
 
 func readBody(r *http.Request) ([]byte, error) {
