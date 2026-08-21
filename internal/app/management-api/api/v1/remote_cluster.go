@@ -51,19 +51,9 @@ var RemoteCluster = types.RouteGroup{
 			Handler: remoteClusterPatch,
 		},
 		{
-			Path:    "{remoteClusterName}/tunnel/{path:.*}",
+			Path:    "{remoteClusterName}/cluster-links",
 			Method:  http.MethodGet,
-			Handler: remoteClusterTunnel,
-		},
-		{
-			Path:    "{remoteClusterName}/tunnel/{path:.*}",
-			Method:  http.MethodPost,
-			Handler: remoteClusterTunnel,
-		},
-		{
-			Path:    "{remoteClusterName}/tunnel/{path:.*}",
-			Method:  http.MethodPut,
-			Handler: remoteClusterTunnel,
+			Handler: remoteClusterLinks,
 		},
 	},
 }
@@ -275,7 +265,7 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 	return remoteClusters, nil
 }
 
-func remoteClusterTunnel(rc types.RouteConfig) types.EndpointHandler {
+func remoteClusterLinks(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
 		if err != nil {
@@ -300,10 +290,7 @@ func remoteClusterTunnel(rc types.RouteConfig) types.EndpointHandler {
 			return response.BadRequest(fmt.Errorf("remote cluster does not have an active tunnel")).Render(w, r)
 		}
 
-		reqURL := clusterDetails.TunnelManagerMemberURL + r.URL.Path
-		if r.URL.RawQuery != "" {
-			reqURL += "?" + r.URL.RawQuery
-		}
+		reqURL := clusterDetails.TunnelManagerMemberURL + "/1.0/remote-cluster/" + remoteClusterName + "/tunnel/1.0/cluster/links?recursion=2"
 
 		sessionProvider, ok := r.Context().Value(auth.SessionCredentialsProviderKey).(*auth.SessionCredentialsProvider)
 		if !ok {
