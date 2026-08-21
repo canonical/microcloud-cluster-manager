@@ -961,17 +961,17 @@
     prop-types "15.8.1"
     react-table "7.8.0"
 
-"@canonical/typescript-config-react@0.33.0":
-  version "0.33.0"
-  resolved "https://registry.yarnpkg.com/@canonical/typescript-config-react/-/typescript-config-react-0.33.0.tgz#91a1b5f3a2d39469352cf73a7d42f9062f403362"
-  integrity sha512-YsgwJNB4SvpQab6ps2nMY8sk8xfaPa8wNVhloUeORmZyangR2qdSpyu5ScqdUPcbQ0wsObEX3/H9ja0hgIphTA==
+"@canonical/typescript-config-react@0.34.0":
+  version "0.34.0"
+  resolved "https://registry.yarnpkg.com/@canonical/typescript-config-react/-/typescript-config-react-0.34.0.tgz#3f9f43527e5dade2e00d4cedd909cf4cfe731d53"
+  integrity sha512-4oHgdOulYojIzVaLhfjAd5oiTv8hABypYQXQ2JUlkX1genYedcOuyUi6rEylHfz6sg7RgZFBWzwTEuDYuZS3Lw==
   dependencies:
-    "@canonical/typescript-config" "^0.33.0"
+    "@canonical/typescript-config" "^0.34.0"
 
-"@canonical/typescript-config@^0.33.0":
-  version "0.33.0"
-  resolved "https://registry.yarnpkg.com/@canonical/typescript-config/-/typescript-config-0.33.0.tgz#a1f1ed4b028acffaa7fb1091105976d9c0c80f70"
-  integrity sha512-pJAGpwjQi+uuVdThZ1a6LxDwNarME4H99yJYy1UceEx2P+toocV8z6xmIA0jpeq9Z+80p3zguDboR+AXweQYhQ==
+"@canonical/typescript-config@^0.34.0":
+  version "0.34.0"
+  resolved "https://registry.yarnpkg.com/@canonical/typescript-config/-/typescript-config-0.34.0.tgz#36d352f5d8b9d43767d109b0cff81ec362e965a6"
+  integrity sha512-4rYxAUNegmWDW4OYbNVngRSxs9251vzz3g6/qZDgW5OnJqeQgUWasxoBHL08OyWOBC7OvFNGB+IM14x50u+BQQ==
 
 "@csstools/color-helpers@^5.1.0":
   version "5.1.0"
@@ -6263,10 +6263,10 @@ v8-to-istanbul@9.3.0:
     "@types/istanbul-lib-coverage" "^2.0.1"
     convert-source-map "^2.0.0"
 
-vanilla-framework@4.57.0:
-  version "4.57.0"
-  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.57.0.tgz#03cba1599e3ad2455f5052dc4020f6ad63eed62b"
-  integrity sha512-WiQkqmZgSjmWclHR6C1uuHdjI4Xu4sC5y00yERckK5Xp+BtSuPn92RhNcUbaMZj48U/6MZ5w0OOrItYj/NiRSw==
+vanilla-framework@4.58.0:
+  version "4.58.0"
+  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.58.0.tgz#6b49cea0b24d56ed79d84b50c4d1719d3f1fa4b5"
+  integrity sha512-NCcDakrhhbocYkLxaHc5k5H1Wk9AsjaUqwi/RCpdI1gZMEuJc4Stx9Af51K0LQHAyGl1fXd74AzrqDfkjfj/5Q==
 
 vite-plugin-istanbul@7.2.1:
   version "7.2.1"
