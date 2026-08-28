@@ -945,10 +945,10 @@
     hashery "^1.5.0"
     keyv "^5.6.0"
 
-"@canonical/react-components@4.10.0":
-  version "4.10.0"
-  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-4.10.0.tgz#40ec375fb97c87cfe014ea3d16f00dac9789685a"
-  integrity sha512-+1/z7K3X2aW5ZCoFthHHVldxmH2UUUbQYP7IOraUNChfdxbJtdwro1R/rGgS3STD83YKZjyDoeW1OlSk3n9ekQ==
+"@canonical/react-components@4.10.2":
+  version "4.10.2"
+  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-4.10.2.tgz#a60c6c7adfd1254ddb6381bb17b342a7d16011ed"
+  integrity sha512-LEe5blxjFsz/xc+kP4Y1SM3rywQs329i3IOJpSfeaW49ld7VP6ePF+BuO+cWDYzN2wbZ6R5tKC0OJTlcvnaksw==
   dependencies:
     "@types/jest" "30.0.0"
     "@types/node" "20.19.30"
@@ -961,17 +961,17 @@
     prop-types "15.8.1"
     react-table "7.8.0"
 
-"@canonical/typescript-config-react@0.34.0":
-  version "0.34.0"
-  resolved "https://registry.yarnpkg.com/@canonical/typescript-config-react/-/typescript-config-react-0.34.0.tgz#3f9f43527e5dade2e00d4cedd909cf4cfe731d53"
-  integrity sha512-4oHgdOulYojIzVaLhfjAd5oiTv8hABypYQXQ2JUlkX1genYedcOuyUi6rEylHfz6sg7RgZFBWzwTEuDYuZS3Lw==
+"@canonical/typescript-config-react@0.35.0":
+  version "0.35.0"
+  resolved "https://registry.yarnpkg.com/@canonical/typescript-config-react/-/typescript-config-react-0.35.0.tgz#5c240bfe608f2735625fd184bd2d209b37b256b9"
+  integrity sha512-dHoftF/SJlqhOnWpvoeigOl++FWlhB7KtIoKC6eHW2oqFPhcpF53D95AoVwosKVbEgcAB+9dac3EITk+7Ka6gg==
   dependencies:
-    "@canonical/typescript-config" "^0.34.0"
+    "@canonical/typescript-config" "^0.35.0"
 
-"@canonical/typescript-config@^0.34.0":
-  version "0.34.0"
-  resolved "https://registry.yarnpkg.com/@canonical/typescript-config/-/typescript-config-0.34.0.tgz#36d352f5d8b9d43767d109b0cff81ec362e965a6"
-  integrity sha512-4rYxAUNegmWDW4OYbNVngRSxs9251vzz3g6/qZDgW5OnJqeQgUWasxoBHL08OyWOBC7OvFNGB+IM14x50u+BQQ==
+"@canonical/typescript-config@^0.35.0":
+  version "0.35.0"
+  resolved "https://registry.yarnpkg.com/@canonical/typescript-config/-/typescript-config-0.35.0.tgz#52ea3b530cc7e08530c87eadbc1b0f14c29e7269"
+  integrity sha512-JO5Gv1ciWqzs7w7HbkuWZo+BPIZMFS55cvNN2Iv8C0YpH1KnCYmsGDc8N60lzVd+fBqmphSX0gbskd+iVm8aVQ==
 
 "@csstools/color-helpers@^5.1.0":
   version "5.1.0"
@@ -6263,10 +6263,10 @@ v8-to-istanbul@9.3.0:
     "@types/istanbul-lib-coverage" "^2.0.1"
     convert-source-map "^2.0.0"
 
-vanilla-framework@4.58.0:
-  version "4.58.0"
-  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.58.0.tgz#6b49cea0b24d56ed79d84b50c4d1719d3f1fa4b5"
-  integrity sha512-NCcDakrhhbocYkLxaHc5k5H1Wk9AsjaUqwi/RCpdI1gZMEuJc4Stx9Af51K0LQHAyGl1fXd74AzrqDfkjfj/5Q==
+vanilla-framework@4.59.0:
+  version "4.59.0"
+  resolved "https://registry.yarnpkg.com/vanilla-framework/-/vanilla-framework-4.59.0.tgz#c31a136577bfc09eae69cd0dd010e82f1130ac5b"
+  integrity sha512-Bpl8fD3M+fkvziXvuZCFpXr6xkPsO1Ulkhcvpe5juIKmpJcKVqmPBs6m5R1nP64tI+dUgOe2u625Fvgm4C3kug==
 
 vite-plugin-istanbul@7.2.1:
   version "7.2.1"
