@@ -961,17 +961,17 @@
     prop-types "15.8.1"
     react-table "7.8.0"
 
-"@canonical/typescript-config-react@0.36.0":
-  version "0.36.0"
-  resolved "https://registry.yarnpkg.com/@canonical/typescript-config-react/-/typescript-config-react-0.36.0.tgz#5d927e4426f5c484e93be1bfbc15dbe0d3e2a33b"
-  integrity sha512-5WxBQTWV3vKE3JTcaQh3M2QTL73ox0YlCLyzc01TJkHLbe/9aDfii7UEF4BSR9G7Ymi3ARxQBrYbnzco8jnYwA==
+"@canonical/typescript-config-react@0.37.0":
+  version "0.37.0"
+  resolved "https://registry.yarnpkg.com/@canonical/typescript-config-react/-/typescript-config-react-0.37.0.tgz#738b358e1254d3d9077bf173359aa17a94c118ea"
+  integrity sha512-iS8wIRA90B49ioqbqiXQHEtMYJRFSyX4zKwE+4huBzMnGW9Gof58d6stKkDrtsOUgJ+nlqLAQ4ikT2mKN9eL6g==
   dependencies:
-    "@canonical/typescript-config" "^0.36.0"
+    "@canonical/typescript-config" "^0.37.0"
 
-"@canonical/typescript-config@^0.36.0":
-  version "0.36.0"
-  resolved "https://registry.yarnpkg.com/@canonical/typescript-config/-/typescript-config-0.36.0.tgz#4d5e2b157c26885f066def11a43d7f96fdf375d8"
-  integrity sha512-EhLKT16Je9olYYo7fN5VuKvw1wg6ZQqrS2MFI1S6Yx6OIP06Y2fCovHlMgRNyFTDAahG5FOZGa9rUNDuN+RFOQ==
+"@canonical/typescript-config@^0.37.0":
+  version "0.37.0"
+  resolved "https://registry.yarnpkg.com/@canonical/typescript-config/-/typescript-config-0.37.0.tgz#4234314afcb615381bfbe80de87f3307c0588710"
+  integrity sha512-rhrP+Oq2AL2ANf29qmw0Qt3eGBUtyJ+dXgLHu1qQ46ScT7GS82ZuHDPt+TLGi5ItObKYrkopy3snwvqrVNU97g==
 
 "@csstools/color-helpers@^5.1.0":
   version "5.1.0"
