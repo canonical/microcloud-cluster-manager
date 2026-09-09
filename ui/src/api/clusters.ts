@@ -1,5 +1,5 @@
 import type { LxdApiResponse } from "types/apiResponse";
-import type { Cluster } from "types/cluster";
+import type { Cluster, ClusterLink } from "types/cluster";
 import { handleResponse, handleSettledResult } from "util/helpers";
 
 export const fetchClusters = async (): Promise<Cluster[]> => {
@@ -52,4 +52,42 @@ export const updateClusterBulk = async (
   return Promise.allSettled(
     remoteClusterNames.map(async (name) => updateCluster(name, payload)),
   ).then(handleSettledResult);
+};
+
+export const fetchClusterLinks = async (
+  remoteClusterName: string,
+): Promise<ClusterLink[]> => {
+  return fetch(
+    `/1.0/remote-cluster/${encodeURIComponent(remoteClusterName)}/cluster-links`,
+  )
+    .then(handleResponse)
+    .then((data) => (data as LxdApiResponse<ClusterLink[]>).metadata);
+};
+
+export const createClusterLink = async (
+  source: string,
+  payload: string,
+): Promise<void> => {
+  await fetch(
+    `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: payload,
+    },
+  ).then(handleResponse);
+};
+
+export const deleteClusterLink = async (
+  source: string,
+  clusterLinkName: string,
+): Promise<void> => {
+  await fetch(
+    `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links/${encodeURIComponent(clusterLinkName)}`,
+    {
+      method: "DELETE",
+    },
+  ).then(handleResponse);
 };
