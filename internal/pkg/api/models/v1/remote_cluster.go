@@ -95,3 +95,17 @@ type RemoteClusterStatusPostResponse struct {
 	NextUpdateInSeconds   string `json:"next_update_in_seconds"`
 	ClusterManagerAddress string `json:"cluster_manager_address"`
 }
+
+// RemoteClusterLinkPost represents the payload for the POST /1.0/remote-clusters/{remoteClusterName}/cluster-links endpoint.
+type RemoteClusterLinkPost struct {
+	// TargetCluster is the name of the remote cluster to link with.
+	TargetCluster string `json:"target_cluster,omitempty"`
+	// Name is the name of the cluster link created on the source cluster.
+	Name string `json:"name,omitempty"`
+	// Description is the description of the cluster link.
+	Description string `json:"description,omitempty"`
+	// AuthGroups is the list of auth groups the cluster link belongs to.
+	AuthGroups []string `json:"auth_groups,omitempty"`
+	// Type is the type of the cluster link, either "bidirectional" or "unidirectional".
+	Type string `json:"type,omitempty"`
+}

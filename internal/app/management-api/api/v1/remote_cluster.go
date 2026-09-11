@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -53,7 +54,17 @@ var RemoteCluster = types.RouteGroup{
 		{
 			Path:    "{remoteClusterName}/cluster-links",
 			Method:  http.MethodGet,
-			Handler: remoteClusterLinks,
+			Handler: remoteClusterLinksGet,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links",
+			Method:  http.MethodPost,
+			Handler: remoteClusterLinksPost,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
+			Method:  http.MethodDelete,
+			Handler: remoteClusterLinkDelete,
 		},
 	},
 }
@@ -265,9 +276,28 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 	return remoteClusters, nil
 }
 
-func remoteClusterLinks(rc types.RouteConfig) types.EndpointHandler {
+func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		clusterConnectorPath := "/cluster-links"
+		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+	}
+}
+
+func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		clusterConnectorPath := "/cluster-links"
+		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+	}
+}
+
+func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName)
 		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
 	}
 }
@@ -313,12 +343,28 @@ func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *h
 		return response.InternalError(fmt.Errorf("failed to get user secret: %w", err)).Render(w, r)
 	}
 
-	resp, err := sendInternalRequest(r, accessToken, userSecret, reqURL, rc)
+	// Buffer the body so that it can be sent again if the request needs to be retried after a token refresh.
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return response.SmartError(fmt.Errorf("failed to read request body: %w", err)).Render(w, r)
+	}
+
+	defer func() {
+		err := r.Body.Close()
+		if err != nil {
+			logger.Log.Warnw("Failed to close request body", "error", err)
+		}
+	}()
+
+	resp, err := sendInternalRequest(r, accessToken, userSecret, reqURL, rc, body)
 	if err != nil {
 		return response.SmartError(err).Render(w, r)
 	}
 
-	needsTokenRefresh := resp.StatusCode == 401 || resp.StatusCode == 403
+	// Only replay requests that have no side effects. A 401/403 from a non-idempotent request may be the
+	// result of a partially applied change, so replaying it could apply the change twice.
+	isRetriable := r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions
+	needsTokenRefresh := isRetriable && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden)
 	if needsTokenRefresh {
 		refreshCtx, cancelRefresh := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancelRefresh()
@@ -327,7 +373,12 @@ func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *h
 			return response.InternalError(fmt.Errorf("failed to refresh access token: %w", err)).Render(w, r)
 		}
 
-		resp, err = sendInternalRequest(r, accessToken, userSecret, reqURL, rc)
+		err = resp.Body.Close()
+		if err != nil {
+			logger.Log.Warnw("Failed to close response body before retry", "error", err)
+		}
+
+		resp, err = sendInternalRequest(r, accessToken, userSecret, reqURL, rc, body)
 		if err != nil {
 			return response.InternalError(fmt.Errorf("failed to send request after token refresh: %w", err)).Render(w, r)
 		}
@@ -353,10 +404,14 @@ func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *h
 	return nil
 }
 
-func sendInternalRequest(r *http.Request, accessToken string, userSecret string, reqURL string, rc types.RouteConfig) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(r.Context(), r.Method, reqURL, r.Body)
+func sendInternalRequest(r *http.Request, accessToken string, userSecret string, reqURL string, rc types.RouteConfig, body []byte) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, reqURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
+	}
+
+	if contentType := r.Header.Get("Content-Type"); contentType != "" {
+		req.Header.Set("Content-Type", contentType)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+accessToken)
