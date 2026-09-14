@@ -16,6 +16,7 @@ import (
 
 	"github.com/canonical/lxd/lxd/request"
 	"github.com/canonical/lxd/lxd/response"
+	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/auth"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/certificate"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/rate_limit"
@@ -84,7 +85,17 @@ var RemoteClusterInternal = types.RouteGroup{
 		{
 			Path:    "{remoteClusterName}/cluster-links",
 			Method:  http.MethodGet,
-			Handler: remoteClusterLinks,
+			Handler: remoteClusterLinksGet,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links",
+			Method:  http.MethodPost,
+			Handler: remoteClusterLinksPost,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
+			Method:  http.MethodDelete,
+			Handler: remoteClusterLinkDelete,
 		},
 	},
 }
@@ -612,30 +623,199 @@ func getClusterTunnel(rc types.RouteConfig, remoteClusterID int) *types.Tunnel {
 	return tunnel
 }
 
-func remoteClusterLinks(rc types.RouteConfig) types.EndpointHandler {
+func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		path := "/1.0/cluster/links?recursion=2"
-		return sendTunnelRequest(rc, w, r, path)
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		body, err := readBody(r)
+		if err != nil {
+			logger.Log.Errorw("Failed to read request body", "error", err)
+			return response.SmartError(errors.New("Failed to read request body")).Render(w, r)
+		}
+
+		var linkRequest models.RemoteClusterLinkPost
+		err = json.Unmarshal(body, &linkRequest)
+		if err != nil {
+			logger.Log.Errorw("Failed to parse cluster link request body", "error", err, "body_length", len(body))
+			return response.BadRequest(fmt.Errorf("Failed to parse request body: %w", err)).Render(w, r)
+		}
+
+		if linkRequest.TargetCluster == "" {
+			return response.BadRequest(errors.New("Missing target cluster")).Render(w, r)
+		}
+
+		// The link created on the source cluster is named after the target cluster unless a name is given.
+		sourceLinkName := linkRequest.Name
+		if sourceLinkName == "" {
+			sourceLinkName = linkRequest.TargetCluster
+		}
+
+		path := "/1.0/cluster/links"
+
+		// Create the pending cluster link on the source cluster, which returns a trust token.
+		pendingLinkResponse, err := sendTunnelRequest(rc, r, http.MethodPost, path, remoteClusterName, body)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if pendingLinkResponse.Status < http.StatusOK || pendingLinkResponse.Status >= http.StatusMultipleChoices {
+			writeResponse(w, *pendingLinkResponse)
+			return nil
+		}
+
+		trustToken, err := extractTrustToken(pendingLinkResponse.Body)
+		if err != nil {
+			logger.Log.Errorw("Failed to extract trust token from cluster link response", "error", err)
+			deletePendingClusterLink(rc, r, remoteClusterName, sourceLinkName)
+			return response.SmartError(errors.New("Failed to extract trust token from cluster link response")).Render(w, r)
+		}
+
+		// Activate the cluster link on the target cluster using the trust token.
+		targetBody, err := json.Marshal(api.ClusterLinksPost{
+			ClusterLinkPut: api.ClusterLinkPut{
+				Description: linkRequest.Description,
+			},
+			Name:       remoteClusterName,
+			Type:       linkRequest.Type,
+			TrustToken: trustToken,
+			AuthGroups: linkRequest.AuthGroups,
+		})
+		if err != nil {
+			logger.Log.Errorw("Failed to encode cluster link request for target cluster", "error", err)
+			deletePendingClusterLink(rc, r, remoteClusterName, sourceLinkName)
+			return response.SmartError(errors.New("Failed to encode cluster link request for target cluster")).Render(w, r)
+		}
+
+		targetLinkResponse, err := sendTunnelRequest(rc, r, http.MethodPost, path, linkRequest.TargetCluster, targetBody)
+		if err != nil {
+			deletePendingClusterLink(rc, r, remoteClusterName, sourceLinkName)
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if targetLinkResponse.Status < http.StatusOK || targetLinkResponse.Status >= http.StatusMultipleChoices {
+			logger.Log.Errorw("Failed to create cluster link on target cluster", "target_cluster", linkRequest.TargetCluster, "status", targetLinkResponse.Status, "body", string(targetLinkResponse.Body))
+
+			// The link only exists as a pending link on the source cluster, remove it so the operation can be retried.
+			deletePendingClusterLink(rc, r, remoteClusterName, sourceLinkName)
+		}
+
+		writeResponse(w, *targetLinkResponse)
+
+		return nil
 	}
 }
 
-func sendTunnelRequest(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, path string) error {
-	remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
-	if err != nil {
-		return response.SmartError(err).Render(w, r)
+// deletePendingClusterLink removes a cluster link that was created on the source cluster but could not be
+// activated on the target cluster. Failures are logged only, as the caller is already handling an error.
+func deletePendingClusterLink(rc types.RouteConfig, r *http.Request, sourceClusterName string, clusterLinkName string) {
+	if clusterLinkName == "" {
+		return
 	}
 
+	path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName)
+	resp, err := sendTunnelRequest(rc, r, http.MethodDelete, path, sourceClusterName, nil)
+	if err != nil {
+		logger.Log.Errorw("Failed to remove pending cluster link", "source_cluster", sourceClusterName, "cluster_link", clusterLinkName, "error", err)
+		return
+	}
+
+	if resp.Status < http.StatusOK || resp.Status >= http.StatusMultipleChoices {
+		logger.Log.Errorw("Failed to remove pending cluster link", "source_cluster", sourceClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "body", string(resp.Body))
+	}
+}
+
+// extractTrustToken reads the trust token returned by LXD when creating a pending cluster link
+// and returns it as a base64 encoded string, ready to be used as the trust_token of a cluster link request.
+func extractTrustToken(body []byte) (string, error) {
+	var lxdResponse struct {
+		Metadata api.CertificateAddToken `json:"metadata"`
+	}
+
+	err := json.Unmarshal(body, &lxdResponse)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse cluster link response: %w", err)
+	}
+
+	if lxdResponse.Metadata.Secret == "" || lxdResponse.Metadata.Fingerprint == "" {
+		return "", errors.New("cluster link response did not contain a trust token")
+	}
+
+	token := lxdResponse.Metadata.String()
+	if token == "" {
+		return "", errors.New("failed to encode trust token")
+	}
+
+	return token, nil
+}
+
+func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		body, err := readBody(r)
+		if err != nil {
+			logger.Log.Errorw("Failed to read request body", "error", err)
+			return response.SmartError(errors.New("Failed to read request body")).Render(w, r)
+		}
+
+		path := "/1.0/cluster/links?recursion=2"
+		resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, body)
+		if err != nil {
+			return err
+		}
+		writeResponse(w, *resp)
+		return nil
+	}
+}
+
+// remoteClusterLinkDelete removes a single edge of a cluster link, meaning the link is only removed on the
+// remote cluster given in the path. The linked cluster keeps its own cluster link entry.
+func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if clusterLinkName == "" {
+			return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
+		}
+
+		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName)
+		resp, err := sendTunnelRequest(rc, r, http.MethodDelete, path, remoteClusterName, nil)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		writeResponse(w, *resp)
+		return nil
+	}
+}
+
+func sendTunnelRequest(rc types.RouteConfig, r *http.Request, method string, path string, remoteClusterName string, body []byte) (*types.ClusterManagerTunnelResponse, error) {
 	authorizationHeader := r.Header.Get("Authorization")
 	if authorizationHeader == "" {
-		return response.SmartError(errors.New("Authorization header is missing")).Render(w, r)
+		return nil, errors.New("Authorization header is missing")
 	}
 
 	userSecret := r.Header.Get("X-User-Secret")
 	if userSecret == "" {
-		return response.SmartError(errors.New("X-User-Secret header is missing")).Render(w, r)
+		return nil, errors.New("X-User-Secret header is missing")
 	}
 
 	var remoteClusterID int
+	var err error
 	err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
 		remoteClusterID, err = store.GetRemoteClusterID(ctx, tx, remoteClusterName)
 		if err != nil {
@@ -645,19 +825,13 @@ func sendTunnelRequest(rc types.RouteConfig, w http.ResponseWriter, r *http.Requ
 		return nil
 	})
 	if err != nil {
-		return response.SmartError(err).Render(w, r)
+		return nil, err
 	}
 
 	id, err := uuid.NewV7()
 	if err != nil {
 		logger.Log.Errorw("Failed to generate request ID", "error", err)
-		return response.SmartError(errors.New("Failed to generate request ID")).Render(w, r)
-	}
-
-	body, err := readBody(r)
-	if err != nil {
-		logger.Log.Errorw("Failed to read request body", "error", err)
-		return response.SmartError(errors.New("Failed to read request body")).Render(w, r)
+		return nil, errors.New("Failed to generate request ID")
 	}
 
 	rc.TunnelStore.Mu.Lock()
@@ -665,14 +839,14 @@ func sendTunnelRequest(rc types.RouteConfig, w http.ResponseWriter, r *http.Requ
 	rc.TunnelStore.Mu.Unlock()
 
 	if tunnel == nil {
-		return response.SmartError(errors.New("Tunnel not found")).Render(w, r)
+		return nil, errors.New("Tunnel not found")
 	}
 
 	headers := http.Header{}
 	headers.Set("Authorization", authorizationHeader)
 	session, err := getUserSession(tunnel, authorizationHeader, userSecret)
 	if err != nil {
-		return response.SmartError(errors.New("Error loading LXD session value")).Render(w, r)
+		return nil, errors.New("Error loading LXD session value")
 	}
 
 	if session != "" {
@@ -681,7 +855,7 @@ func sendTunnelRequest(rc types.RouteConfig, w http.ResponseWriter, r *http.Requ
 
 	req := types.ClusterManagerTunnelRequest{
 		UUID:    id.String(),
-		Method:  r.Method,
+		Method:  method,
 		Path:    path,
 		Headers: headers,
 		Body:    body,
@@ -703,7 +877,7 @@ func sendTunnelRequest(rc types.RouteConfig, w http.ResponseWriter, r *http.Requ
 	wsConn := tunnel.WsConn
 	if wsConn == nil {
 		tunnel.Mu.Unlock()
-		return response.SmartError(errors.New("Tunnel not connected")).Render(w, r)
+		return nil, errors.New("Tunnel not connected")
 	}
 	err = wsConn.WriteJSON(req)
 	tunnel.Mu.Unlock()
@@ -711,21 +885,19 @@ func sendTunnelRequest(rc types.RouteConfig, w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		logger.Log.Errorw("Failed to send request over WebSocket", "error", err)
 		ensureClosed(tunnel)
-		return response.SmartError(errors.New("Failed to send request")).Render(w, r)
+		return nil, errors.New("Failed to send request")
 	}
 
 	// Wait for response
 	select {
 	case resp := <-ch:
 		setUserSession(resp, tunnel, authorizationHeader, userSecret)
-		writeResponse(w, resp)
+		return &resp, nil
 	case <-time.After(15 * time.Second):
-		return response.SmartError(errors.New("Timeout")).Render(w, r)
+		return nil, errors.New("Timeout")
 	case <-r.Context().Done():
-		return response.SmartError(errors.New("Client disconnected")).Render(w, r)
+		return nil, errors.New("Client disconnected")
 	}
-
-	return nil
 }
 
 func readBody(r *http.Request) ([]byte, error) {
