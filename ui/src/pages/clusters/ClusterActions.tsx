@@ -19,7 +19,7 @@ const ClusterActions: FC<Props> = ({ cluster }) => {
       key="configure"
     />,
     <ClusterUiButton
-      uiUrl={cluster.ui_url}
+      lxdUrl={cluster.lxd_url}
       className="p-contextual-menu__link"
       key="ui"
     />,
