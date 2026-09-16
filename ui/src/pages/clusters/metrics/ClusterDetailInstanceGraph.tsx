@@ -32,7 +32,7 @@ const ClusterDetailInstanceGraph: FC<Props> = ({ cluster }: Props) => {
   }
   if (stopped > 0) {
     segments.push({
-      color: "#CC7900",
+      color: "#000000",
       tooltip: "Stopped",
       value: stopped,
     });
@@ -70,7 +70,7 @@ const ClusterDetailInstanceGraph: FC<Props> = ({ cluster }: Props) => {
           {getPercentage(running)} Running
         </li>
         <li>
-          <Icon name="status-waiting-small" />
+          <Icon name="status-queued-small" />
           {getPercentage(stopped)}
           Stopped
         </li>
