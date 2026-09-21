@@ -90,6 +90,28 @@ func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFu
 		}
 
 		{
+			condition = "Should be able to receive a status update without a cluster UUID"
+			input := helpers.CreateStatusPostData()
+			input.ClusterUUID = ""
+			_, err = helpers.SendStatusUpdate(env, tokenData, input)
+			if err != nil {
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			remoteCluster, err := helpers.FindRemoteCluster(env, remoteClusterName)
+			if err != nil {
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			if remoteCluster.ClusterUUID != "" {
+				err = fmt.Errorf("invalid cluster UUID: expected empty value")
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			helpers.LogTestOutcome(t, condition, nil)
+		}
+
+		{
 			condition = "Should be able to receive a status update"
 			input := helpers.CreateStatusPostData()
 			response, err := helpers.SendStatusUpdate(env, tokenData, input)
@@ -147,6 +169,42 @@ func testRemoteClusterSuccess(env *helpers.Environment) (testName string, testFu
 				{Name: "data", Total: 2048, Usage: 1024},
 			}) {
 				err = fmt.Errorf("invalid member statuses")
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			if remoteCluster.ClusterUUID != "3fa85f64-5717-4562-b3fc-2c963f66afa6" {
+				err = fmt.Errorf("invalid cluster UUID")
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			helpers.LogTestOutcome(t, condition, nil)
+		}
+
+		{
+			condition = "Should keep the previously stored cluster UUID when a later status update omits it"
+
+			// Store a known cluster UUID first, independent of earlier test cases.
+			withUUID := helpers.CreateStatusPostData()
+			withUUID.ClusterUUID = "cd67b02d-89e0-4a6b-9e5b-3f7c1f1e9c11"
+			_, err = helpers.SendStatusUpdate(env, tokenData, withUUID)
+			if err != nil {
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			withoutUUID := helpers.CreateStatusPostData()
+			withoutUUID.ClusterUUID = ""
+			_, err = helpers.SendStatusUpdate(env, tokenData, withoutUUID)
+			if err != nil {
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			remoteCluster, err := helpers.FindRemoteCluster(env, remoteClusterName)
+			if err != nil {
+				helpers.LogTestOutcome(t, condition, err)
+			}
+
+			if remoteCluster.ClusterUUID != "cd67b02d-89e0-4a6b-9e5b-3f7c1f1e9c11" {
+				err = fmt.Errorf("invalid cluster UUID: expected previously stored value to be preserved")
 				helpers.LogTestOutcome(t, condition, err)
 			}
 
