@@ -60,6 +60,7 @@ type RemoteClusterWithDetail struct {
 	Name                   string          `db:"name"`
 	Description            string          `db:"description"`
 	ClusterCertificate     string          `db:"cluster_certificate"`
+	ClusterUUID            string          `db:"cluster_uuid"`
 	DiskThreshold          int64           `db:"disk_threshold"`
 	MemoryThreshold        int64           `db:"memory_threshold"`
 	ClusterCreatedAt       time.Time       `db:"created_at"`
@@ -335,6 +336,7 @@ var baseDetailQuery = `
 		remote_clusters.description,
 		remote_clusters.status,
 		remote_clusters.cluster_certificate,
+		remote_clusters.cluster_uuid,
 		remote_clusters.joined_at,
 		remote_clusters.created_at,
 		remote_cluster_details.ceph_count,
@@ -379,6 +381,7 @@ func getRemoteClusterWithDetails(ctx context.Context, tx *sqlx.Tx, sql string, a
 			&c.Description,
 			&c.Status,
 			&c.ClusterCertificate,
+			&c.ClusterUUID,
 			&c.ClusterJoinedAt,
 			&c.ClusterCreatedAt,
 			&c.CephCount,
