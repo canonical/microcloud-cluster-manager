@@ -12,6 +12,7 @@ export interface StoragePoolUsage {
 
 export interface Cluster {
   name: string;
+  cluster_uuid: string;
   description: string;
   disk_threshold: number;
   memory_threshold: number;
