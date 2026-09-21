@@ -232,6 +232,7 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 
 		remoteClusters = append(remoteClusters, models.RemoteCluster{
 			Name:               e.Name,
+			ClusterUUID:        e.ClusterUUID,
 			Description:        e.Description,
 			ClusterCertificate: e.ClusterCertificate,
 			DiskThreshold:      e.DiskThreshold,
