@@ -34,6 +34,7 @@ type StoragePoolUsage struct {
 // RemoteCluster is a standalone or clustered LXD cluster.
 type RemoteCluster struct {
 	Name               string               `json:"name"`
+	ClusterUUID        string               `json:"cluster_uuid"`
 	Description        string               `json:"description"`
 	ClusterCertificate string               `json:"cluster_certificate"`
 	DiskThreshold      int64                `json:"disk_threshold"`
@@ -76,6 +77,7 @@ type RemoteClusterPost struct {
 
 // RemoteClusterStatusPost is sent by LXD to inform about its current status.
 type RemoteClusterStatusPost struct {
+	ClusterUUID       string               `json:"cluster_uuid"`
 	CephStatuses      []StatusDistribution `json:"ceph_statuses"`
 	CPUTotalCount     int64                `json:"cpu_total_count"`
 	CPULoad1          string               `json:"cpu_load_1"`
