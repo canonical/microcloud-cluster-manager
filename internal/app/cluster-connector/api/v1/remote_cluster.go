@@ -232,6 +232,22 @@ func remoteClusterStatusPost(rc types.RouteConfig) types.EndpointHandler {
 				return err
 			}
 
+			// Persist the cluster UUID reported in the heartbeat. Older MicroCloud
+			// versions don't send it, so only update the stored value when a valid
+			// UUID is provided and keep correlating via the certificate fingerprint.
+			clusterUUID := dbRemoteCluster.ClusterUUID
+			if payload.ClusterUUID != "" {
+				_, err := uuid.Parse(payload.ClusterUUID)
+				if err != nil {
+					logger.Log.Warnw("Ignoring invalid cluster UUID in status update", "remote cluster", remoteClusterID, "cluster_uuid", payload.ClusterUUID)
+				} else if dbRemoteCluster.ClusterUUID == "" {
+					clusterUUID = payload.ClusterUUID
+				} else if payload.ClusterUUID != dbRemoteCluster.ClusterUUID {
+					logger.Log.Infow("Updating stored cluster UUID", "remote cluster", remoteClusterID, "old_cluster_uuid", dbRemoteCluster.ClusterUUID, "new_cluster_uuid", payload.ClusterUUID)
+					clusterUUID = payload.ClusterUUID
+				}
+			}
+
 			dbRemoteClusterDetail, err := store.GetRemoteClusterDetail(ctx, tx, remoteClusterID)
 			if err != nil {
 				return err
@@ -249,6 +265,7 @@ func remoteClusterStatusPost(rc types.RouteConfig) types.EndpointHandler {
 				Status:             string(models.ACTIVE),
 				JoinedAt:           time.Now(),
 				ClusterCertificate: dbRemoteCluster.ClusterCertificate,
+				ClusterUUID:        clusterUUID,
 			}
 
 			err = store.UpdateRemoteCluster(ctx, tx, dbRemoteCluster.Name, newCluster)
