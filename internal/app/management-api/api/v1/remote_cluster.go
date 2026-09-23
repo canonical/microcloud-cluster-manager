@@ -232,6 +232,7 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 
 		remoteClusters = append(remoteClusters, models.RemoteCluster{
 			Name:               e.Name,
+			ClusterUUID:        e.ClusterUUID,
 			Description:        e.Description,
 			ClusterCertificate: e.ClusterCertificate,
 			DiskThreshold:      e.DiskThreshold,
@@ -250,8 +251,8 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 			InstanceCount:      e.InstanceCount,
 			InstanceStatuses:   instanceStatuses,
 			StoragePoolUsages:  storagePoolUsages,
-			UIURL:              e.UIURL,
 			TunnelRegistered:   e.TunnelManagerMemberURL != "",
+			LXDURL:             e.LXDURL,
 			JoinedAt:           e.ClusterJoinedAt,
 			CreatedAt:          e.ClusterCreatedAt,
 			LastStatusUpdateAt: e.ClusterUpdatedAt,

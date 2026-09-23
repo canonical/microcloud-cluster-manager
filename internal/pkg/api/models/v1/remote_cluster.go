@@ -34,6 +34,7 @@ type StoragePoolUsage struct {
 // RemoteCluster is a standalone or clustered LXD cluster.
 type RemoteCluster struct {
 	Name               string               `json:"name"`
+	ClusterUUID        string               `json:"cluster_uuid"`
 	Description        string               `json:"description"`
 	ClusterCertificate string               `json:"cluster_certificate"`
 	DiskThreshold      int64                `json:"disk_threshold"`
@@ -52,8 +53,8 @@ type RemoteCluster struct {
 	MemberStatuses     []StatusDistribution `json:"member_statuses"`
 	InstanceCount      int64                `json:"instance_count"`
 	InstanceStatuses   []StatusDistribution `json:"instance_statuses"`
-	UIURL              string               `json:"ui_url"`
 	TunnelRegistered   bool                 `json:"tunnel_registered"`
+	LXDURL             string               `json:"lxd_url"`
 	JoinedAt           time.Time            `json:"joined_at"`
 	CreatedAt          time.Time            `json:"created_at"`
 	LastStatusUpdateAt time.Time            `json:"last_status_update_at"`
@@ -76,6 +77,7 @@ type RemoteClusterPost struct {
 
 // RemoteClusterStatusPost is sent by LXD to inform about its current status.
 type RemoteClusterStatusPost struct {
+	ClusterUUID       string               `json:"cluster_uuid"`
 	CephStatuses      []StatusDistribution `json:"ceph_statuses"`
 	CPUTotalCount     int64                `json:"cpu_total_count"`
 	CPULoad1          string               `json:"cpu_load_1"`
@@ -87,7 +89,7 @@ type RemoteClusterStatusPost struct {
 	MemberStatuses    []StatusDistribution `json:"member_statuses"`
 	InstanceStatuses  []StatusDistribution `json:"instance_statuses"`
 	ServerMetrics     []ServerMetrics      `json:"server_metrics"`
-	UIURL             string               `json:"ui_url"`
+	LXDURL            string               `json:"lxd_url"`
 }
 
 // RemoteClusterStatusPostResponse is sent to LXD in response to a remote cluster status update.
