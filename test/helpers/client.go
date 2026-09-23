@@ -89,6 +89,26 @@ func QueryManagementAPI(env *Environment, method string, path *api.URL, input an
 	return statusCode, err
 }
 
+// QueryClusterConnectorInternal makes a request to a cluster connector internal endpoint,
+// authenticating with the management API certificate, as the management API does when it
+// forwards requests to the cluster connector.
+func QueryClusterConnectorInternal(env *Environment, method string, path *api.URL, input any, output any, adjustHeaders func(*http.Request) error) (int, error) {
+	serverCert, err := env.ClusterConnectorCert().PublicKeyX509()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get cluster connector cert: %w", err)
+	}
+
+	tlsClient, err := NewTLSHTTPClient(api.URL{}, env.ManagementAPICert(), serverCert, env.ClusterConnectorHost())
+	if err != nil {
+		return 0, fmt.Errorf("failed to create TLS client: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	return tlsClient.Query(ctx, method, path, input, output, adjustHeaders)
+}
+
 // Query makes a query using the http client (unix or tls).
 func (c *Client) Query(ctx context.Context, method string, path *api.URL, input any, output any, adjustHeaders func(*http.Request) error) (int, error) {
 	// Merge the provided URL with the one we have for the client.

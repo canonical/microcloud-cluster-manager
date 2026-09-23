@@ -10,6 +10,7 @@ import (
 var tests = []types.Test{
 	testRemoteClusterSuccess,
 	testRemoteClusterSuccessWithMetrics,
+	testRemoteClusterLinkPrecheck,
 	testRemoteClusterJoinInvalid,
 	testRemoteClusterJoinExpiredToken,
 	testRemoteClusterStatusNoCert,

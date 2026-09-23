@@ -15,6 +15,9 @@ var tests = []types.UnitTest{
 	testRateLimitMiddleware_CleanupLoop,
 	testAuthorizor_CheckPermissions_AdminUser,
 	testAuthorizor_CheckPermissions_NonAdminUser,
+	testClusterLink_RequiredEntitlements_Bidirectional,
+	testClusterLink_RequiredEntitlements_UnsupportedType,
+	testClusterLink_HasServerEntitlement,
 }
 
 func TestUnit(t *testing.T) {
