@@ -18,6 +18,8 @@ import ClusterMetricsButton from "pages/clusters/actions/ClusterMetricsButton";
 import RemoveClusterButton from "pages/clusters/actions/RemoveClusterButton";
 import ConfigureClusterButton from "pages/clusters/actions/ConfigureClusterButton";
 import ClusterEditDescriptionBtn from "pages/clusters/actions/ClusterEditDescriptionBtn";
+import ClusterLinks from "pages/clusters/ClusterLinks";
+import CreateClusterLinkPanel from "pages/clusters/CreateClusterLinkPanel";
 
 const ClusterDetail: FC = () => {
   const panelParams = usePanelParams();
@@ -139,11 +141,15 @@ const ClusterDetail: FC = () => {
               }
             />
             <ClusterWarningList cluster={cluster} />
+            <ClusterLinks cluster={cluster} />
           </Row>
         )}
       </BaseLayout>
       {panelParams.panel === panels.configureCluster && (
         <ConfigureClusterPanel />
+      )}
+      {panelParams.panel === panels.createClusterLink && (
+        <CreateClusterLinkPanel />
       )}
     </>
   );
