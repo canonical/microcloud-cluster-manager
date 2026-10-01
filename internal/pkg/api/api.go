@@ -96,7 +96,7 @@ func (a *API) RegisterRoutes(routes []types.RouteGroup) {
 		w.Header().Set("Content-Type", "application/json")
 		err := response.NotFound(nil).Render(w, r)
 		if err != nil {
-			logger.Log.Error("Failed to write HTTP response", "url", r.URL, "err", err.Error())
+			logger.Log.Errorw("Failed to write HTTP response", "url", r.URL, "err", err.Error())
 		}
 	})
 }

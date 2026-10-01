@@ -20,7 +20,7 @@ func AuthMiddleware(rc types.RouteConfig) mux.MiddlewareFunc {
 			if verifier == nil || !ok {
 				err := response.Forbidden(nil).Render(w, r)
 				if err != nil {
-					logger.Log.Errorw("Failed rendering forbidden response due to invalid verifier: %w", err)
+					logger.Log.Errorw("Failed rendering forbidden response due to invalid verifier", "error", err)
 				}
 				return
 			}
@@ -29,7 +29,7 @@ func AuthMiddleware(rc types.RouteConfig) mux.MiddlewareFunc {
 			if err != nil {
 				err := response.Forbidden(nil).Render(w, r)
 				if err != nil {
-					logger.Log.Errorw("Failed rendering forbidden response due to authentication error: %w", err)
+					logger.Log.Errorw("Failed rendering forbidden response due to authentication error", "error", err)
 				}
 				return
 			}

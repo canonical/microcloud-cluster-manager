@@ -19,7 +19,7 @@ func RequestTrace(next http.Handler) http.Handler {
 		if err != nil {
 			err := response.InternalError(err).Render(w, r)
 			if err != nil {
-				logger.Log.Errorw("Failed rendering internal error response due to failed UUID generation: %w", err)
+				logger.Log.Errorw("Failed rendering internal error response due to failed UUID generation", "error", err)
 			}
 			return
 		}
@@ -48,7 +48,7 @@ func LogRequest(next http.Handler) http.Handler {
 		if err != nil {
 			err := response.InternalError(err).Render(w, r)
 			if err != nil {
-				logger.Log.Errorw("Failed rendering internal error response due to missing request values: %w", err)
+				logger.Log.Errorw("Failed rendering internal error response due to missing request values", "error", err)
 			}
 			return
 		}
