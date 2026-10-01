@@ -113,7 +113,9 @@ const ClusterList: FC = () => {
   const filteredClusters = clusters.filter((item) => {
     if (
       //Query search by name
-      !filters.queries.every((q) => item.name.toLowerCase().includes(q))
+      !filters.queries.every((q) =>
+        item.name.toLowerCase().includes(q.toLowerCase()),
+      )
     ) {
       return false;
     }
