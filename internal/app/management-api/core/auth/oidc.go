@@ -29,6 +29,9 @@ import (
 )
 
 const (
+	// cookieNameLoginID is used to identify a single login flow.
+	cookieNameLoginID = "login_id"
+
 	// cookieNameSessionToken is used to identify the session. It does not need to be encrypted.
 	cookieNameSessionToken = "oidc_session"
 
@@ -64,7 +67,7 @@ type Verifier struct {
 	host string
 
 	// configExpiry is the next time at which the relying party and access token verifier will be considered out of date
-	// and will be refreshed. This refreshes the cookie encryption keys that the relying party uses.
+	// and will be refreshed.
 	configExpiry         time.Time
 	configExpiryInterval time.Duration
 
@@ -416,6 +419,37 @@ func (o *Verifier) Login(w http.ResponseWriter, r *http.Request, stateTokenStr s
 		return
 	}
 
+	// Create a login ID cookie. This will be deleted when the login flow reaches /oidc/callback.
+	loginIDCookie := &http.Cookie{
+		Name:     cookieNameLoginID,
+		Path:     "/",
+		Value:    uuid.NewString(),
+		Secure:   true,
+		HttpOnly: true,
+		// Lax mode is required because the IdP redirects the browser back to /oidc/callback. In Strict mode the
+		// browser does not send this cookie on that cross-site redirect.
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	// Set the login cookie on the request. This is required so that the AuthURLHandler below is able to use it to
+	// derive cookie encryption keys that are unique to this login flow and can be recreated on any replica (see
+	// [Verifier.setRelyingParty]). Any login_id cookie left over from an abandoned login is dropped first, otherwise
+	// r.Cookie would return the stale value and the state and PKCE cookies would be encrypted with the wrong keys.
+	requestCookies := r.Cookies()
+	r.Header.Del("Cookie")
+	for _, cookie := range requestCookies {
+		if cookie.Name != cookieNameLoginID {
+			r.AddCookie(cookie)
+		}
+	}
+
+	r.AddCookie(loginIDCookie)
+
+	// Set the login cookie on the response. This stores the salt for cookie encryption key derivation on the client,
+	// for use in /oidc/callback. We must set this on the response now, because the AuthURLHandler below will send a
+	// HTTP redirect.
+	http.SetCookie(w, loginIDCookie)
+
 	logger.Log.Info("AUTHN initiating OIDC login flow")
 	handler := rp.AuthURLHandler(func() string { return stateTokenStr }, o.relyingParty, rp.WithURLParam("audience", o.audience))
 	handler(w, r)
@@ -452,6 +486,17 @@ func (o *Verifier) Logout(w http.ResponseWriter, r *http.Request) {
 
 // Callback is a http.HandlerFunc which implements the code exchange required on the /oidc/callback endpoint.
 func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL string) {
+	// Always delete the login_id cookie on callback, whether or not the code exchange succeeds. It is only valid for a
+	// single login flow.
+	http.SetCookie(w, &http.Cookie{
+		Name:     cookieNameLoginID,
+		Path:     "/",
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Expires:  time.Unix(0, 0),
+	})
+
 	err := o.ensureConfig(r.Context(), r)
 	if err != nil {
 		logger.Log.Info("AUTHN invalid OIDC configuration")
@@ -586,28 +631,31 @@ func (o *Verifier) setRelyingParty(ctx context.Context, r *http.Request) error {
 	// The relying party sets cookies for the following values:
 	// - "state": Used to prevent CSRF attacks (https://datatracker.ietf.org/doc/html/rfc6749#section-10.12).
 	// - "pkce": Used to prevent authorization code interception attacks (https://datatracker.ietf.org/doc/html/rfc7636).
-	// Both should be stored securely. However, these cookies do not need to be decrypted by other cluster members, so
-	// it is ok to use the secure key generation that is built in to the securecookie library. This also reduces the
-	// exposure of our private key.
+	//
+	// When the management API runs with more than one replica behind a load balancer, the IdP may redirect the caller
+	// to a different replica than the one that started the flow. The relying party may also be refreshed between the
+	// two requests (see configExpiry). To handle both, we set a "login_id" cookie at the start of the flow, then derive
+	// the cookie encryption keys from that login ID and the management API private key using HKDF (the same way that
+	// we do for the user secret cookie). This mirrors the fix for https://github.com/canonical/lxd/issues/13644.
+	cookieHandler := httphelper.NewRequestAwareCookieHandler(func(r *http.Request) (*securecookie.SecureCookie, error) {
+		loginID, err := r.Cookie(cookieNameLoginID)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get login ID cookie: %w", err)
+		}
 
-	// The hash key should be 64 bytes (https://github.com/gorilla/securecookie).
-	cookieHashKey := securecookie.GenerateRandomKey(64)
-	if cookieHashKey == nil {
-		return errors.New("Failed to generate a secure cookie hash key")
-	}
+		loginUUID, err := uuid.Parse(loginID.Value)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse login ID cookie: %w", err)
+		}
 
-	// The block key should 32 bytes for AES-256 encryption.
-	cookieBlockKey := securecookie.GenerateRandomKey(32)
-	if cookieBlockKey == nil {
-		return errors.New("Failed to generate a secure cookie hash key")
-	}
+		return o.secureCookieFromSession(loginUUID)
+	})
 
 	httpClient, err := o.httpClientFunc()
 	if err != nil {
 		return fmt.Errorf("Failed to get a HTTP client: %w", err)
 	}
 
-	cookieHandler := httphelper.NewCookieHandler(cookieHashKey, cookieBlockKey)
 	options := []rp.Option{
 		rp.WithCookieHandler(cookieHandler),
 		rp.WithVerifierOpts(rp.WithIssuedAtOffset(5 * time.Second)),
