@@ -18,6 +18,8 @@ var tests = []types.UnitTest{
 	testAuthorizor_CheckPermissions_NonAdminUser,
 	testOIDCLogin_CallbackOnAnotherReplica,
 	testOIDCLogin_IgnoresStaleLoginID,
+	testDatabase_StatusCheckHonoursContext,
+	testDatabase_TransactionHonoursContext,
 }
 
 func TestUnit(t *testing.T) {
