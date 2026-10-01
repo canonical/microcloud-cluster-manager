@@ -16,6 +16,7 @@ import SelectedTableNotification from "components/SelectedTableNotification";
 import SelectableMainTable from "components/SelectableMainTable";
 import RevokeTokenButton from "pages/clusters/actions/RevokeTokenButton";
 import EnrollClusterButton from "pages/clusters/actions/EnrollClusterButton";
+import useSortTableData from "context/useSortTableData";
 
 interface Props {
   processingNames: string[];
@@ -113,6 +114,11 @@ const ClusterListTokens: FC<Props> = ({
     };
   });
 
+  const { rows: sortedRows, updateSort } = useSortTableData({
+    rows: tableRows,
+    defaultSort: "createdAt",
+  });
+
   const isEmptyState = !tokens.length && !isLoading;
 
   return (
@@ -139,7 +145,7 @@ const ClusterListTokens: FC<Props> = ({
           belowIds={["status-bar"]}
         >
           <TablePagination
-            data={tableRows}
+            data={sortedRows}
             id="pagination"
             itemName="token"
             className="u-no-margin--top"
@@ -170,8 +176,9 @@ const ClusterListTokens: FC<Props> = ({
               }
               sortable
               headers={tableHeaders}
-              rows={tableRows}
+              rows={sortedRows}
               defaultSort="createdAt"
+              onUpdateSort={updateSort}
               selectedNames={selectedNames}
               setSelectedNames={setSelectedNames}
               itemName="token"
