@@ -55,20 +55,34 @@ func (rl *RateLimiter) CheckLimit(ctx context.Context, w http.ResponseWriter, r 
 	lim := rl.getOrCreateClientLimiter(clientID)
 
 	if lim == nil || lim.limiter == nil {
-		logger.Log.Info("Could not create rate limiter for client %s", clientID)
+		logger.Log.Infof("Could not create rate limiter for client %s", clientID)
 		return false, fmt.Errorf("could not create rate limiter for client %s", clientID)
 	}
 
 	if !lim.limiter.Allow() {
-		if time.Since(lim.lastLogged) >= rl.logInterval {
-			lim.lastLogged = time.Now()
-			logger.Log.Info("Rate limit exceeded for client %s", clientID)
+		if rl.shouldLogLimitExceeded(lim) {
+			logger.Log.Infof("Rate limit exceeded for client %s", clientID)
 		}
 		w.Header().Set("Retry-After", getRetryAfterHeader(lim.limiter))
 		return false, nil
 	}
 
 	return true, nil
+}
+
+// shouldLogLimitExceeded returns true if the client has not been logged as exceeding the rate limit within the last
+// logInterval, and records that it is being logged now. Requests from the same client share a ClientLimiter, so this
+// is done under the lock.
+func (rl *RateLimiter) shouldLogLimitExceeded(lim *ClientLimiter) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	if time.Since(lim.lastLogged) < rl.logInterval {
+		return false
+	}
+
+	lim.lastLogged = time.Now()
+	return true
 }
 
 // getOrCreateClientLimiter returns an existing limiter for client or creates a new one.
@@ -84,7 +98,7 @@ func (rl *RateLimiter) getOrCreateClientLimiter(key string) *ClientLimiter {
 	if len(rl.clients) >= rl.maxClients {
 		if time.Since(rl.lastLogged) >= rl.logInterval {
 			rl.lastLogged = time.Now()
-			logger.Log.Info("Rate limiter store is full: maximum %d clients reached", rl.maxClients)
+			logger.Log.Infof("Rate limiter store is full: maximum %d clients reached", rl.maxClients)
 		}
 		return nil
 	}

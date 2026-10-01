@@ -13,6 +13,7 @@ var tests = []types.UnitTest{
 	testRateLimitMiddleware_BucketSizeAllowance,
 	testRateLimitMiddleware_TokenRefill,
 	testRateLimitMiddleware_CleanupLoop,
+	testRateLimitMiddleware_ConcurrentLimitedRequests,
 	testAuthorizor_CheckPermissions_AdminUser,
 	testAuthorizor_CheckPermissions_NonAdminUser,
 }
