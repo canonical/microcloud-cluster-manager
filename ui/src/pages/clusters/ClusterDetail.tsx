@@ -66,7 +66,7 @@ const ClusterDetail: FC = () => {
                 className="p-segmented-control__button"
               />
               <ClusterUiButton
-                uiUrl={cluster.ui_url}
+                lxdUrl={cluster.lxd_url}
                 className="p-segmented-control__button"
               />
               <ClusterMetricsButton

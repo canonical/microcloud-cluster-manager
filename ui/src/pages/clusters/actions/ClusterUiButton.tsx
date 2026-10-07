@@ -3,13 +3,13 @@ import type { FC } from "react";
 import classnames from "classnames";
 
 interface Props {
-  uiUrl: string;
+  lxdUrl: string;
   className?: string;
   onClose?: () => void;
 }
 
-const ClusterUiButton: FC<Props> = ({ uiUrl, className, onClose }) => {
-  if (!uiUrl) {
+const ClusterUiButton: FC<Props> = ({ lxdUrl, className, onClose }) => {
+  if (!lxdUrl) {
     return null;
   }
 
@@ -17,7 +17,7 @@ const ClusterUiButton: FC<Props> = ({ uiUrl, className, onClose }) => {
     <a
       className={classnames("p-button u-no-margin--bottom has-icon", className)}
       onClick={onClose}
-      href={uiUrl}
+      href={lxdUrl}
       target="_blank"
       rel="noopener noreferrer"
     >

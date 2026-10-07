@@ -33,8 +33,8 @@ export interface Cluster {
   storage_pool_usages: StoragePoolUsage[];
   cluster_certificate: string;
   status: string;
-  ui_url: string;
   tunnel_registered: boolean;
+  lxd_url: string;
 }
 
 export type ClusterInstanceStatus = "Running" | "Frozen" | "Error" | "Stopped";
