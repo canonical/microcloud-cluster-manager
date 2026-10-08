@@ -16,6 +16,8 @@ var tests = []types.UnitTest{
 	testRateLimitMiddleware_ConcurrentLimitedRequests,
 	testAuthorizor_CheckPermissions_AdminUser,
 	testAuthorizor_CheckPermissions_NonAdminUser,
+	testOIDCLogin_CallbackOnAnotherReplica,
+	testOIDCLogin_IgnoresStaleLoginID,
 }
 
 func TestUnit(t *testing.T) {
