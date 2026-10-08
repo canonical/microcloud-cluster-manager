@@ -961,10 +961,10 @@
     prop-types "15.8.1"
     react-table "7.8.0"
 
-"@canonical/typescript-config-react@0.44.0":
-  version "0.44.0"
-  resolved "https://registry.yarnpkg.com/@canonical/typescript-config-react/-/typescript-config-react-0.44.0.tgz#e79f1051c60cb4709c1c098d83929dc333287efc"
-  integrity sha512-+IDGWFrqWxk+pidrStSTHSlZfTyFpdkKFWVNMScAWln+XwX5xaVX2Zy3z4s4ul4KmvTOxrawAZSqkFbuGdpgyQ==
+"@canonical/typescript-config-react@0.44.1":
+  version "0.44.1"
+  resolved "https://registry.yarnpkg.com/@canonical/typescript-config-react/-/typescript-config-react-0.44.1.tgz#323b263ab8897c6c10f196b72100ff6015587468"
+  integrity sha512-F/mMNR3VRkExYqRSB2KiEwbtsyikI274AVQBjyCEmBcOoe4jF+TlXs/XFk+RcP8Sei/iBsLzZdUa0KcH+fIfcw==
   dependencies:
     "@canonical/typescript-config" "0.43.0"
 
