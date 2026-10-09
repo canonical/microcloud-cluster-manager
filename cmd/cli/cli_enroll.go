@@ -56,7 +56,7 @@ func (c *cmdEnroll) Run(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if t.Before(time.Now()) {
-			return fmt.Errorf("expire flag must be in the future, got %s", payload.Expiry)
+			return fmt.Errorf("expire flag must be in the future, got %s", t.Format(time.RFC3339))
 		}
 		payload.Expiry = t
 	}
