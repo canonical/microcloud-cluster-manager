@@ -82,7 +82,9 @@ const ClusterListActive: FC<Props> = ({
       columns: [
         {
           content: (
-            <Link to={`/ui/cluster/${cluster.name}`}>{cluster.name}</Link>
+            <Link to={`/ui/cluster/${encodeURIComponent(cluster.name)}`}>
+              {cluster.name}
+            </Link>
           ),
           className: "name",
           role: "rowheader",
