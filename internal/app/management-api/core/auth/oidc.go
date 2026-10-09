@@ -414,7 +414,7 @@ func (o *Verifier) Login(w http.ResponseWriter, r *http.Request, stateTokenStr s
 		logger.Log.Info("AUTHN invalid OIDC configuration")
 		err := response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Login failed: %w", err).Error()).Render(w, r)
 		if err != nil {
-			logger.Log.Errorw("Failed rendering internal server error response due to invalid OIDC configuration: %w", err)
+			logger.Log.Errorw("Failed rendering internal server error response due to invalid OIDC configuration", "error", err)
 		}
 		return
 	}
@@ -502,7 +502,7 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 		logger.Log.Info("AUTHN invalid OIDC configuration")
 		err := response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("OIDC callback failed: %w", err).Error()).Render(w, r)
 		if err != nil {
-			logger.Log.Errorw("Failed rendering internal server error response due to invalid OIDC configuration: %w", err)
+			logger.Log.Errorw("Failed rendering internal server error response due to invalid OIDC configuration", "error", err)
 		}
 		return
 	}
@@ -513,7 +513,7 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 			logger.Log.Info("AUTHN failed to verify OIDC ID token")
 			err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to verify ID token: %w", err).Error()).Render(w, r)
 			if err != nil {
-				logger.Log.Errorw("Failed rendering internal server error response due to failed ID token verification: %w", err)
+				logger.Log.Errorw("Failed rendering internal server error response due to failed ID token verification", "error", err)
 			}
 			return
 		}
@@ -523,7 +523,7 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 			logger.Log.Info("AUTHN failed to generate user secret")
 			err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to generate user secret: %w", err).Error()).Render(w, r)
 			if err != nil {
-				logger.Log.Errorw("Failed rendering internal server error response due to failed user secret generation: %w", err)
+				logger.Log.Errorw("Failed rendering internal server error response due to failed user secret generation", "error", err)
 			}
 			return
 		}
@@ -532,7 +532,7 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 			logger.Log.Infof("AUTHN failed to encrypt tokens %v", err)
 			err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to encrypt tokens: %w", err).Error()).Render(w, r)
 			if err != nil {
-				logger.Log.Errorw("Failed rendering internal server error response due to failed token encryption: %w", err)
+				logger.Log.Errorw("Failed rendering internal server error response due to failed token encryption", "error", err)
 			}
 			return
 		}
@@ -542,7 +542,7 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 			logger.Log.Infof("AUTHN failed to start session, %v", err)
 			err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to start session: %w", err).Error()).Render(w, r)
 			if err != nil {
-				logger.Log.Errorw("Failed rendering internal server error response due to failed session start: %w", err)
+				logger.Log.Errorw("Failed rendering internal server error response due to failed session start", "error", err)
 			}
 			return
 		}
@@ -553,7 +553,7 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 			logger.Log.Infof("AUTHN failed to set cookies, %v", err)
 			err = response.ErrorResponse(http.StatusInternalServerError, err.Error()).Render(w, r)
 			if err != nil {
-				logger.Log.Errorw("Failed rendering internal server error response due to failed cookie setting: %w", err)
+				logger.Log.Errorw("Failed rendering internal server error response due to failed cookie setting", "error", err)
 			}
 			return
 		}
