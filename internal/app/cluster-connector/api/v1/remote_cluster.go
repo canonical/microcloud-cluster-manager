@@ -11,7 +11,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/canonical/lxd/lxd/request"
@@ -19,7 +21,9 @@ import (
 	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/auth"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/certificate"
+	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/cluster_link"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/rate_limit"
+	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/tunnel"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/config"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
@@ -664,16 +668,32 @@ func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 			return response.BadRequest(errors.New("Missing target cluster")).Render(w, r)
 		}
 
+		if linkRequest.TargetCluster == remoteClusterName {
+			return response.BadRequest(errors.New("Target cluster must differ from the source cluster")).Render(w, r)
+		}
+
+		err = checkClusterLinkPreflight(rc, r, linkRequest.Type, remoteClusterName, linkRequest.TargetCluster)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
 		// The link created on the source cluster is named after the target cluster unless a name is given.
 		sourceLinkName := linkRequest.Name
 		if sourceLinkName == "" {
 			sourceLinkName = linkRequest.TargetCluster
 		}
+		linkRequest.Name = sourceLinkName
+
+		sourceBody, err := json.Marshal(linkRequest)
+		if err != nil {
+			logger.Log.Errorw("Failed to encode cluster link request for source cluster", "error", err)
+			return response.SmartError(errors.New("Failed to encode cluster link request for source cluster")).Render(w, r)
+		}
 
 		path := "/1.0/cluster/links"
 
 		// Create the pending cluster link on the source cluster, which returns a trust token.
-		pendingLinkResponse, err := sendTunnelRequest(rc, r, http.MethodPost, path, remoteClusterName, body)
+		pendingLinkResponse, err := sendTunnelRequest(rc, r, http.MethodPost, path, remoteClusterName, sourceBody)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -766,6 +786,117 @@ func extractTrustToken(body []byte) (string, error) {
 	}
 
 	return token, nil
+}
+
+// checkClusterLinkPreflight validates the link type and verifies that both clusters meet its
+// API-extension and permission requirements before a link is created.
+func checkClusterLinkPreflight(rc types.RouteConfig, r *http.Request, linkType string, sourceCluster string, targetCluster string) error {
+	sourcePermissions, targetPermissions, ok := cluster_link.RequiredPermissions(linkType)
+	if !ok {
+		return api.StatusErrorf(http.StatusBadRequest, "Unsupported cluster link type %q", linkType)
+	}
+
+	var sourceErr, targetErr error
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		sourceErr = checkTunnelRequirements(rc, r, sourceCluster, []string{cluster_link.ClusterLinksAPIExtension}, sourcePermissions)
+	}()
+	go func() {
+		defer wg.Done()
+		targetErr = checkTunnelRequirements(rc, r, targetCluster, []string{cluster_link.ClusterLinksAPIExtension}, targetPermissions)
+	}()
+	wg.Wait()
+
+	if sourceErr != nil {
+		if targetErr != nil {
+			return api.StatusErrorf(http.StatusBadGateway, "Source cluster error: %v; Target cluster error: %v", sourceErr, targetErr)
+		}
+
+		return sourceErr
+	}
+
+	return targetErr
+}
+
+// checkTunnelRequirements verifies that a cluster is reachable over its tunnel, supports the
+// requested API extensions, and grants the user the given entity-qualified permissions. An empty
+// permissions list means only reachability and API-extension support are checked.
+func checkTunnelRequirements(rc types.RouteConfig, r *http.Request, clusterName string, apiExtensions []string, permissions []api.Permission) error {
+	// Probe reachability and required API-extension support.
+	resp, err := sendTunnelRequest(rc, r, http.MethodGet, "/1.0", clusterName, nil)
+	if err != nil {
+		// Do not mask a 404 Not Found error as a bad gateway.
+		if api.StatusErrorCheck(err, http.StatusNotFound) {
+			return err
+		}
+		return api.StatusErrorf(http.StatusBadGateway, "Cluster %q is unreachable: %s", clusterName, err)
+	}
+
+	if resp.Status == http.StatusUnauthorized || resp.Status == http.StatusForbidden {
+		return api.StatusErrorf(http.StatusForbidden, "Not authenticated on cluster %q", clusterName)
+	}
+
+	if resp.Status < http.StatusOK || resp.Status >= http.StatusMultipleChoices {
+		return api.StatusErrorf(http.StatusInternalServerError, "Unexpected response from cluster %q: %s", clusterName, string(resp.Body))
+	}
+
+	var serverResponse struct {
+		Metadata api.Server `json:"metadata"`
+	}
+
+	err = json.Unmarshal(resp.Body, &serverResponse)
+	if err != nil {
+		return fmt.Errorf("failed to parse server response from cluster %q: %w", clusterName, err)
+	}
+
+	for _, apiExtension := range apiExtensions {
+		if !slices.Contains(serverResponse.Metadata.APIExtensions, apiExtension) {
+			return api.StatusErrorf(http.StatusBadRequest, "Cluster %q does not support required API extension %q", clusterName, apiExtension)
+		}
+	}
+
+	if len(permissions) == 0 || !slices.Contains(serverResponse.Metadata.APIExtensions, tunnel.AccessManagementAPIExtension) {
+		// Nothing more to check, or the cluster cannot report effective permissions (older LXD);
+		// any missing permissions will surface as creation-time errors.
+		return nil
+	}
+
+	// Let LXD evaluate the user's effective permissions.
+	resp, err = sendTunnelRequest(rc, r, http.MethodGet, "/1.0/auth/identities/current", clusterName, nil)
+	if err != nil {
+		return api.StatusErrorf(http.StatusBadGateway, "Cluster %q is unreachable: %s", clusterName, err)
+	}
+
+	if resp.Status == http.StatusUnauthorized || resp.Status == http.StatusForbidden {
+		return api.StatusErrorf(http.StatusForbidden, "Not authenticated on cluster %q", clusterName)
+	}
+
+	if resp.Status < http.StatusOK || resp.Status >= http.StatusMultipleChoices {
+		return api.StatusErrorf(http.StatusInternalServerError, "Unexpected response from cluster %q: %s", clusterName, string(resp.Body))
+	}
+
+	var identityResponse struct {
+		Metadata api.IdentityInfo `json:"metadata"`
+	}
+
+	err = json.Unmarshal(resp.Body, &identityResponse)
+	if err != nil {
+		return fmt.Errorf("failed to parse identity response from cluster %q: %w", clusterName, err)
+	}
+
+	if !identityResponse.Metadata.FineGrained {
+		// Unrestricted identities (e.g. trusted TLS clients) hold every permission.
+		return nil
+	}
+
+	err = tunnel.CheckPermissions(identityResponse.Metadata.EffectivePermissions, permissions)
+	if err != nil {
+		return api.StatusErrorf(http.StatusForbidden, "Insufficient permissions on cluster %q: %v", clusterName, err)
+	}
+
+	return nil
 }
 
 func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
