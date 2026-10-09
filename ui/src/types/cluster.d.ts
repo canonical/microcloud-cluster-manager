@@ -49,5 +49,6 @@ export interface ClusterLink {
   type: string;
   config?: {
     "volatile.addresses"?: string;
+    "volatile.uuid"?: string;
   };
 }
