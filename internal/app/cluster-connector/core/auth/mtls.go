@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/canonical/lxd/lxd/request"
 	"github.com/canonical/lxd/lxd/util"
@@ -25,9 +24,10 @@ type MtlsAuthenticator struct {
 // NewMtlsAuthenticator returns a new MtlsAuthenticator.
 func NewMtlsAuthenticator(db *database.DB) *MtlsAuthenticator {
 	return &MtlsAuthenticator{
+		// The cache TTL is left unset, so the cache starts out expired and is built from the database on the first
+		// request. Otherwise clusters that are already enrolled are rejected until the first TTL runs out.
 		cache: &certificate.CertificatesCache{
 			Certificates: make(map[string]*certificate.CertificateCacheEntry),
-			TTL:          time.Now().Add(60 * time.Second),
 		},
 		db: db,
 	}
@@ -60,7 +60,13 @@ func (ma *MtlsAuthenticator) Auth(ctx context.Context, w http.ResponseWriter, r 
 		return fmt.Errorf("invalid cluster certificate")
 	}
 
-	remoteClusterCert, _ := ma.cache.GetCertificateEntry(fingerprint)
+	// The cache may have been rebuilt since GetTrustedCerts was called, and no longer contain this certificate.
+	remoteClusterCert, ok := ma.cache.GetCertificateEntry(fingerprint)
+	if !ok {
+		logger.Log.Info("AUTHN peer certificate for mTLS was removed from the trusted certificates")
+		return fmt.Errorf("invalid cluster certificate")
+	}
+
 	request.SetContextValue(r, CtxRemoteClusterID, remoteClusterCert.ClusterID)
 
 	logger.Log.Info("AUTHN peer certificate for mTLS authenticated successfully")

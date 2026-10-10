@@ -22,9 +22,9 @@ type CertificateCacheEntry struct {
 // CertificatesCache represent a cache of LXD cluster certificates with a TTL.
 type CertificatesCache struct {
 	Certificates map[string]*CertificateCacheEntry
-	// TTL is the time when the cache will expire.
+	// TTL is the time when the cache will expire. A zero TTL means the cache has never been built.
 	// The cache TTL is used to eliminate the need to synchronize the cache across all members of the cluster.
-	// The cache will be re-built using db data after TTL is reached
+	// The cache will be re-built using db data after TTL is reached.
 	TTL time.Time
 	mu  sync.RWMutex
 }
@@ -45,8 +45,10 @@ func (c *CertificatesCache) AddCertificate(cert *x509.Certificate, clusterID int
 }
 
 // Expired returns true if the cache has expired.
-// No need to lock the cache here since TTL will not change concurrently after cache is created.
 func (c *CertificatesCache) Expired() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	return time.Now().After(c.TTL)
 }
 
@@ -80,6 +82,12 @@ func (c *CertificatesCache) GetTrustedCerts() map[string]x509.Certificate {
 func (c *CertificatesCache) RebuildCache(ctx context.Context, db *database.DB) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	// Concurrent requests that see the cache as expired all wait for the lock here. Only the first one needs to read
+	// from the database, the others can use the cache it built.
+	if !time.Now().After(c.TTL) {
+		return nil
+	}
 
 	return db.Transaction(ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		var dbRemoteClusters []store.RemoteClusterWithDetail
