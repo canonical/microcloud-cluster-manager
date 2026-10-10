@@ -2,6 +2,7 @@ package clusterconnector
 
 import (
 	"context"
+	"errors"
 	"expvar"
 	"fmt"
 	"net/http"
@@ -79,7 +80,13 @@ func Run() (err error) {
 	}
 	defer func() {
 		logger.Log.Infow("shutdown", "status", "stopping database support", "host", cfg.DBHost)
-		err = db.Close()
+		dbCloseError := db.Close()
+		if dbCloseError != nil {
+			logger.Log.Errorw("shutdown", "status", "error closing database", "error", dbCloseError)
+		}
+		if dbCloseError != nil && err == nil {
+			err = dbCloseError
+		}
 	}()
 
 	// time out the database connection after 5 minutes
@@ -214,8 +221,7 @@ func Run() (err error) {
 
 		// Asking server to shutdown and shed load.
 		if err := server.Shutdown(ctx); err != nil {
-			err = server.Close()
-			return fmt.Errorf("could not stop server gracefully: %w", err)
+			return fmt.Errorf("could not stop server gracefully: %w", errors.Join(err, server.Close()))
 		}
 	}
 
