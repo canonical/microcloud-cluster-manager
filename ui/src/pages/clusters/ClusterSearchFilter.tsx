@@ -6,7 +6,10 @@ import type {
   SearchAndFilterData,
 } from "@canonical/react-components/dist/components/SearchAndFilter/types";
 import { useSearchParams } from "react-router-dom";
-import { paramsFromSearchData } from "util/searchAndFilter";
+import {
+  paramsFromSearchData,
+  searchParamsToChips,
+} from "util/searchAndFilter";
 import {
   instanceStatuses,
   nodeStatuses,
@@ -79,6 +82,7 @@ const ClusterSearchFilter: FC = () => {
     <>
       <h2 className="u-off-screen">Search and filter</h2>
       <SearchAndFilter
+        existingSearchData={searchParamsToChips(searchParams, QUERY_PARAMS)}
         filterPanelData={searchAndFilterData}
         returnSearchData={onSearchDataChange}
       />
