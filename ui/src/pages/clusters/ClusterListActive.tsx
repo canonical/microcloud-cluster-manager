@@ -169,7 +169,7 @@ const ClusterListActive: FC<Props> = ({
                   parentName=""
                   selectedNames={selectedNames}
                   setSelectedNames={setSelectedNames}
-                  filteredNames={selectedNames}
+                  filteredNames={clusters.map((item) => item.name)}
                 />
               )
             }
