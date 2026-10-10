@@ -18,6 +18,7 @@ import { fetchClusters, updateClusterBulk } from "api/clusters";
 import { pluralize } from "util/helpers";
 import BulkConfigurePanelInput from "components/forms/BulkConfigurePanelInput";
 import * as Yup from "yup";
+import { thresholdSchema } from "util/thresholdValidation";
 
 const BulkConfigureClusterPanel: FC = () => {
   const panelParams = usePanelParams();
@@ -86,8 +87,8 @@ const BulkConfigureClusterPanel: FC = () => {
     );
 
   const BulkConfigurationSchema = Yup.object().shape({
-    diskThreshold: Yup.number().min(0).max(100),
-    memoryThreshold: Yup.number().min(0).max(100),
+    diskThreshold: thresholdSchema,
+    memoryThreshold: thresholdSchema,
   });
 
   const formik = useFormik<ConfigureClusterFormValues>({
