@@ -81,8 +81,10 @@ func Run() (err error) {
 	defer func() {
 		logger.Log.Infow("shutdown", "status", "stopping database support", "host", cfg.DBHost)
 		dbCloseError := db.Close()
-		if dbCloseError != nil && err == nil {
+		if dbCloseError != nil {
 			logger.Log.Errorw("shutdown", "status", "error closing database", "error", dbCloseError)
+		}
+		if dbCloseError != nil && err == nil {
 			err = dbCloseError
 		}
 	}()
