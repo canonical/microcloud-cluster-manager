@@ -46,9 +46,10 @@ func testPatchRemoteClusterSuccess(env *helpers.Environment, router routers.Rout
 			t.Fatalf("Failed to create cluster for patch test: %v", err)
 		}
 
+		description := "updated by OpenAPI schema test"
 		patch := models.RemoteClusterPatch{
 			Status:          models.ACTIVE,
-			Description:     "updated by OpenAPI schema test",
+			Description:     &description,
 			DiskThreshold:   75,
 			MemoryThreshold: 80,
 		}
@@ -62,9 +63,10 @@ func testPatchRemoteClusterSuccess(env *helpers.Environment, router routers.Rout
 func testPatchRemoteClusterNotFound(env *helpers.Environment, router routers.Router) (testName string, testFunc func(t *testing.T)) {
 	return "testPatchRemoteClusterNotFound PATCH /1.0/remote-cluster/{remoteClusterName} 404", func(t *testing.T) {
 		clusterName := "non-existent-cluster"
+		description := "updated by OpenAPI schema test"
 		patch := models.RemoteClusterPatch{
 			Status:          models.ACTIVE,
-			Description:     "updated by OpenAPI schema test",
+			Description:     &description,
 			DiskThreshold:   75,
 			MemoryThreshold: 80,
 		}

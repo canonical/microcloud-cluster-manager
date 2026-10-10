@@ -160,7 +160,10 @@ func remoteClusterPatch(rc types.RouteConfig) types.EndpointHandler {
 			if payload.Status != "" {
 				newRemoteCluster.Status = string(payload.Status)
 			}
-			newRemoteCluster.Description = payload.Description
+			if payload.Description != nil {
+				newRemoteCluster.Description = *payload.Description
+			}
+
 			if payload.DiskThreshold < 0 || payload.DiskThreshold > 100 {
 				return errors.New("disk threshold outside 0 and 100 percent")
 			}

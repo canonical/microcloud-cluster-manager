@@ -61,9 +61,10 @@ type RemoteCluster struct {
 }
 
 // RemoteClusterPatch represents the payload for the PATCH /1.0/remote-clusters/{remoteClusterName} endpoint.
+// Description is a pointer so that a payload without it leaves the existing description unchanged.
 type RemoteClusterPatch struct {
 	Status          RemoteClusterStatus `json:"status"`
-	Description     string              `json:"description,omitempty"`
+	Description     *string             `json:"description,omitempty"`
 	DiskThreshold   int64               `json:"disk_threshold,omitempty"`
 	MemoryThreshold int64               `json:"memory_threshold,omitempty"`
 }
