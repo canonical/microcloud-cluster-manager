@@ -22,7 +22,11 @@ import type { ClusterLink, ClusterLinkPost } from "types/cluster";
 import * as Yup from "yup";
 import ClusterSelector from "pages/clusters/ClusterSelector";
 
-const CreateClusterLinkPanel: FC = () => {
+interface Props {
+  sourceCluster?: string;
+}
+
+const CreateClusterLinkPanel: FC<Props> = ({ sourceCluster = "" }) => {
   const panelParams = usePanelParams();
   const queryClient = useQueryClient();
   const notify = useNotify();
@@ -38,6 +42,7 @@ const CreateClusterLinkPanel: FC = () => {
   };
 
   interface CreateClusterLinkFormValues {
+    sourceCluster: string;
     targetCluster: string;
     type: ClusterLink["type"];
     useDifferentTargetAddress: boolean;
@@ -74,6 +79,7 @@ const CreateClusterLinkPanel: FC = () => {
   };
 
   const ConfigurationSchema = Yup.object().shape({
+    sourceCluster: Yup.string().required("Source cluster is required"),
     targetCluster: Yup.string().required("Target cluster is required"),
     useDifferentTargetAddress: Yup.boolean(),
     targetAddress: Yup.string().when("useDifferentTargetAddress", {
@@ -98,7 +104,6 @@ const CreateClusterLinkPanel: FC = () => {
       targetAddress: "",
     },
     validationSchema: ConfigurationSchema,
-    enableReinitialize: true,
     onSubmit: handleSubmit,
   });
 

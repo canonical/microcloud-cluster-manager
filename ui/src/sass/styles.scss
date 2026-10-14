@@ -9,6 +9,9 @@
 @include vf-p-icon-cluster-host;
 @include vf-p-icon-copy;
 @include vf-p-icon-edit;
+@include vf-p-icon-applications;
+@include vf-p-icon-arrow-right;
+@include vf-p-icon-exposed;
 @include vf-p-icon-export;
 @include vf-p-icon-profile;
 @include vf-p-icon-submit-bug;
@@ -26,6 +29,7 @@
 @import "breadcrumbs";
 @import "cluster_detail";
 @import "cluster_graphs";
+@import "cluster_link_list";
 @import "cluster_list";
 @import "cluster_token_list";
 @import "empty_state";
@@ -34,6 +38,7 @@
 @import "page_header";
 @import "pattern_navigation";
 @import "not_authorized";
+@import "actions_list";
 @import "selectable_main_table";
 @import "status_bar";
 

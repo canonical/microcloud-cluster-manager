@@ -57,6 +57,7 @@ export interface ClusterLink {
     "volatile.pending_address"?: string;
     "volatile.pending_certificate"?: string;
   };
+  used_by?: string[];
 }
 
 export interface ClusterLinkPost {

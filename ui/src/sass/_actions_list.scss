@@ -1,0 +1,31 @@
+// Mirrors the .actions-list pattern from LXD-UI: icon buttons separated by a
+// thin vertical divider, right-aligned in the table cell.
+.actions-list {
+  display: inline-block;
+
+  .p-inline-list__item {
+    margin-right: 0;
+  }
+
+  > * {
+    border-right: 1px solid var(--vf-color-border-default);
+    margin: 0;
+    padding-left: 0;
+    padding-right: 0;
+
+    button {
+      margin: 0;
+      width: 44px;
+    }
+  }
+
+  > *:last-child {
+    border-right: none;
+  }
+}
+
+// Align the settings icon in the actions column header with the row action
+// icons below it, which are centered in the fixed-width buttons.
+th.actions {
+  padding-right: calc(#{$sph--small} + (44px - 16px) / 2);
+}
