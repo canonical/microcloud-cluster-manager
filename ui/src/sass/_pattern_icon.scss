@@ -2,10 +2,28 @@
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' width='16px' height='16px' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 7.743 L 6.742 14.485 L 7.899 13.329 L 2.311 7.743 L 7.899 2.157 L 6.742 1 L 0 7.743 Z M 7.899 7.743 L 14.642 14.485 L 15.797 13.329 L 10.21 7.743 L 15.797 2.157 L 14.642 1 L 7.899 7.743 Z' fill='%23FFF' style=''/%3E%3C/svg%3E");
 }
 
+// swap icon for bidirectional cluster links, not yet provided by vanilla
+// https://assets.ubuntu.com/v1/68d8d25d-swap.svg
+@mixin swap-icon($color) {
+  background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.1895 6.25L10.4697 7.96973L11.5303 9.03027L15.0605 5.5L11.5303 1.96973L10.4697 3.03027L12.1895 4.75L6 4.75L6 6.25L12.1895 6.25Z' fill='#{vf-url-friendly-color($color)}'/%3E%3Cpath d='M4.46973 14.0303L5.53027 12.9697L3.81055 11.25H10V9.75L3.81055 9.75L5.53027 8.03027L4.46973 6.96973L0.939453 10.5L4.46973 14.0303Z' fill='#{vf-url-friendly-color($color)}'/%3E%3C/svg%3E");
+}
+
 @mixin custom-p-icon {
   .p-icon--sidebar-toggle {
     @extend %icon;
     @include sidebar-collapse-icon;
+  }
+
+  .p-icon--swap {
+    @extend %icon;
+    @include swap-icon($colors--light-theme--icon);
+
+    [class*="--dark"] &,
+    body.is-dark &,
+    &.is-light, // DEPRECATED: use is-dark instead
+    &.is-dark {
+      @include swap-icon($colors--dark-theme--icon);
+    }
   }
 }
 

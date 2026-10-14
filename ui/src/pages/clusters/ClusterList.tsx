@@ -186,31 +186,36 @@ const ClusterList: FC = () => {
 
               <PageHeader.Search>
                 {hasSearchInput && <ClusterSearchFilter />}
-                {hasSelectedClusters && (
-                  <>
-                    <BulkConfigureClusterButton
-                      key="configure"
-                      clusterNames={selectedNames}
-                      onStart={() => {
-                        setProcessingNames(selectedNames);
-                      }}
-                      onFinish={() => {
-                        setProcessingNames([]);
-                      }}
-                    />
-                    <BulkRemoveClusterButton
-                      key="remove"
-                      clusterNames={selectedNames}
-                      onStart={() => {
-                        setProcessingNames(selectedNames);
-                      }}
-                      onFinish={() => {
-                        setProcessingNames([]);
-                      }}
-                    />
-                  </>
-                )}
-                {hasSelectedTokens && (
+              </PageHeader.Search>
+            </PageHeader.Left>
+
+            <PageHeader.BaseActions>
+              {hasSelectedClusters && (
+                <div className="u-float-right">
+                  <BulkConfigureClusterButton
+                    key="configure"
+                    clusterNames={selectedNames}
+                    onStart={() => {
+                      setProcessingNames(selectedNames);
+                    }}
+                    onFinish={() => {
+                      setProcessingNames([]);
+                    }}
+                  />
+                  <BulkRemoveClusterButton
+                    key="remove"
+                    clusterNames={selectedNames}
+                    onStart={() => {
+                      setProcessingNames(selectedNames);
+                    }}
+                    onFinish={() => {
+                      setProcessingNames([]);
+                    }}
+                  />
+                </div>
+              )}
+              {hasSelectedTokens && (
+                <div className="u-float-right">
                   <BulkRevokeTokenButton
                     clusterNames={selectedNames}
                     onStart={() => {
@@ -220,11 +225,8 @@ const ClusterList: FC = () => {
                       setProcessingNames([]);
                     }}
                   />
-                )}
-              </PageHeader.Search>
-            </PageHeader.Left>
-
-            <PageHeader.BaseActions>
+                </div>
+              )}
               {hasCreateInHeader && (
                 <EnrollClusterButton className="u-float-right" />
               )}
