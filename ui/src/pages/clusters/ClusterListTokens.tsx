@@ -14,6 +14,7 @@ import { isoTimeToString } from "util/helpers";
 import { queryKeys } from "util/queryKeys";
 import SelectedTableNotification from "components/SelectedTableNotification";
 import SelectableMainTable from "components/SelectableMainTable";
+import ActionsList from "components/ActionsList";
 import RevokeTokenButton from "pages/clusters/actions/RevokeTokenButton";
 import EnrollClusterButton from "pages/clusters/actions/EnrollClusterButton";
 
@@ -67,7 +68,7 @@ const ClusterListTokens: FC<Props> = ({
       className: "createdAt",
     },
     {
-      content: "",
+      content: <Icon name="settings" />,
       "aria-label": "Actions",
       className: "u-align--right actions",
     },
@@ -99,7 +100,11 @@ const ClusterListTokens: FC<Props> = ({
           role: "cell",
         },
         {
-          content: <RevokeTokenButton token={token} />,
+          content: (
+            <ActionsList
+              items={[<RevokeTokenButton token={token} key="revoke" />]}
+            />
+          ),
           className: "u-align--right actions",
           role: "cell",
         },
@@ -134,16 +139,17 @@ const ClusterListTokens: FC<Props> = ({
         </div>
       ) : (
         <ScrollableTable
-          dependencies={[tokens, notify.notification]}
+          dependencies={[tokens, notify.notification, selectedNames.length]}
           tableId="cluster-token-table"
-          belowIds={["status-bar"]}
+          belowIds={["status-bar", "pagination"]}
         >
           <TablePagination
             data={tableRows}
             id="pagination"
             itemName="token"
-            className="u-no-margin--top"
+            className="u-no-margin--bottom"
             aria-label="Table pagination control"
+            position="below"
             description={
               selectedNames.length > 0 && (
                 <SelectedTableNotification

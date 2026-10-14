@@ -91,3 +91,11 @@ export const deleteClusterLink = async (
     },
   ).then(handleResponse);
 };
+
+export const deleteClusterLinks = async (
+  links: { source: string; name: string }[],
+): Promise<void> => {
+  return Promise.allSettled(
+    links.map(async (link) => deleteClusterLink(link.source, link.name)),
+  ).then(handleSettledResult);
+};

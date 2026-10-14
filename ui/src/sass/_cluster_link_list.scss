@@ -1,0 +1,145 @@
+.cluster-link-table {
+  margin: 0;
+
+  th,
+  td {
+    display: table-cell;
+    vertical-align: top;
+  }
+
+  thead,
+  tbody {
+    display: block;
+    overflow: hidden auto;
+    scrollbar-gutter: stable;
+  }
+
+  thead tr,
+  tbody tr {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  // align the select-all checkbox with the header labels; the shared
+  // .select-header override is tuned for headers with a multiselect menu
+  thead .select-header {
+    vertical-align: middle;
+  }
+
+  .cluster {
+    width: 9rem;
+  }
+
+  .type {
+    width: 8.5rem;
+
+    // keep the neutral border on the read-only type chip; vanilla removes it
+    // for filter-panel chips, but here it is a static label
+    .p-chip.is-readonly {
+      border-color: $colors--theme--border-neutral;
+    }
+  }
+
+  // name, target, description and addresses share the remaining space equally
+  .addresses {
+    white-space: nowrap;
+
+    // truncate the first address inline so the +N indicator stays on the same line
+    .u-truncate {
+      display: inline-block;
+      max-width: calc(100% - 2rem);
+      vertical-align: middle;
+    }
+
+    .p-tooltip {
+      vertical-align: middle;
+    }
+  }
+
+  .used-by {
+    text-align: right;
+    width: 5rem;
+  }
+
+  .actions {
+    text-align: right;
+    width: 4rem;
+  }
+
+  @media screen and (1500px >= width >= #{$breakpoint-large}) {
+    .description {
+      display: none;
+    }
+  }
+
+  // only group and select-all checkboxes live in the select column
+  .select {
+    width: 2.5rem;
+  }
+
+  // entry checkboxes sit inline, right next to the link name
+  .cluster-link-row .name {
+    white-space: nowrap;
+
+    > .p-form__group {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    // the label text is off-screen, keep only a small gap after the box
+    .p-checkbox__label {
+      padding-left: $form-tick-box-size + $sph--small;
+    }
+
+    > .u-truncate {
+      display: inline-block;
+      max-width: calc(100% - #{$form-tick-box-size + $sph--small});
+      vertical-align: middle;
+    }
+  }
+
+  .cluster-link-group-row td {
+    background-color: $colors--theme--background-alt;
+    font-weight: $font-weight-bold;
+    padding-bottom: $spv--x-small;
+    padding-top: $spv--x-small;
+  }
+
+  .cluster-link-group-name {
+    overflow: visible;
+    white-space: nowrap;
+
+    // vanilla base buttons are full width blocks, keep the toggle inline
+    button {
+      display: inline-block;
+      margin-right: $sph--small;
+      padding-left: $sph--x-small;
+      padding-right: 0;
+      vertical-align: middle;
+      width: auto;
+    }
+
+    a {
+      vertical-align: middle;
+    }
+  }
+
+  @media screen and (max-width: $breakpoint-large) {
+    .used-by {
+      text-align: inherit;
+    }
+  }
+}
+
+.cluster-link-unknown-target-icon {
+  margin-left: $sph--x-small;
+}
+
+.cluster-link-addresses-more {
+  margin-left: $sph--x-small;
+}
+
+.cluster-link-addresses-tooltip {
+  list-style: none;
+}

@@ -21,7 +21,10 @@ const SelectedTableNotification: FC<Props> = ({
   setSelectedNames,
   hideActions,
 }: Props) => {
-  const isAllSelected = selectedNames.length === filteredNames.length;
+  const selectedLookup = new Set(selectedNames);
+  const isAllSelected =
+    selectedNames.length === filteredNames.length &&
+    filteredNames.every((name) => selectedLookup.has(name));
 
   const selectAll = () => {
     setSelectedNames(filteredNames);
