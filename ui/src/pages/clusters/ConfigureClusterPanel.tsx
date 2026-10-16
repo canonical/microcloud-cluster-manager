@@ -16,6 +16,7 @@ import NotificationRow from "components/NotificationRow";
 import usePanelParams from "context/usePanelParams";
 import { fetchCluster, updateCluster } from "api/clusters";
 import * as Yup from "yup";
+import { thresholdSchema } from "util/thresholdValidation";
 
 export const FIELD_DISK_THRESHOLD = "diskThreshold";
 export const FIELD_MEMORY_THRESHOLD = "memoryThreshold";
@@ -78,8 +79,8 @@ const ConfigureClusterPanel: FC = () => {
 
   const ConfigurationSchema = Yup.object().shape({
     description: Yup.string(),
-    diskThreshold: Yup.number().min(0).max(100),
-    memoryThreshold: Yup.number().min(0).max(100),
+    diskThreshold: thresholdSchema,
+    memoryThreshold: thresholdSchema,
   });
 
   const formik = useFormik<ConfigureClusterFormValues>({
