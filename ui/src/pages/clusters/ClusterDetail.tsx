@@ -1,29 +1,25 @@
-import { List, Notification, Row, Strip } from "@canonical/react-components";
+import { Notification, Row, Spinner, Strip } from "@canonical/react-components";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCluster } from "api/clusters";
 import BaseLayout from "components/BaseLayout";
 import type { FC } from "react";
 import { Link, useParams } from "react-router-dom";
 import { queryKeys } from "util/queryKeys";
-import ClusterDetailInstanceGraph from "./metrics/ClusterDetailInstanceGraph";
-import ClusterDetailMemberGraph from "./metrics/ClusterDetailMemberGraph";
-import ClusterTimer from "./metrics/ClusterTimer";
-import ClusterDetailMetrics from "./metrics/ClusterDetailMetrics";
 import BreadCrumbHeader from "components/BreadcrumbHeader";
-import { ClusterWarningList } from "pages/clusters/metrics/ClusterWarningList";
 import usePanelParams, { panels } from "context/usePanelParams";
 import ConfigureClusterPanel from "pages/clusters/ConfigureClusterPanel";
 import ClusterUiButton from "pages/clusters/actions/ClusterUiButton";
 import ClusterMetricsButton from "pages/clusters/actions/ClusterMetricsButton";
 import RemoveClusterButton from "pages/clusters/actions/RemoveClusterButton";
 import ConfigureClusterButton from "pages/clusters/actions/ConfigureClusterButton";
-import ClusterEditDescriptionBtn from "pages/clusters/actions/ClusterEditDescriptionBtn";
+import ClusterOverview from "pages/clusters/ClusterOverview";
 import ClusterLinks from "pages/clusters/ClusterLinks";
+import TabLinks from "components/TabLinks";
 import CreateClusterLinkPanel from "pages/clusters/CreateClusterLinkPanel";
 
 const ClusterDetail: FC = () => {
   const panelParams = usePanelParams();
-  const { name } = useParams<{ name: string }>();
+  const { name, activeTab } = useParams<{ name: string; activeTab?: string }>();
   if (!name) {
     return <>Missing name</>;
   }
@@ -40,11 +36,7 @@ const ClusterDetail: FC = () => {
   });
 
   if (isLoading) {
-    return <></>;
-  }
-
-  if (!cluster) {
-    return <>Unable to get details</>;
+    return <Spinner className="u-loader" text="Loading..." isMainComponent />;
   }
 
   return (
@@ -52,7 +44,7 @@ const ClusterDetail: FC = () => {
       <BaseLayout
         title={
           <BreadCrumbHeader
-            name={cluster.name}
+            name={name}
             parentItems={[
               <Link to="/ui/clusters" key="clusters">
                 Clusters
@@ -61,29 +53,37 @@ const ClusterDetail: FC = () => {
           />
         }
         controls={
-          <div className="p-segmented-control">
-            <div className="p-segmented-control__list">
-              <ConfigureClusterButton
-                cluster={cluster}
-                className="p-segmented-control__button"
-              />
-              <ClusterUiButton
-                lxdUrl={cluster.lxd_url}
-                className="p-segmented-control__button"
-              />
-              <ClusterMetricsButton
-                clusterName={cluster.name}
-                className="p-segmented-control__button"
-              />
-              <RemoveClusterButton
-                clusterName={cluster.name}
-                className="p-segmented-control__button"
-              />
+          cluster && (
+            <div className="p-segmented-control">
+              <div className="p-segmented-control__list">
+                <ConfigureClusterButton
+                  cluster={cluster}
+                  className="p-segmented-control__button"
+                />
+                <ClusterUiButton
+                  lxdUrl={cluster.lxd_url}
+                  className="p-segmented-control__button"
+                />
+                <ClusterMetricsButton
+                  clusterName={cluster.name}
+                  className="p-segmented-control__button"
+                />
+                <RemoveClusterButton
+                  clusterName={cluster.name}
+                  className="p-segmented-control__button"
+                />
+              </div>
             </div>
-          </div>
+          )
         }
       >
-        {!cluster && !error && <>Loading cluster failed</>}
+        {!cluster && !error && (
+          <Strip>
+            <Notification severity="negative" title="Error">
+              Unable to get cluster details.
+            </Notification>
+          </Strip>
+        )}
         {error && (
           <Strip>
             <Notification severity="negative" title="Error">
@@ -93,55 +93,16 @@ const ClusterDetail: FC = () => {
         )}
         {cluster && (
           <Row>
-            <List
-              className="cluster-detail-graphs"
-              inline
-              items={[
-                <ClusterTimer cluster={cluster} key="cluster-timer" />,
-                <ClusterDetailMetrics
-                  cluster={cluster}
-                  key="cluster-detail-metrics"
-                />,
-                <ClusterDetailMemberGraph
-                  cluster={cluster}
-                  key="cluster-member-graph"
-                />,
-                <ClusterDetailInstanceGraph
-                  cluster={cluster}
-                  key="cluster-instance-graph"
-                />,
-              ]}
+            <TabLinks
+              tabs={["Overview", "Cluster links"]}
+              activeTab={activeTab}
+              tabUrl={`/ui/cluster/${cluster.name}`}
             />
-            {cluster.description ? (
-              <>
-                <h2 className="p-heading--4">Description</h2>
-                <p>
-                  {cluster.description}{" "}
-                  <ClusterEditDescriptionBtn
-                    appearance="base"
-                    clusterName={cluster.name}
-                  />
-                </p>
-              </>
+            {activeTab === "cluster-links" ? (
+              <ClusterLinks cluster={cluster} />
             ) : (
-              <div>
-                <ClusterEditDescriptionBtn
-                  appearance=""
-                  label="Add description"
-                  clusterName={cluster.name}
-                />
-              </div>
+              <ClusterOverview cluster={cluster} />
             )}
-            <Notification
-              severity="information"
-              title={
-                cluster.tunnel_registered
-                  ? "Tunnel registered"
-                  : "Tunnel not available"
-              }
-            />
-            <ClusterWarningList cluster={cluster} />
-            <ClusterLinks cluster={cluster} />
           </Row>
         )}
       </BaseLayout>

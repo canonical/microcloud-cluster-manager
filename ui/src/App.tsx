@@ -31,6 +31,7 @@ const App: FC = () => {
       <Route path="/ui/clusters" element={<ClusterList />} />
       <Route path="/ui/clusters/:activeTab" element={<ClusterList />} />
       <Route path="/ui/cluster/:name" element={<ClusterDetail />} />
+      <Route path="/ui/cluster/:name/:activeTab" element={<ClusterDetail />} />
       <Route path="/ui/settings" element={<Settings />} />
       <Route path="*" element={<NoMatch />} />
     </>

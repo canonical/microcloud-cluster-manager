@@ -11,19 +11,17 @@ const CreateClusterLinkBtn: FC<Props> = ({ cluster }) => {
   const panelParams = usePanelParams();
 
   return (
-    <div>
-      <Button
-        appearance=""
-        className="u-no-margin--bottom has-icon"
-        onClick={() => {
-          panelParams.openCreateClusterLink(cluster.name);
-        }}
-        hasIcon
-      >
-        <Icon name="plus" />
-        <span>Create Cluster Link</span>
-      </Button>
-    </div>
+    <Button
+      appearance="positive"
+      className="u-no-margin--bottom has-icon"
+      onClick={() => {
+        panelParams.openCreateClusterLink(cluster.name);
+      }}
+      hasIcon
+    >
+      <Icon name="plus" className={"is-light"} />
+      <span>Create cluster link</span>
+    </Button>
   );
 };
 
