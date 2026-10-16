@@ -24,7 +24,8 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
   const notify = useNotify();
   const toastNotification = useToastNotification();
   const [isLoading, setLoading] = useState(false);
-  const [deleteBothEnds, setDeleteBothEnds] = useState(false);
+  const [deleteBothEnds, setDeleteBothEnds] = useState(true);
+  const isBidirectional = link.type.toLowerCase() === "bidirectional";
 
   const deleteTargetEnd = async (target: Cluster) => {
     const targetLinks = await fetchClusterLinks(target.name);
@@ -40,7 +41,8 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
 
   const handleDelete = async () => {
     setLoading(true);
-    const removeTargetEnd = deleteBothEnds && !!targetCluster;
+    const removeTargetEnd =
+      isBidirectional && deleteBothEnds && !!targetCluster;
     try {
       await deleteClusterLink(cluster.name, link.name);
 
@@ -67,7 +69,7 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
     await queryClient.invalidateQueries({
       queryKey: [queryKeys.clusters],
     });
-    setDeleteBothEnds(false);
+    setDeleteBothEnds(true);
     setLoading(false);
   };
 
@@ -80,19 +82,13 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
         children: (
           <>
             <p>
-              Are you sure you want to delete the cluster link{" "}
-              <strong>{link.name}</strong> on cluster{" "}
-              <strong>{cluster.name}</strong>?
+              This will permanently delete cluster link{" "}
+              <strong>{link.name}</strong>. This action cannot be undone.
             </p>
-            {targetCluster ? (
+            {!isBidirectional ? null : targetCluster ? (
               <CheckboxInput
                 id="delete-both-ends"
-                label={
-                  <>
-                    Also delete the link on{" "}
-                    <strong>{targetCluster.name}</strong>
-                  </>
-                }
+                label="Delete bidirectional links on both source and target cluster"
                 checked={deleteBothEnds}
                 onChange={() => {
                   setDeleteBothEnds((value) => !value);
