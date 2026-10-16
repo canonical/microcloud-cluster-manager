@@ -8,7 +8,7 @@ export interface PanelHelper {
   clear: () => void;
   openEnrollCluster: () => void;
   openConfigureCluster: (cluster?: string, focusField?: string) => void;
-  openCreateClusterLink: (cluster?: string) => void;
+  openCreateClusterLink: () => void;
   openBulkConfigureCluster: (clusterNames: string[]) => void;
 }
 
@@ -71,9 +71,8 @@ const usePanelParams = (): PanelHelper => {
       setPanelParams(panels.configureCluster, params);
     },
 
-    openCreateClusterLink: (cluster?: string) => {
-      const params = { cluster: cluster || "" };
-      setPanelParams(panels.createClusterLink, params);
+    openCreateClusterLink: () => {
+      setPanelParams(panels.createClusterLink);
     },
 
     openBulkConfigureCluster: (clusterNames: string[]) => {

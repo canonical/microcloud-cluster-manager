@@ -57,7 +57,7 @@ const ClusterLinks: FC<Props> = ({ cluster }) => {
       ) : (
         <Notification severity="information" title="No cluster links found." />
       )}
-      {cluster.tunnel_registered && <CreateClusterLinkBtn cluster={cluster} />}
+      {cluster.tunnel_registered && <CreateClusterLinkBtn />}
     </>
   );
 };

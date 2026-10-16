@@ -1,8 +1,9 @@
 import type { Page } from "@playwright/test";
 import { expect } from "../fixtures/test-extension";
+import { gotoURL } from "./navigate";
 
 export const goToSettingsPage = async (page: Page) => {
-  await page.goto("/ui");
+  await gotoURL(page, "/ui");
   await page.getByRole("link", { name: "Settings" }).click();
   await page.waitForSelector("text=Settings");
 };

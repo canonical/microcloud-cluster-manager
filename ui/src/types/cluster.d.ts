@@ -50,9 +50,11 @@ export type ClusterPercentiles = 0.5 | 0.75 | 0.8 | 0.9;
 
 export interface ClusterLink {
   name: string;
+  description: string;
   type: string;
   config?: {
     "volatile.addresses"?: string;
     "volatile.uuid"?: string;
   };
+  used_by?: string[];
 }

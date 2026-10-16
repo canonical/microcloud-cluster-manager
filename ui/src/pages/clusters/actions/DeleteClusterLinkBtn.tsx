@@ -17,9 +17,17 @@ interface Props {
   cluster: Cluster;
   link: ClusterLink;
   targetCluster?: Cluster;
+  hasLabel?: boolean;
+  disabled?: boolean;
 }
 
-const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
+const DeleteClusterLinkBtn: FC<Props> = ({
+  cluster,
+  link,
+  targetCluster,
+  hasLabel = true,
+  disabled = false,
+}) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
   const toastNotification = useToastNotification();
@@ -74,7 +82,11 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
   return (
     <ConfirmationButton
       className="u-no-margin--bottom has-icon"
+      appearance={hasLabel ? "default" : "base"}
       loading={isLoading}
+      disabled={disabled || undefined}
+      aria-label={hasLabel ? undefined : `Delete cluster link ${link.name}`}
+      onHoverText={hasLabel ? undefined : "Delete"}
       confirmationModalProps={{
         title: "Confirm delete",
         children: (
@@ -112,7 +124,7 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
       shiftClickEnabled
     >
       <Icon name="delete" />
-      <span>Delete</span>
+      {hasLabel && <span>Delete</span>}
     </ConfirmationButton>
   );
 };
