@@ -207,7 +207,7 @@ make install-deps
 
 **Manual Dependency Installation:**
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed manual installation of Go, Docker, Kubernetes (kubectl, Kind), Skaffold, Node.js (NVM), Dotrun, and Juju.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed manual installation of Go, Docker, Node.js (NVM), and Dotrun.
 
 ### Running Development Server
 
@@ -246,11 +246,7 @@ Frontend UI runs on: `https://ma.lxd-cm.local:8414`
 
 #### Cleanup
 
-After finishing development for the day, clean up unused Docker images to prevent disk space issues:
-
-```bash
-make nuke
-```
+Press `Ctrl+C` in the `make dev` terminal to stop the services and remove the Postgres/Prometheus containers.
 
 ## Build and Run Commands
 
@@ -310,9 +306,6 @@ make test-e2e
 
 # Run frontend E2E tests
 make test-ui-e2e
-
-# Clean up unused Docker images
-make nuke
 
 # Add hosts to /etc/hosts for local development
 sudo make add-hosts
@@ -653,8 +646,7 @@ npx playwright test                    # E2E tests
 make test-e2e                          # Run backend E2E tests
 make test-ui-e2e                       # Run frontend E2E tests
 
-# Cleanup
-make nuke                              # Clean up unused Docker images
+# Git hooks
 make add-hooks                         # Enable pre-commit hooks
 ```
 

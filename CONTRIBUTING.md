@@ -37,7 +37,7 @@ You will need to [install Go](https://go.dev/dl/) on your host for developing th
 
 #### Docker
 
-Docker is required to build and run the service containers for the Kubernetes cluster. It is highly recommended that you install the docker snap package as it does not have network inteference with `lxd` (another dependency required for building rocks).
+Docker is required to run the Postgres and Prometheus containers used by the local development environment. It is highly recommended that you install the docker snap package as it does not have network inteference with `lxd` (another dependency required for building rocks).
 
 ```
 sudo snap install docker
@@ -53,23 +53,6 @@ sudo snap disable docker
 sudo snap enable docker
 ```
 
-#### Kubectl
-
-You will need to install `kubectl` for deploying resources to the local Kubernetes cluster. You can follow the installation instructions from the official [docs](https://kubernetes.io/docs/tasks/tools/).
-
-#### Kind
-
-Kind is required for setting up the local Kubernetes cluster inside a docker container. You can follow instructions from this [guide](https://kind.sigs.k8s.io/docs/user/quick-start/) to install kind.
-
-#### Skaffold
-
-We use skaffold for managing resources in the local Kubernetes cluster with hot reloading and debugging functionalities. You can install it with the following commands.
-
-```
-curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-sudo install skaffold /usr/local/bin/
-```
-
 #### Node version manager (NVM)
 
 Node.js is required to run the development UI. Instead of installing Nodejs directly, we recommend that you install NVM for simpler management of multiple Node.js versions. You can follow instructions from the [official GitHub repository](https://github.com/nvm-sh/nvm) to install NVM.
@@ -77,15 +60,6 @@ Node.js is required to run the development UI. Instead of installing Nodejs dire
 #### Dotrun
 
 Dotrun is required to spin up a development container for the UI. You can install it by following the instructions [here](https://github.com/canonical/dotrun#installation).
-
-#### Juju
-
-Juju is required to deploy the Canonical Observability [Stack](https://charmhub.io/topics/canonical-observability-stack) to our development k8s cluster.
-To install Juju, run the following command:
-
-```
-make install-juju
-```
 
 ## Optional dependencies
 
@@ -102,7 +76,7 @@ lxd init --auto
 
 ### Rockcraft
 
-For local development, the Kubernetes cluster image is built using Docker. However, for production and CI, the image is built as a rock using Rockcraft. To install Rockcraft, run the following command:
+For production and CI, the application image is built as a rock using Rockcraft. To install Rockcraft, run the following command:
 
 ```
 sudo snap install rockcraft --classic
@@ -128,21 +102,9 @@ Once you have all the required dependencies installed, to get the local developm
 make dev
 ```
 
-Once the cluster is ready, you should see terminal output logs similar to the following example:
+This starts Postgres and Prometheus in Docker, builds the application and runs the management API (`https://ma.lxd-cm.local:30000`) and the cluster connector (`https://cc.lxd-cm.local:9000`) locally. The service logs are printed to your terminal.
 
-```
-Deployments stabilized in 31.094 seconds
-Port forwarding service/management-api-svc in namespace default, remote port management-api -> http://127.0.0.1:9000
-Port forwarding service/cluster-connector-svc in namespace default, remote port cluster-conn -> http://127.0.0.1:9001
-Port forwarding service/db-svc in namespace default, remote port db -> http://127.0.0.1:5432
-Listing files to watch...
- - microcloud-cluster-manager
-Press Ctrl+C to exit
-...
-Watching for changes...
-```
-
-**NOTE**: If it's your first time starting the development environment, it may take a while for all the resources and images to be pulled into the cluster.
+**NOTE**: If it's your first time starting the development environment, it may take a while for the container images to be pulled.
 
 ### Run the UI in a separate terminal
 
@@ -185,23 +147,9 @@ Re-optimizing dependencies because lockfile has changed
 
 **NOTE**: You can reach the UI in your browser at `https://ma.lxd-cm.local:8414`.
 
-### Stop and cleanup the development cluster
+### Stop the backend
 
-Unfortunately, skaffold creates new images for each rebuild due to detected code changes. Those images are not automatically deleted from your local docker image registry. This can cause unbounded disk utilisation on your host machine. To prevent this from happening, you should always run the following command after you are done with development for the day to clean up unused images:
-
-```
-make nuke
-```
-
-## Run the backend cluster with rock
-
-If you need to work on building the image with Rockcraft, you can test out the rock with the backend cluster by running the following command:
-
-```
-make dev-rock
-```
-
-**NOTE**: You must have installed the optional dependencies for the above to work.
+Press `Ctrl+C` in the terminal running `make dev`. This stops the services and removes the Postgres and Prometheus containers.
 
 ## End-to-end (e2e) tests
 
