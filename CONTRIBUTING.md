@@ -193,6 +193,115 @@ Unfortunately, skaffold creates new images for each rebuild due to detected code
 make nuke
 ```
 
+### Enrolling test clusters
+
+The `scripts/lxd-container-setup.sh` script creates single-member MicroCloud clusters in
+LXD containers and enrolls each of them with the Cluster Manager running on your
+machine. It is useful to test the Cluster Manager against real MicroCloud clusters
+without having to set up multiple machines.
+
+With `make dev` running, build the Cluster Manager binary and run the script:
+
+```bash
+make build
+./scripts/lxd-container-setup.sh --count 2
+```
+
+The script creates a dedicated LXD project named `microcloud-mcm`. It shares the default
+project's images, networks, and profiles so that the containers use the host's existing
+network and storage configuration. All host-side container commands explicitly select
+this project; the active LXD project is not changed.
+Remove any same-named containers in other projects before running the script, because
+container DNS names must be unique on the shared network.
+
+For every container the script installs the LXD and MicroCloud snaps, initializes a
+single-member MicroCloud cluster, creates a join token with the Cluster Manager CLI,
+joins the cluster to the Cluster Manager and enables the reverse tunnel. It also points
+the LXD of every cluster at the same identity provider as the Cluster Manager, so that
+the OIDC tokens the Cluster Manager verifies are issued by a provider that the cluster's
+LXD trusts too. The `oidc.issuer`, `oidc.client.id`, `oidc.client.secret` and
+`oidc.audience` values come from the environment, and the groups claim is set to
+`mcm-idp-groups`, which is the claim the Cluster Manager reads. The client secret is
+needed because the identity provider is registered as a confidential client, and LXD uses
+the same client when it handles its own login callback.
+
+The script binds each LXD HTTPS API to its cluster address instead of all interfaces.
+This prevents LXD from advertising nested bridge addresses, such as the address of
+`lxdfan0`, which are not covered by the cluster certificate.
+When reusing an enrolled cluster, the script restarts the MicroCloud daemon and waits
+for it to become ready. This briefly interrupts the reverse tunnel, allowing it to
+reconnect with the current LXD address and certificate instead of retaining old values.
+The cluster address is also added to the SANs of its LXD cluster certificate. The
+requests that arrive over the reverse tunnel are proxied by `microcloudd` to the LXD of the
+cluster, and `microcloudd` verifies that connection against the cluster certificate. LXD
+only puts the hostname and the loopback addresses in the SANs of the certificate it
+generates, so without this the verification fails with `certificate is valid for 127.0.0.1,
+::1, not <address>` and every tunnel request is rejected.
+
+The identity provider group `admins` is then mapped to the LXD group `admins`, which LXD
+creates with the server admin entitlement. The Cluster Manager only accepts users in the
+OIDC group `admins`, and the mapping is what lets such a user authenticate against a
+cluster's LXD with permission to do anything, because access is granted by the claim in
+the token rather than by a separate LXD login.
+
+The script loads the development environment from `scripts/setup-env.sh`, because the
+Cluster Manager CLI reads the same configuration as the services. The file is sourced
+with its side effects stubbed out, so it only exports the variables and does not start
+the Postgres and Prometheus containers again.
+
+Before it creates the containers, the script compares the certificate that the running
+Cluster Connector serves with the certificate of this checkout, and stops when they
+differ. The join token carries the certificate fingerprint of the Cluster Connector, and
+MicroCloud refuses to join when the connector answers with a different certificate. This
+only happens when the connector was started from another checkout, which is easy to do
+with git worktrees; in that case, restart the development environment with `make dev`
+from this checkout.
+
+Use `--microcloud-channel` to install the MicroCloud snap from another channel:
+
+```bash
+./scripts/lxd-container-setup.sh --count 2 --microcloud-channel 3/edge
+```
+
+The containers are named `microcloud-01`, `microcloud-02`, ... and the MicroCloud
+cluster inside a container is named after the container's hostname. The script can be
+run again: it reuses existing containers in `microcloud-mcm`, skips the snaps that are
+already installed, preserves initialized clusters and their enrollment, and rewrites the
+Cluster Manager host entry only when it changed. Existing containers in other projects
+are not moved or reused.
+
+To list the containers:
+
+```bash
+lxc --project microcloud-mcm list
+```
+
+The logs of a run are written to a temporary directory. The directory is removed when
+the run succeeds and kept when it fails, and the script then prints where the logs are.
+The script waits for the MicroCloud daemon before running preseed. If preseed fails,
+its log includes the exit status (or an explicit timeout message) and recent MicroCloud
+daemon logs, even when preseed itself produces no output.
+
+To force-delete the default number of containers, including their data:
+
+```bash
+./scripts/lxd-container-setup.sh --nuke
+```
+
+Use `-n` or `--count` to select how many containers to delete, starting with
+`microcloud-01`. For example, to delete the first three containers:
+
+```bash
+./scripts/lxd-container-setup.sh --nuke --count 3
+```
+
+Cleanup only targets the selected containers in `microcloud-mcm`. It keeps the project
+and does not require the Cluster Manager development environment or binary.
+Cluster Manager records are not removed; remove the corresponding entries in the UI
+before enrolling replacement clusters with the same names.
+
+Run `./scripts/lxd-container-setup.sh --help` for all options.
+
 ## Run the backend cluster with rock
 
 If you need to work on building the image with Rockcraft, you can test out the rock with the backend cluster by running the following command:
