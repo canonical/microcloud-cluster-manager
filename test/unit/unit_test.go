@@ -22,6 +22,8 @@ var tests = []types.UnitTest{
 	testTunnel_CheckPermissions,
 	testMtlsAuthenticator_CacheStartsExpired,
 	testCertificatesCache_RebuildSkippedWhenFresh,
+	testDatabase_StatusCheckHonoursContext,
+	testDatabase_TransactionHonoursContext,
 }
 
 func TestUnit(t *testing.T) {
