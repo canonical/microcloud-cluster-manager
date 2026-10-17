@@ -19,7 +19,7 @@ func AuthMiddleware(rc types.RouteConfig) mux.MiddlewareFunc {
 			if r.TLS == nil {
 				err := response.Forbidden(fmt.Errorf("TLS is required")).Render(w, r)
 				if err != nil {
-					logger.Log.Errorw("Failed rendering forbidden response due to missing TLS: %w", err)
+					logger.Log.Errorf("Failed rendering forbidden response due to missing TLS: %v", err)
 				}
 				return
 			}
@@ -27,7 +27,7 @@ func AuthMiddleware(rc types.RouteConfig) mux.MiddlewareFunc {
 			if verifier == nil || !ok {
 				err := response.InternalError(nil).Render(w, r)
 				if err != nil {
-					logger.Log.Errorw("Failed rendering internal server error response due to invalid verifier: %w", err)
+					logger.Log.Errorf("Failed rendering internal server error response due to invalid verifier: %v", err)
 				}
 				return
 			}
@@ -36,7 +36,7 @@ func AuthMiddleware(rc types.RouteConfig) mux.MiddlewareFunc {
 			if err != nil {
 				err := response.Unauthorized(nil).Render(w, r)
 				if err != nil {
-					logger.Log.Errorw("Failed rendering unauthorized response due to authentication error: %w", err)
+					logger.Log.Errorf("Failed rendering unauthorized response due to authentication error: %v", err)
 				}
 				return
 			}
