@@ -669,7 +669,15 @@ func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 		}
 
 		if linkRequest.TargetCluster == remoteClusterName {
-			return response.BadRequest(errors.New("Target cluster must differ from the source cluster")).Render(w, r)
+			return response.BadRequest(errors.New("Source cluster and target cluster must differ")).Render(w, r)
+		}
+
+		if linkRequest.Type == cluster_link.TypePublic && len(linkRequest.AuthGroups) > 0 {
+			return response.BadRequest(errors.New("Auth groups cannot be set for public cluster links")).Render(w, r)
+		}
+
+		if linkRequest.Type != cluster_link.TypePublic && linkRequest.RemoteAddress != "" {
+			return response.BadRequest(errors.New("Remote address can only be set for public cluster links")).Render(w, r)
 		}
 
 		err = checkClusterLinkPreflight(rc, r, linkRequest.Type, remoteClusterName, linkRequest.TargetCluster)
@@ -678,95 +686,333 @@ func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 		}
 
 		// The link created on the source cluster is named after the target cluster unless a name is given.
-		sourceLinkName := linkRequest.Name
-		if sourceLinkName == "" {
-			sourceLinkName = linkRequest.TargetCluster
-		}
-		linkRequest.Name = sourceLinkName
-
-		sourceBody, err := json.Marshal(linkRequest)
-		if err != nil {
-			logger.Log.Errorw("Failed to encode cluster link request for source cluster", "error", err)
-			return response.SmartError(errors.New("Failed to encode cluster link request for source cluster")).Render(w, r)
+		if linkRequest.Name == "" {
+			linkRequest.Name = linkRequest.TargetCluster
 		}
 
-		path := "/1.0/cluster/links"
-
-		// Create the pending cluster link on the source cluster, which returns a trust token.
-		pendingLinkResponse, err := sendTunnelRequest(rc, r, http.MethodPost, path, remoteClusterName, sourceBody)
-		if err != nil {
-			return response.SmartError(err).Render(w, r)
+		switch linkRequest.Type {
+		case cluster_link.TypeUnidirectional:
+			return createUnidirectionalClusterLink(rc, w, r, remoteClusterName, linkRequest)
+		case cluster_link.TypePublic:
+			return createPublicClusterLink(rc, w, r, remoteClusterName, linkRequest)
+		default:
+			return createBidirectionalClusterLink(rc, w, r, remoteClusterName, linkRequest)
 		}
-
-		if pendingLinkResponse.Status < http.StatusOK || pendingLinkResponse.Status >= http.StatusMultipleChoices {
-			logger.Log.Errorw("Failed to create the pending cluster link", "error", err)
-			pendingLinkResponse.Status = http.StatusInternalServerError
-			writeResponse(w, *pendingLinkResponse)
-			return nil
-		}
-
-		trustToken, err := extractTrustToken(pendingLinkResponse.Body)
-		if err != nil {
-			logger.Log.Errorw("Failed to extract trust token from cluster link response", "error", err)
-			deletePendingClusterLink(rc, r, remoteClusterName, sourceLinkName)
-			return response.SmartError(errors.New("Failed to extract trust token from cluster link response")).Render(w, r)
-		}
-
-		// Activate the cluster link on the target cluster using the trust token.
-		targetBody, err := json.Marshal(api.ClusterLinksPost{
-			ClusterLinkPut: api.ClusterLinkPut{
-				Description: linkRequest.Description,
-			},
-			Name:       remoteClusterName,
-			Type:       linkRequest.Type,
-			TrustToken: trustToken,
-			AuthGroups: linkRequest.AuthGroups,
-		})
-		if err != nil {
-			logger.Log.Errorw("Failed to encode cluster link request for target cluster", "error", err)
-			deletePendingClusterLink(rc, r, remoteClusterName, sourceLinkName)
-			return response.SmartError(errors.New("Failed to encode cluster link request for target cluster")).Render(w, r)
-		}
-
-		targetLinkResponse, err := sendTunnelRequest(rc, r, http.MethodPost, path, linkRequest.TargetCluster, targetBody)
-		if err != nil {
-			deletePendingClusterLink(rc, r, remoteClusterName, sourceLinkName)
-			return response.SmartError(err).Render(w, r)
-		}
-
-		if targetLinkResponse.Status < http.StatusOK || targetLinkResponse.Status >= http.StatusMultipleChoices {
-			logger.Log.Errorw("Failed to create cluster link on target cluster", "target_cluster", linkRequest.TargetCluster, "status", targetLinkResponse.Status, "body", string(targetLinkResponse.Body))
-
-			// The link only exists as a pending link on the source cluster, remove it so the operation can be retried.
-			deletePendingClusterLink(rc, r, remoteClusterName, sourceLinkName)
-
-			targetLinkResponse.Status = http.StatusInternalServerError
-			writeResponse(w, *targetLinkResponse)
-			return nil
-		}
-
-		writeResponse(w, *targetLinkResponse)
-
-		return nil
 	}
 }
 
-// deletePendingClusterLink removes a cluster link that was created on the source cluster but could not be
-// activated on the target cluster. Failures are logged only, as the caller is already handling an error.
+// isSuccessStatus reports whether the status is a 2xx status code.
+func isSuccessStatus(status int) bool {
+	return status >= http.StatusOK && status < http.StatusMultipleChoices
+}
+
+func sendClusterLinkRequest(rc types.RouteConfig, r *http.Request, clusterName string, requestBody any) (*types.ClusterManagerTunnelResponse, error) {
+	body, err := json.Marshal(requestBody)
+	if err != nil {
+		logger.Log.Errorw("Failed to encode cluster link request", "cluster", clusterName, "error", err)
+		return nil, api.StatusErrorf(http.StatusInternalServerError, "Failed to encode cluster link request for cluster %q: %v", clusterName, err)
+	}
+
+	resp, err := sendTunnelRequest(rc, r, http.MethodPost, "/1.0/cluster/links", clusterName, body)
+	if err != nil {
+		logger.Log.Errorw("Cluster link request failed", "cluster", clusterName, "error", err)
+		if api.StatusErrorCheck(err, http.StatusUnauthorized, http.StatusForbidden) {
+			return nil, err
+		}
+		if api.StatusErrorCheck(err, http.StatusNotFound) {
+			return nil, fmt.Errorf("Request to cluster %q failed: %w", clusterName, err)
+		}
+		return nil, api.StatusErrorf(http.StatusBadGateway, "Request to cluster %q failed: %v", clusterName, err)
+	}
+	if !isSuccessStatus(resp.Status) {
+		err = tunnel.ResponseError(*resp, clusterName, "send cluster link request")
+		logger.Log.Errorw("Cluster link request failed", "cluster", clusterName, "status", resp.Status, "error", err)
+		return nil, err
+	}
+	return resp, nil
+}
+
+func extractCertificateFingerprint(body []byte) (string, error) {
+	var certificateResponse struct {
+		Metadata api.Certificate `json:"metadata"`
+	}
+	if err := json.Unmarshal(body, &certificateResponse); err != nil {
+		return "", fmt.Errorf("failed to parse certificate response: %w", err)
+	}
+	if certificateResponse.Metadata.Fingerprint == "" {
+		return "", errors.New("certificate response did not contain a fingerprint")
+	}
+	return certificateResponse.Metadata.Fingerprint, nil
+}
+
+// createBidirectionalClusterLink creates a pending link on the source cluster and activates it on the target cluster
+// using the trust token returned by the source cluster.
+func createBidirectionalClusterLink(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, remoteClusterName string, linkRequest models.RemoteClusterLinkPost) error {
+	sourceLinkName := linkRequest.Name
+
+	// Create the pending cluster link on the source cluster, which returns a trust token.
+	sourceRequest := api.ClusterLinksPost{
+		Description: linkRequest.Description,
+		Name:        sourceLinkName,
+		Type:        linkRequest.Type,
+		AuthGroups:  linkRequest.AuthGroups,
+	}
+	pendingLinkResponse, err := sendClusterLinkRequest(rc, r, remoteClusterName, sourceRequest)
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
+	}
+
+	activated := false
+	defer func() {
+		if !activated {
+			deletePendingClusterLink(rc, r, remoteClusterName, sourceLinkName)
+		}
+	}()
+
+	trustToken, err := extractTrustToken(pendingLinkResponse.Body)
+	if err != nil {
+		logger.Log.Errorw("Failed to extract trust token from cluster link response", "error", err)
+		return response.SmartError(api.StatusErrorf(http.StatusBadGateway, "Failed to extract trust token from cluster link response: %v", err)).Render(w, r)
+	}
+
+	// Activate the cluster link on the target cluster using the trust token.
+	targetRequest := api.ClusterLinksPost{
+		Description: linkRequest.Description,
+		Name:        remoteClusterName,
+		Type:        linkRequest.Type,
+		TrustToken:  trustToken,
+		AuthGroups:  linkRequest.AuthGroups,
+	}
+
+	targetLinkResponse, err := sendClusterLinkRequest(rc, r, linkRequest.TargetCluster, targetRequest)
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
+	}
+
+	activated = true
+	writeResponse(w, *targetLinkResponse)
+
+	return nil
+}
+
+// createUnidirectionalClusterLink creates a pending identity on the target cluster and uses the returned trust token to create a link on the source cluster.
+// The target cluster does not get a link to the source.
+func createUnidirectionalClusterLink(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, remoteClusterName string, linkRequest models.RemoteClusterLinkPost) error {
+	// Issue the pending identity on the target cluster. It is named after the source cluster.
+	identityRequest := api.ClusterLinksPost{
+		Name:       remoteClusterName,
+		Type:       cluster_link.TypeUnidirectional,
+		AuthGroups: linkRequest.AuthGroups,
+	}
+
+	identityResponse, err := sendClusterLinkRequest(rc, r, linkRequest.TargetCluster, identityRequest)
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
+	}
+
+	activated := false
+	defer func() {
+		if !activated {
+			deletePendingIdentity(rc, r, linkRequest.TargetCluster, remoteClusterName)
+		}
+	}()
+
+	trustToken, err := extractTrustToken(identityResponse.Body)
+	if err != nil {
+		logger.Log.Errorw("Failed to extract trust token from pending identity response", "error", err)
+		return response.SmartError(api.StatusErrorf(http.StatusBadGateway, "Failed to extract trust token from pending identity response: %v", err)).Render(w, r)
+	}
+
+	// Create the link on the source cluster, which also activates the pending identity on the target cluster.
+	sourceRequest := api.ClusterLinksPost{
+		Description: linkRequest.Description,
+		Name:        linkRequest.Name,
+		Type:        cluster_link.TypeUnidirectional,
+		TrustToken:  trustToken,
+	}
+
+	sourceResponse, err := sendClusterLinkRequest(rc, r, remoteClusterName, sourceRequest)
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
+	}
+
+	activated = true
+	writeResponse(w, *sourceResponse)
+
+	return nil
+}
+
+// createPublicClusterLink creates a public cluster link. A set fingerprint confirms a pending link, otherwise a pending link is created.
+func createPublicClusterLink(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, remoteClusterName string, linkRequest models.RemoteClusterLinkPost) error {
+	if linkRequest.Fingerprint != "" {
+		return confirmPublicClusterLink(rc, w, r, remoteClusterName, linkRequest)
+	}
+
+	return createPendingPublicClusterLink(rc, w, r, remoteClusterName, linkRequest)
+}
+
+// confirmPublicClusterLink pins the target certificate fingerprint that the user verified on the pending public cluster link.
+func confirmPublicClusterLink(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, remoteClusterName string, linkRequest models.RemoteClusterLinkPost) error {
+	publicRequest := api.ClusterLinksPost{
+		Description: linkRequest.Description,
+		Name:        linkRequest.Name,
+		Type:        cluster_link.TypePublic,
+		Fingerprint: linkRequest.Fingerprint,
+	}
+
+	confirmResponse, err := sendClusterLinkRequest(rc, r, remoteClusterName, publicRequest)
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
+	}
+
+	writeResponse(w, *confirmResponse)
+	return nil
+}
+
+// createPendingPublicClusterLink creates a pending public cluster link and returns the target certificate fingerprint for the user to verify.
+func createPendingPublicClusterLink(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, remoteClusterName string, linkRequest models.RemoteClusterLinkPost) error {
+	targetAddressForSourceCluster, err := getPublicClusterLinkAddress(rc, r, linkRequest.TargetCluster, linkRequest.RemoteAddress)
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
+	}
+
+	targetFingerprint, err := getClusterCertificateFingerprint(rc, r, linkRequest.TargetCluster)
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
+	}
+
+	publicRequest := api.ClusterLinksPost{
+		Description:   linkRequest.Description,
+		Name:          linkRequest.Name,
+		Type:          cluster_link.TypePublic,
+		RemoteAddress: targetAddressForSourceCluster,
+	}
+
+	// The source cluster fetches the target certificate while the pending link is created.
+	pendingResponse, err := sendClusterLinkRequest(rc, r, remoteClusterName, publicRequest)
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
+	}
+
+	keepPending := false
+	defer func() {
+		if !keepPending {
+			deletePendingClusterLink(rc, r, remoteClusterName, linkRequest.Name)
+		}
+	}()
+
+	fingerprint, err := extractCertificateFingerprint(pendingResponse.Body)
+	if err != nil {
+		logger.Log.Errorw("Failed to read the certificate fingerprint of the pending public cluster link", "error", err)
+		return response.SmartError(api.StatusErrorf(http.StatusBadGateway, "Failed to read the certificate fingerprint of the pending public cluster link: %v", err)).Render(w, r)
+	}
+
+	if fingerprint != targetFingerprint {
+		logger.Log.Errorw("Source cluster and cluster manager observed different certificates for public cluster link", "target_cluster", linkRequest.TargetCluster, "address", targetAddressForSourceCluster)
+		return response.SmartError(api.StatusErrorf(http.StatusBadGateway, "Source cluster and cluster manager observed different certificates from cluster %q", linkRequest.TargetCluster)).Render(w, r)
+	}
+
+	keepPending = true
+	return response.SyncResponse(true, api.ClusterLinkCertificate{Fingerprint: fingerprint}).Render(w, r)
+}
+
+// getClusterCertificateFingerprint fetches the cluster certificate fingerprint of the given cluster over its tunnel.
+func getClusterCertificateFingerprint(rc types.RouteConfig, r *http.Request, clusterName string) (string, error) {
+	server, err := getClusterServer(rc, r, clusterName, "fetch cluster certificate")
+	if err != nil {
+		return "", err
+	}
+
+	if server.Environment.CertificateFingerprint == "" {
+		return "", api.StatusErrorf(http.StatusBadGateway, "Cluster %q did not report a certificate fingerprint", clusterName)
+	}
+
+	return server.Environment.CertificateFingerprint, nil
+}
+
+// getClusterServer fetches the LXD server metadata of the given cluster over its tunnel.
+func getClusterServer(rc types.RouteConfig, r *http.Request, clusterName string, operation string) (api.Server, error) {
+	resp, err := sendTunnelRequest(rc, r, http.MethodGet, "/1.0", clusterName, nil)
+	if err != nil {
+		// Do not mask a 404 Not Found error as a bad gateway.
+		if api.StatusErrorCheck(err, http.StatusNotFound, http.StatusUnauthorized, http.StatusForbidden) {
+			return api.Server{}, err
+		}
+		return api.Server{}, api.StatusErrorf(http.StatusBadGateway, "Cluster %q is unreachable: %s", clusterName, err)
+	}
+
+	if !isSuccessStatus(resp.Status) {
+		err = tunnel.ResponseError(*resp, clusterName, operation)
+		logger.Log.Errorw("Cluster server request failed", "cluster", clusterName, "operation", operation, "error", err)
+		return api.Server{}, err
+	}
+
+	var serverResponse struct {
+		Metadata api.Server `json:"metadata"`
+	}
+	if err := json.Unmarshal(resp.Body, &serverResponse); err != nil {
+		logger.Log.Errorw("Failed to parse cluster server response", "cluster", clusterName, "error", err)
+		return api.Server{}, api.StatusErrorf(http.StatusBadGateway, "Invalid server response from cluster %q: %v", clusterName, err)
+	}
+
+	return serverResponse.Metadata, nil
+}
+
+// getPublicClusterLinkAddress returns the target host:port of a cluster, using the override if provided or the target cluster's registered LXD URL.
+func getPublicClusterLinkAddress(rc types.RouteConfig, r *http.Request, clusterName string, remoteAddressOverride string) (string, error) {
+	targetURL := strings.TrimSpace(remoteAddressOverride)
+	if targetURL == "" {
+		var details *store.RemoteClusterWithDetail
+		err := rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
+			var err error
+			details, err = store.GetRemoteClusterWithDetailByName(ctx, tx, clusterName)
+			return err
+		})
+		if err != nil {
+			return "", err
+		}
+		if details == nil || strings.TrimSpace(details.LXDURL) == "" {
+			return "", api.StatusErrorf(http.StatusBadRequest, "Cluster %q has no registered LXD address", clusterName)
+		}
+		targetURL = strings.TrimSpace(details.LXDURL)
+	}
+
+	parsedTargetURL, err := url.Parse(targetURL)
+	if err != nil || parsedTargetURL.Scheme != "https" || parsedTargetURL.Host == "" || parsedTargetURL.User != nil {
+		return "", api.StatusErrorf(http.StatusBadRequest, "Remote address for cluster %q must be a valid HTTPS URL", clusterName)
+	}
+
+	return parsedTargetURL.Host, nil
+}
+
+// deletePendingIdentity removes a pending identity issued on the target cluster of a unidirectional link.
+func deletePendingIdentity(rc types.RouteConfig, r *http.Request, targetClusterName string, identity string) {
+	deletePendingResource(rc, r, targetClusterName, "/1.0/auth/identities/tls/"+url.PathEscape(identity))
+}
+
+// deletePendingClusterLink removes a pending cluster link created on the source cluster.
 func deletePendingClusterLink(rc types.RouteConfig, r *http.Request, sourceClusterName string, clusterLinkName string) {
 	if clusterLinkName == "" {
 		return
 	}
+	deletePendingResource(rc, r, sourceClusterName, "/1.0/cluster/links/"+url.PathEscape(clusterLinkName))
+}
 
-	path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName)
-	resp, err := sendTunnelRequest(rc, r, http.MethodDelete, path, sourceClusterName, nil)
+// deletePendingResource sends a best-effort DELETE over a cluster's tunnel with a detached timeout.
+func deletePendingResource(rc types.RouteConfig, r *http.Request, clusterName string, path string) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)
+	defer cancel()
+	r = r.WithContext(ctx)
+
+	resp, err := sendTunnelRequest(rc, r, http.MethodDelete, path, clusterName, nil)
 	if err != nil {
-		logger.Log.Errorw("Failed to remove pending cluster link", "source_cluster", sourceClusterName, "cluster_link", clusterLinkName, "error", err)
+		logger.Log.Errorw("Failed to remove pending resource", "cluster", clusterName, "path", path, "error", err)
 		return
 	}
 
-	if resp.Status < http.StatusOK || resp.Status >= http.StatusMultipleChoices {
-		logger.Log.Errorw("Failed to remove pending cluster link", "source_cluster", sourceClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "body", string(resp.Body))
+	if !isSuccessStatus(resp.Status) {
+		err = tunnel.ResponseError(*resp, clusterName, "remove pending resource")
+		logger.Log.Errorw("Failed to remove pending resource", "cluster", clusterName, "path", path, "status", resp.Status, "error", err)
 	}
 }
 
@@ -797,7 +1043,7 @@ func extractTrustToken(body []byte) (string, error) {
 // checkClusterLinkPreflight validates the link type and verifies that both clusters meet its
 // API-extension and permission requirements before a link is created.
 func checkClusterLinkPreflight(rc types.RouteConfig, r *http.Request, linkType string, sourceCluster string, targetCluster string) error {
-	sourcePermissions, targetPermissions, ok := cluster_link.RequiredPermissions(linkType)
+	requirements, ok := cluster_link.RequirementsFor(linkType)
 	if !ok {
 		return api.StatusErrorf(http.StatusBadRequest, "Unsupported cluster link type %q", linkType)
 	}
@@ -807,13 +1053,20 @@ func checkClusterLinkPreflight(rc types.RouteConfig, r *http.Request, linkType s
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		sourceErr = checkTunnelRequirements(rc, r, sourceCluster, []string{cluster_link.ClusterLinksAPIExtension}, sourcePermissions)
+		sourceErr = checkTunnelRequirements(rc, r, sourceCluster, requirements.Source)
 	}()
 	go func() {
 		defer wg.Done()
-		targetErr = checkTunnelRequirements(rc, r, targetCluster, []string{cluster_link.ClusterLinksAPIExtension}, targetPermissions)
+		targetErr = checkTunnelRequirements(rc, r, targetCluster, requirements.Target)
 	}()
 	wg.Wait()
+
+	if api.StatusErrorCheck(sourceErr, http.StatusUnauthorized, http.StatusForbidden) {
+		return sourceErr
+	}
+	if api.StatusErrorCheck(targetErr, http.StatusUnauthorized, http.StatusForbidden) {
+		return targetErr
+	}
 
 	if sourceErr != nil {
 		if targetErr != nil {
@@ -829,58 +1082,38 @@ func checkClusterLinkPreflight(rc types.RouteConfig, r *http.Request, linkType s
 // checkTunnelRequirements verifies that a cluster is reachable over its tunnel, supports the
 // requested API extensions, and grants the user the given entity-qualified permissions. An empty
 // permissions list means only reachability and API-extension support are checked.
-func checkTunnelRequirements(rc types.RouteConfig, r *http.Request, clusterName string, apiExtensions []string, permissions []api.Permission) error {
+func checkTunnelRequirements(rc types.RouteConfig, r *http.Request, clusterName string, requirements tunnel.ClusterRequirements) error {
 	// Probe reachability and required API-extension support.
-	resp, err := sendTunnelRequest(rc, r, http.MethodGet, "/1.0", clusterName, nil)
+	server, err := getClusterServer(rc, r, clusterName, "check cluster capabilities")
 	if err != nil {
-		// Do not mask a 404 Not Found error as a bad gateway.
-		if api.StatusErrorCheck(err, http.StatusNotFound) {
-			return err
-		}
-		return api.StatusErrorf(http.StatusBadGateway, "Cluster %q is unreachable: %s", clusterName, err)
+		return err
 	}
 
-	if resp.Status == http.StatusUnauthorized || resp.Status == http.StatusForbidden {
-		return api.StatusErrorf(http.StatusForbidden, "Not authenticated on cluster %q", clusterName)
-	}
-
-	if resp.Status < http.StatusOK || resp.Status >= http.StatusMultipleChoices {
-		return api.StatusErrorf(http.StatusInternalServerError, "Unexpected response from cluster %q: %s", clusterName, string(resp.Body))
-	}
-
-	var serverResponse struct {
-		Metadata api.Server `json:"metadata"`
-	}
-
-	err = json.Unmarshal(resp.Body, &serverResponse)
-	if err != nil {
-		return fmt.Errorf("failed to parse server response from cluster %q: %w", clusterName, err)
-	}
-
-	for _, apiExtension := range apiExtensions {
-		if !slices.Contains(serverResponse.Metadata.APIExtensions, apiExtension) {
+	for _, apiExtension := range requirements.APIExtensions {
+		if !slices.Contains(server.APIExtensions, apiExtension) {
 			return api.StatusErrorf(http.StatusBadRequest, "Cluster %q does not support required API extension %q", clusterName, apiExtension)
 		}
 	}
 
-	if len(permissions) == 0 || !slices.Contains(serverResponse.Metadata.APIExtensions, tunnel.AccessManagementAPIExtension) {
+	if len(requirements.Permissions) == 0 || !slices.Contains(server.APIExtensions, tunnel.AccessManagementAPIExtension) {
 		// Nothing more to check, or the cluster cannot report effective permissions (older LXD);
 		// any missing permissions will surface as creation-time errors.
 		return nil
 	}
 
 	// Let LXD evaluate the user's effective permissions.
-	resp, err = sendTunnelRequest(rc, r, http.MethodGet, "/1.0/auth/identities/current", clusterName, nil)
+	resp, err := sendTunnelRequest(rc, r, http.MethodGet, "/1.0/auth/identities/current", clusterName, nil)
 	if err != nil {
+		if api.StatusErrorCheck(err, http.StatusUnauthorized, http.StatusForbidden) {
+			return err
+		}
 		return api.StatusErrorf(http.StatusBadGateway, "Cluster %q is unreachable: %s", clusterName, err)
 	}
 
-	if resp.Status == http.StatusUnauthorized || resp.Status == http.StatusForbidden {
-		return api.StatusErrorf(http.StatusForbidden, "Not authenticated on cluster %q", clusterName)
-	}
-
-	if resp.Status < http.StatusOK || resp.Status >= http.StatusMultipleChoices {
-		return api.StatusErrorf(http.StatusInternalServerError, "Unexpected response from cluster %q: %s", clusterName, string(resp.Body))
+	if !isSuccessStatus(resp.Status) {
+		err = tunnel.ResponseError(*resp, clusterName, "check cluster permissions")
+		logger.Log.Errorw("Cluster permission check failed", "cluster", clusterName, "error", err)
+		return err
 	}
 
 	var identityResponse struct {
@@ -889,7 +1122,8 @@ func checkTunnelRequirements(rc types.RouteConfig, r *http.Request, clusterName 
 
 	err = json.Unmarshal(resp.Body, &identityResponse)
 	if err != nil {
-		return fmt.Errorf("failed to parse identity response from cluster %q: %w", clusterName, err)
+		logger.Log.Errorw("Failed to parse cluster identity response", "cluster", clusterName, "error", err)
+		return api.StatusErrorf(http.StatusBadGateway, "Invalid identity response from cluster %q: %v", clusterName, err)
 	}
 
 	if !identityResponse.Metadata.FineGrained {
@@ -897,7 +1131,7 @@ func checkTunnelRequirements(rc types.RouteConfig, r *http.Request, clusterName 
 		return nil
 	}
 
-	err = tunnel.CheckPermissions(identityResponse.Metadata.EffectivePermissions, permissions)
+	err = tunnel.CheckPermissions(identityResponse.Metadata.EffectivePermissions, requirements.Permissions)
 	if err != nil {
 		return api.StatusErrorf(http.StatusForbidden, "Insufficient permissions on cluster %q: %v", clusterName, err)
 	}
@@ -922,6 +1156,11 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 		resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, body)
 		if err != nil {
 			return err
+		}
+		if !isSuccessStatus(resp.Status) {
+			err = tunnel.ResponseError(*resp, remoteClusterName, "list cluster links")
+			logger.Log.Errorw("Failed to list cluster links", "cluster", remoteClusterName, "status", resp.Status, "error", err)
+			return response.SmartError(err).Render(w, r)
 		}
 		writeResponse(w, *resp)
 		return nil
@@ -949,6 +1188,12 @@ func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName)
 		resp, err := sendTunnelRequest(rc, r, http.MethodDelete, path, remoteClusterName, nil)
 		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if !isSuccessStatus(resp.Status) {
+			err = tunnel.ResponseError(*resp, remoteClusterName, "delete cluster link")
+			logger.Log.Errorw("Failed to delete cluster link", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "error", err)
 			return response.SmartError(err).Render(w, r)
 		}
 
