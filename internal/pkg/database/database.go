@@ -96,13 +96,15 @@ func (db *DB) StatusCheck(ctx context.Context) error {
 	// First check we can ping the database.
 	var pingError error
 	for attempts := 1; ; attempts++ {
-		pingError = db.conn.Ping()
+		pingError = db.conn.PingContext(ctx)
 		if pingError == nil {
 			break
 		}
-		time.Sleep(time.Duration(attempts) * 100 * time.Millisecond)
-		if ctx.Err() != nil {
+
+		select {
+		case <-ctx.Done():
 			return ctx.Err()
+		case <-time.After(time.Duration(attempts) * 100 * time.Millisecond):
 		}
 	}
 
@@ -155,7 +157,7 @@ func (db *DB) Transaction(ctx context.Context, fn func(context.Context, *sqlx.Tx
 
 		// Begin the transaction.
 		logger.Log.Infow("begin tran", "traceid", traceID)
-		tx, err := db.conn.Beginx()
+		tx, err := db.conn.BeginTxx(ctx, nil)
 		if err != nil {
 			return fmt.Errorf("begin tran: %w", err)
 		}

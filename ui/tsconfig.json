@@ -6,6 +6,7 @@
     "paths": {
       "api/*": ["src/api/*"],
       "context/*": ["src/context/*"],
+      "icons/*": ["src/icons/*"],
       "components/*": ["src/components/*"],
       "pages/*": ["src/pages/*"],
       "types/*": ["src/types/*"],
@@ -21,7 +22,7 @@
     "moduleResolution": "bundler", // imports to be without the .js extension
     "isolatedModules": true, // recommended for vite projects, see https://v2.vitejs.dev/guide/features.html#typescript-compiler-options
     "sourceMap": true,
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals", "vite/client"]
   },
   "include": [
     "./src",
@@ -31,5 +32,5 @@
     "./tests/**/*.ts",
     "vite.config.ts",
     "vitest.config.ts"
-  ],
+  ]
 }

@@ -13,8 +13,17 @@ var tests = []types.UnitTest{
 	testRateLimitMiddleware_BucketSizeAllowance,
 	testRateLimitMiddleware_TokenRefill,
 	testRateLimitMiddleware_CleanupLoop,
+	testRateLimitMiddleware_ConcurrentLimitedRequests,
 	testAuthorizor_CheckPermissions_AdminUser,
 	testAuthorizor_CheckPermissions_NonAdminUser,
+	testOIDCLogin_CallbackOnAnotherReplica,
+	testOIDCLogin_IgnoresStaleLoginID,
+	testClusterLink_RequiredPermissions_UnsupportedType,
+	testTunnel_CheckPermissions,
+	testMtlsAuthenticator_CacheStartsExpired,
+	testCertificatesCache_RebuildSkippedWhenFresh,
+	testDatabase_StatusCheckHonoursContext,
+	testDatabase_TransactionHonoursContext,
 }
 
 func TestUnit(t *testing.T) {

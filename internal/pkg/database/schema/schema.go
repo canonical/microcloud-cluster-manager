@@ -15,6 +15,7 @@ var migrations embed.FS
 var VersionMap = map[string]int64{
 	"development": -1,
 	"0.9":         1,
+	"0.10":        6,
 }
 
 // Migrate runs the database migrations.

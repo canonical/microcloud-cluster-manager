@@ -1,6 +1,6 @@
 import type {
   ClusterInstanceStatus,
-  ClusterNodeStatus,
+  ClusterMemberStatus,
   ClusterPercentiles,
   StatusDistribution,
 } from "types/cluster";
@@ -8,7 +8,7 @@ import type {
 export interface ClusterFilters {
   queries: string[];
   instanceStatuses: ClusterInstanceStatus[];
-  nodeStatuses: ClusterNodeStatus[];
+  memberStatuses: ClusterMemberStatus[];
   memoryUsage: number[];
   storagePoolUsage: number[];
 }
@@ -20,7 +20,7 @@ export const instanceStatuses: ClusterInstanceStatus[] = [
   "Error",
 ];
 
-export const nodeStatuses: ClusterNodeStatus[] = [
+export const memberStatuses: ClusterMemberStatus[] = [
   "Online",
   "Blocked",
   "Offline",

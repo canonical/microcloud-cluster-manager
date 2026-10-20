@@ -139,6 +139,7 @@ func SendStatusUpdate(env *Environment, tokenData models.RemoteClusterTokenBody,
 
 func CreateStatusPostData() models.RemoteClusterStatusPost {
 	return models.RemoteClusterStatusPost{
+		ClusterUUID:       "3fa85f64-5717-4562-b3fc-2c963f66afa6",
 		CPUTotalCount:     8,
 		CPULoad1:          "0.1",
 		CPULoad5:          "0.2",

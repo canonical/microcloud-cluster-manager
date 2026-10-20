@@ -12,6 +12,7 @@ export interface StoragePoolUsage {
 
 export interface Cluster {
   name: string;
+  cluster_uuid: string;
   description: string;
   disk_threshold: number;
   memory_threshold: number;
@@ -33,12 +34,25 @@ export interface Cluster {
   storage_pool_usages: StoragePoolUsage[];
   cluster_certificate: string;
   status: string;
-  ui_url: string;
   tunnel_registered: boolean;
+  lxd_url: string;
 }
 
 export type ClusterInstanceStatus = "Running" | "Frozen" | "Error" | "Stopped";
 
-export type ClusterNodeStatus = "Online" | "Blocked" | "Offline" | "Evacuated";
+export type ClusterMemberStatus =
+  | "Online"
+  | "Blocked"
+  | "Offline"
+  | "Evacuated";
 
 export type ClusterPercentiles = 0.5 | 0.75 | 0.8 | 0.9;
+
+export interface ClusterLink {
+  name: string;
+  type: string;
+  config?: {
+    "volatile.addresses"?: string;
+    "volatile.uuid"?: string;
+  };
+}

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -169,6 +170,56 @@ func testRateLimitMiddleware_CleanupLoop() (testName string, testFunc func(t *te
 			rr2 := helpers.SendTestRequest(handler, clientIP)
 			if rr2.Code != http.StatusOK {
 				err = fmt.Errorf("after cleanup: expected status OK, got %d", rr2.Code)
+			}
+
+			helpers.LogTestOutcome(t, condition, err)
+		}
+	}
+}
+
+func testRateLimitMiddleware_ConcurrentLimitedRequests() (testName string, testFunc func(t *testing.T)) {
+	return "rate limit middleware handles concurrent requests from a limited client", func(t *testing.T) {
+		var condition string
+
+		{
+			// Run with -race to catch unsynchronised access to the client limiter.
+			condition = "Should reject concurrent requests over the limit from the same client"
+
+			// A refill rate of 0 never adds tokens, so the result doesn't depend on how long the requests take. A log
+			// interval of 0 logs every rejected request, so each one updates the client's last logged time.
+			handler := helpers.GetHandlerWithRateLimiting(0, 1, 1000, 1*time.Minute, 1*time.Minute, 0)
+			clientIP := helpers.GetRandomIP()
+
+			const requests = 20
+			codes := make(chan int, requests)
+
+			var wg sync.WaitGroup
+			for range requests {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					codes <- helpers.SendTestRequest(handler, clientIP).Code
+				}()
+			}
+
+			wg.Wait()
+			close(codes)
+
+			var err error
+			allowed := 0
+			for code := range codes {
+				switch code {
+				case http.StatusOK:
+					allowed++
+				case http.StatusTooManyRequests:
+				default:
+					err = fmt.Errorf("expected status 200 or 429, got %d", code)
+				}
+			}
+
+			// The bucket holds 1 token and is never refilled, so exactly 1 request gets through.
+			if err == nil && allowed != 1 {
+				err = fmt.Errorf("expected exactly 1 request to be allowed, got %d", allowed)
 			}
 
 			helpers.LogTestOutcome(t, condition, err)

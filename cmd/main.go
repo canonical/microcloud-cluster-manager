@@ -12,7 +12,7 @@ import (
 )
 
 // VERSION represents the current version of the application.
-var VERSION = "0.9"
+var VERSION = "0.10"
 
 // SERVICES is a list of valid service names within the cluster manager application.
 var SERVICES = []string{

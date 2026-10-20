@@ -1,4 +1,5 @@
 import { test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import {
   ensureClusterExists,
   goToClusterDetail,
@@ -154,6 +155,111 @@ test.describe("Navigation and UI", () => {
     await goToClusterDetail(page, cluster);
     await page.getByRole("link", { name: "Clusters", exact: true }).click();
     await expect(page).toHaveURL(/.*\/clusters$/);
+  });
+});
+
+test.describe("Cluster links tab", () => {
+  const mockTunnel = async (
+    page: Page,
+    cluster: string,
+    registered: boolean,
+  ): Promise<void> => {
+    await page.route(`**/1.0/remote-cluster/${cluster}`, async (route) => {
+      const response = await route.fetch();
+      const body = (await response.json()) as {
+        metadata: { tunnel_registered: boolean };
+      };
+      body.metadata.tunnel_registered = registered;
+      await route.fulfill({ response, json: body });
+    });
+  };
+
+  test("should navigate to the Cluster links tab and back", async ({
+    page,
+  }) => {
+    const cluster = randomSeedClusterName();
+    await goToClusterDetail(page, cluster);
+    await page.getByRole("tab", { name: "Cluster links" }).click();
+    await expect(page).toHaveURL(
+      new RegExp(`.*/ui/cluster/${cluster}/cluster-links$`),
+    );
+    await expect(
+      page.getByRole("tab", { name: "Cluster links" }),
+    ).toHaveAttribute("aria-selected", "true");
+
+    await page.getByRole("tab", { name: "Overview" }).click();
+    await expect(page).toHaveURL(new RegExp(`.*/ui/cluster/${cluster}$`));
+    await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  test("should open the Cluster links tab directly from the URL", async ({
+    page,
+  }) => {
+    const cluster = randomSeedClusterName();
+    await ensureClusterExists(page, cluster);
+    await page.goto(`/ui/cluster/${cluster}/cluster-links`);
+    await expect(
+      page.getByRole("tab", { name: "Cluster links" }),
+    ).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("should show tunnel requirement when tunnel is not registered", async ({
+    page,
+  }) => {
+    const cluster = randomSeedClusterName();
+    await ensureClusterExists(page, cluster);
+    await mockTunnel(page, cluster, false);
+    await page.goto(`/ui/cluster/${cluster}/cluster-links`);
+    await expect(
+      page.getByText("Cluster links require a registered tunnel."),
+    ).toBeVisible();
+  });
+
+  test("should show the empty state when there are no cluster links", async ({
+    page,
+  }) => {
+    const cluster = randomSeedClusterName();
+    await ensureClusterExists(page, cluster);
+    await mockTunnel(page, cluster, true);
+    await page.route(
+      `**/1.0/remote-cluster/${cluster}/cluster-links`,
+      async (route) =>
+        route.fulfill({
+          json: {
+            type: "sync",
+            status: "Success",
+            status_code: 200,
+            metadata: [],
+          },
+        }),
+    );
+    await page.goto(`/ui/cluster/${cluster}/cluster-links`);
+    await expect(page.getByText("No cluster links found")).toBeVisible();
+    await expect(
+      page.getByText("There are no cluster links on this server."),
+    ).toBeVisible();
+  });
+
+  test("should show an error when loading cluster links fails", async ({
+    page,
+  }) => {
+    const cluster = randomSeedClusterName();
+    await ensureClusterExists(page, cluster);
+    await mockTunnel(page, cluster, true);
+    await page.route(
+      `**/1.0/remote-cluster/${cluster}/cluster-links`,
+      async (route) =>
+        route.fulfill({
+          status: 500,
+          json: { type: "error", error: "boom", error_code: 500 },
+        }),
+    );
+    await page.goto(`/ui/cluster/${cluster}/cluster-links`);
+    await expect(page.getByText("Loading cluster links failed")).toBeVisible();
+    await expect(page.getByText("No cluster links found")).toHaveCount(0);
   });
 });
 
