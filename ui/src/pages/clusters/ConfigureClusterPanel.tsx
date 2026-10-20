@@ -16,7 +16,10 @@ import NotificationRow from "components/NotificationRow";
 import usePanelParams from "context/usePanelParams";
 import { fetchCluster, updateCluster } from "api/clusters";
 import * as Yup from "yup";
-import { thresholdSchema } from "util/thresholdValidation";
+import {
+  thresholdSchema,
+  toThresholdFormValue,
+} from "util/thresholdValidation";
 
 export const FIELD_DISK_THRESHOLD = "diskThreshold";
 export const FIELD_MEMORY_THRESHOLD = "memoryThreshold";
@@ -43,8 +46,8 @@ const ConfigureClusterPanel: FC = () => {
 
   interface ConfigureClusterFormValues {
     description: string;
-    diskThreshold: number;
-    memoryThreshold: number;
+    diskThreshold?: number;
+    memoryThreshold?: number;
   }
 
   const handleSubmit = (values: ConfigureClusterFormValues) => {
@@ -86,8 +89,8 @@ const ConfigureClusterPanel: FC = () => {
   const formik = useFormik<ConfigureClusterFormValues>({
     initialValues: {
       description: cluster?.description ?? "",
-      diskThreshold: cluster?.disk_threshold ?? 80,
-      memoryThreshold: cluster?.memory_threshold ?? 80,
+      diskThreshold: toThresholdFormValue(cluster?.disk_threshold, 80),
+      memoryThreshold: toThresholdFormValue(cluster?.memory_threshold, 80),
     },
     validationSchema: ConfigurationSchema,
     enableReinitialize: true,
@@ -131,7 +134,7 @@ const ConfigureClusterPanel: FC = () => {
                 autoFocus={focusField === FIELD_DISK_THRESHOLD}
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
-                value={formik.values.diskThreshold}
+                value={formik.values.diskThreshold ?? ""}
                 error={
                   formik.touched.diskThreshold && formik.errors.diskThreshold
                 }
@@ -146,7 +149,7 @@ const ConfigureClusterPanel: FC = () => {
                 autoFocus={focusField === FIELD_MEMORY_THRESHOLD}
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
-                value={formik.values.memoryThreshold}
+                value={formik.values.memoryThreshold ?? ""}
                 error={
                   formik.touched.memoryThreshold &&
                   formik.errors.memoryThreshold
