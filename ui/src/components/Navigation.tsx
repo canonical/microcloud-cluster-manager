@@ -122,6 +122,21 @@ const Navigation: FC = () => {
               <li className="p-side-navigation__item">
                 <a
                   className="p-side-navigation__link"
+                  title="Documentation"
+                  href="https://canonical.com/microcloud/docs/latest/how-to/cluster_manager/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Icon
+                    className="is-light p-side-navigation__icon p-side-logout"
+                    name="book"
+                  />
+                  Documentation
+                </a>
+              </li>
+              <li className="p-side-navigation__item">
+                <a
+                  className="p-side-navigation__link"
                   title="Report a bug"
                   href="https://github.com/canonical/microcloud-cluster-manager/issues/new"
                   target="_blank"

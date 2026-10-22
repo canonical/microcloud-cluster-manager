@@ -2,6 +2,7 @@ package managementapi
 
 import (
 	"context"
+	"errors"
 	"expvar"
 	"fmt"
 	"net/http"
@@ -179,8 +180,7 @@ func Run() (err error) {
 
 		// Asking server to shutdown and shed load.
 		if err := server.Shutdown(ctx); err != nil {
-			err = server.Close()
-			return fmt.Errorf("could not stop server gracefully: %w", err)
+			return fmt.Errorf("could not stop server gracefully: %w", errors.Join(err, server.Close()))
 		}
 	}
 

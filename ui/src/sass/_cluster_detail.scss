@@ -51,3 +51,27 @@
     }
   }
 }
+
+.cluster-links-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: $spv--large;
+}
+
+.cluster-links-empty-state {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 60dvh;
+
+  .empty-state {
+    margin: 0;
+  }
+
+  img.empty-state-icon {
+    height: 5.375rem;
+    opacity: 1;
+    width: 5.375rem;
+  }
+}

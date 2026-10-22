@@ -152,7 +152,7 @@ const ClusterListTokens: FC<Props> = ({
                   parentName=""
                   selectedNames={selectedNames}
                   setSelectedNames={setSelectedNames}
-                  filteredNames={selectedNames}
+                  filteredNames={tokens.map((item) => item.cluster_name)}
                 />
               )
             }

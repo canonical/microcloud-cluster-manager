@@ -55,7 +55,7 @@ const ClusterDetailMemberGraph: FC<Props> = ({ cluster }: Props) => {
   return (
     <div className="cluster-detail-doughnut-graph">
       <DoughnutChart
-        chartID="clusterNode"
+        chartID="clusterMember"
         segmentHoverWidth={45}
         segmentThickness={40}
         segments={segments}

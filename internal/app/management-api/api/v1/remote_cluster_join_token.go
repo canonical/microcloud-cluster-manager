@@ -92,14 +92,18 @@ func tokenPost(rc types.RouteConfig) types.EndpointHandler {
 		}
 
 		// store token details in the database
+		var isNameTaken bool
 		err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
 			var err error
-			isNameTaken, err := store.RemoteClusterExists(ctx, tx, payload.ClusterName)
+			isNameTaken, err = store.RemoteClusterExists(ctx, tx, payload.ClusterName)
 			if err != nil {
 				return err
 			}
+
+			// The conflict response is rendered after the transaction, so that the handler doesn't go on to render a
+			// success response as well.
 			if isNameTaken {
-				return response.Conflict(fmt.Errorf("cluster name already exists")).Render(w, r)
+				return nil
 			}
 
 			tokenData := store.RemoteClusterToken{
@@ -116,6 +120,10 @@ func tokenPost(rc types.RouteConfig) types.EndpointHandler {
 
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
+		}
+
+		if isNameTaken {
+			return response.Conflict(fmt.Errorf("cluster name already exists")).Render(w, r)
 		}
 
 		logger.Log.Info("AUTHN remote cluster join token created")

@@ -1,6 +1,6 @@
 # product metadata
 name: microcloud-cluster-manager
-version: "0.9"
+version: "0.10"
 summary: Canonical MicroCloud Cluster Manager
 description: |
   The Canonical MicroCloud Cluster Manager is a tool that allows you to manage multiple MicroClouds from a single interface.
