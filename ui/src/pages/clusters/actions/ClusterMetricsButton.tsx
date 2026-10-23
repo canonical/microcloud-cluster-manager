@@ -4,6 +4,7 @@ import type { FC } from "react";
 import { queryKeys } from "util/queryKeys";
 import { fetchConfigurations } from "api/settings";
 import classnames from "classnames";
+import { getClusterMetricsUrl } from "util/clusterMetrics";
 
 interface Props {
   clusterName: string;
@@ -31,7 +32,7 @@ const ClusterMetricsButton: FC<Props> = ({
     <a
       className={classnames("p-button u-no-margin--bottom has-icon", className)}
       onClick={onClose}
-      href={`${baseUrl}/lxd?orgId=1&var-job=${clusterName}`}
+      href={getClusterMetricsUrl(baseUrl, clusterName)}
       target="_blank"
       rel="noopener noreferrer"
     >
