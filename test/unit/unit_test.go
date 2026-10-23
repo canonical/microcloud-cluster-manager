@@ -19,6 +19,7 @@ var tests = []types.UnitTest{
 	testOIDCLogin_CallbackOnAnotherReplica,
 	testOIDCLogin_IgnoresStaleLoginID,
 	testClusterLink_RequiredPermissions_UnsupportedType,
+	testClusterLink_RequirementsFor_SupportedTypes,
 	testTunnel_CheckPermissions,
 	testMtlsAuthenticator_CacheStartsExpired,
 	testCertificatesCache_RebuildSkippedWhenFresh,
