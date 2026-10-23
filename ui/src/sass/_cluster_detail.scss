@@ -75,3 +75,23 @@
     width: 5.375rem;
   }
 }
+
+.cluster-link-endpoints {
+  align-items: end;
+  display: grid;
+  gap: 0 $sph--large;
+  grid-template-columns: 1fr auto 1fr;
+
+  &__arrow {
+    margin-bottom: 1.5rem;
+  }
+}
+
+// leaves room for the focus ring of the radio inputs, which is clipped by the scroll container
+.cluster-link-types {
+  padding-left: $sph--small;
+
+  &__help {
+    margin-top: $spv--x-small;
+  }
+}

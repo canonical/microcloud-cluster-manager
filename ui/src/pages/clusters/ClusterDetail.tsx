@@ -109,7 +109,8 @@ const ClusterDetail: FC = () => {
       {panelParams.panel === panels.configureCluster && (
         <ConfigureClusterPanel />
       )}
-      {panelParams.panel === panels.createClusterLink && (
+      {(panelParams.panel === panels.createClusterLink ||
+        panelParams.panel === panels.editClusterLink) && (
         <CreateClusterLinkPanel />
       )}
     </>
