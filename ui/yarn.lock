@@ -945,10 +945,10 @@
     hashery "^1.5.0"
     keyv "^5.6.0"
 
-"@canonical/react-components@4.15.0":
-  version "4.15.0"
-  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-4.15.0.tgz#d3e7b7e3fd2264cb6e0e2c7c36af3cc5aa62eaeb"
-  integrity sha512-0c7W4RKQSUV3MwFZSxJmNSwpbdQmKWY+ZyKORg4KPWp5Zo1YsbvkPYm7OBrzggq4eDijHi59HJp63FG3mqJcaw==
+"@canonical/react-components@4.16.0":
+  version "4.16.0"
+  resolved "https://registry.yarnpkg.com/@canonical/react-components/-/react-components-4.16.0.tgz#a273b0a7cb6128c2bf4e663df67a597719b294be"
+  integrity sha512-rEwmL7Bv3I4ojYtrnQWPP6YmFa6+WeuwMxZhYmhXu5G369bMBsRiw6ez4t84kDI98K0j668hhN5dh5dinmPihQ==
   dependencies:
     "@types/jest" "30.0.0"
     "@types/node" "20.19.30"
@@ -961,10 +961,10 @@
     prop-types "15.8.1"
     react-table "7.8.0"
 
-"@canonical/typescript-config-react@0.44.1":
-  version "0.44.1"
-  resolved "https://registry.yarnpkg.com/@canonical/typescript-config-react/-/typescript-config-react-0.44.1.tgz#323b263ab8897c6c10f196b72100ff6015587468"
-  integrity sha512-F/mMNR3VRkExYqRSB2KiEwbtsyikI274AVQBjyCEmBcOoe4jF+TlXs/XFk+RcP8Sei/iBsLzZdUa0KcH+fIfcw==
+"@canonical/typescript-config-react@0.45.0":
+  version "0.45.0"
+  resolved "https://registry.yarnpkg.com/@canonical/typescript-config-react/-/typescript-config-react-0.45.0.tgz#14b2f4fdef76283376c63189b1f47f40ccde64f1"
+  integrity sha512-HC2bTmPsTHYJiMCp3dkzu7F7K4hYHfF8PUWQWvg8Er+tAA+XgIPJkItM8v8P4NQTRvggFBbbtQa8d0nqaQK7HQ==
   dependencies:
     "@canonical/typescript-config" "0.43.0"
 
