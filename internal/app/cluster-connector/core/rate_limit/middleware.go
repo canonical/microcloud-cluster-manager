@@ -16,7 +16,7 @@ func RateLimitMiddleware(rc types.RouteConfig) mux.MiddlewareFunc {
 			if rateLimiter == nil || !ok {
 				err := response.InternalError(nil).Render(w, r)
 				if err != nil {
-					logger.Log.Errorw("Failed rendering Internal Server Error response due to invalid rateLimiter: %w", err)
+					logger.Log.Errorf("Failed rendering Internal Server Error response due to invalid rateLimiter: %v", err)
 				}
 				return
 			}
@@ -25,7 +25,7 @@ func RateLimitMiddleware(rc types.RouteConfig) mux.MiddlewareFunc {
 			if err != nil {
 				err := response.InternalError(nil).Render(w, r)
 				if err != nil {
-					logger.Log.Errorw("Failed rendering Internal Server Error response due to rateLimiter error: %w", err)
+					logger.Log.Errorf("Failed rendering Internal Server Error response due to rateLimiter error: %v", err)
 				}
 				return
 			}
