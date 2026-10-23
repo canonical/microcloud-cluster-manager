@@ -42,11 +42,11 @@ readonly IDP_ADMIN_GROUP="admins"
 
 COUNT=2
 LXD_CHANNEL="6/stable"
-LXD_CHANNEL_EXPLICIT=0
 MICROCLOUD_CHANNEL="3/stable"
 TIMEOUT=600
 VERBOSE=0
 NUKE=0
+SEQUENTIAL=0
 
 WORK_DIR=""
 
@@ -77,7 +77,8 @@ Options:
       --nuke                   Force-delete the selected containers instead of setting them up.
       --microcloud-channel CHANNEL
                                Channel of the MicroCloud snap. (default: ${MICROCLOUD_CHANNEL})
-      --lxd-channel CHANNEL    Channel of the LXD snap. (default: ${LXD_CHANNEL})
+      --sequential             Set up one container at a time instead of in parallel. Use this
+                               on hosts that run out of memory or fail with several containers.
   -v, --verbose                Print the commands run in the containers.
   -h, --help                   Show this help message.
 
@@ -119,17 +120,12 @@ parse_args() {
         MICROCLOUD_CHANNEL="${2:-}"
         shift 2
         ;;
-      --lxd-channel)
-        if [ "$#" -lt 2 ]; then
-          log_error "$1 requires a value"
-          exit 1
-        fi
-        LXD_CHANNEL="${2:-}"
-        LXD_CHANNEL_EXPLICIT=1
-        shift 2
-        ;;
       --nuke)
         NUKE=1
+        shift
+        ;;
+      --sequential)
+        SEQUENTIAL=1
         shift
         ;;
       -v|--verbose)
@@ -371,17 +367,6 @@ install_snaps() {
   for snap in lxd microcloud; do
     if run_in_instance "${name}" -- snap list "${snap}" &>/dev/null; then
       log "The ${snap} snap is already installed in ${name}"
-      # An explicit channel also applies to a container that was created before, so that
-      # a container with an LXD that MicroCloud rejects can be fixed by running the script
-      # again with the channel that provides a supported LXD.
-      if [ "${snap}" = "lxd" ] && [ "${LXD_CHANNEL_EXPLICIT}" -eq 1 ]; then
-        log "Refreshing the lxd snap in ${name} to the ${LXD_CHANNEL} channel"
-        if ! run_in_instance "${name}" -- snap refresh lxd --channel="${LXD_CHANNEL}"; then
-          log_error "Failed to refresh the lxd snap in ${name}"
-          return 1
-        fi
-      fi
-
       continue
     fi
 
@@ -445,7 +430,10 @@ EOF
   if [ "${status}" -ne 0 ]; then
     # A cluster that was created before is left untouched, so that running the script
     # again only enrolls the clusters that the Cluster Manager does not know yet.
-    if grep -q "MicroCloud is already initialized" "${log_file}"; then
+    # The wording of the error differs between MicroCloud versions, so a member that
+    # already shows as ONLINE in the status is also treated as initialized.
+    if grep -q "MicroCloud is already initialized" "${log_file}" ||
+      run_in_instance "${name}" -- microcloud status 2>&1 | grep -q "${name}.*ONLINE"; then
       log "The MicroCloud cluster in ${name} is already initialized, reusing it"
       return 0
     fi
@@ -463,8 +451,18 @@ EOF
     return 1
   fi
 
-  if ! grep -q "MicroCloud is ready" "${log_file}"; then
-    log_error "MicroCloud did not report the cluster as ready in ${name}, see ${log_file}"
+  # Preseed prints nothing on success in recent MicroCloud versions, so the cluster is
+  # verified by asking MicroCloud for its status instead of matching preseed output.
+  # The status exits non-zero with warnings only, such as a missing MicroCeph, so the
+  # member list is checked.
+  local status_output
+  status_output="$(run_in_instance "${name}" -- microcloud status 2>&1 || true)"
+  if ! grep -q "${name}.*ONLINE" <<<"${status_output}"; then
+    {
+      echo "--- microcloud status ---"
+      echo "${status_output}"
+    } >>"${log_file}"
+    log_error "MicroCloud cluster is not online in ${name}, see ${log_file}"
     tail -n 20 "${log_file}" >&2
     return 1
   fi
@@ -778,17 +776,25 @@ run_parallel() {
   shift 2
 
   local pids=()
+  local failed=0
   local name
   for name in "$@"; do
     (
       set -eo pipefail
       "${func}" "${name}" 2>&1 | sed -u "s/^/[${name}] /" | tee "${WORK_DIR}/${name}.${func}.log"
     ) &
-    pids+=("$!")
+    if [ "${SEQUENTIAL}" -eq 1 ]; then
+      # Wait for this instance before starting the next one. The remaining instances
+      # still run so that all failures are reported.
+      if ! wait "$!"; then
+        failed=1
+      fi
+    else
+      pids+=("$!")
+    fi
   done
 
   local pid
-  local failed=0
   for pid in "${pids[@]}"; do
     if ! wait "${pid}"; then
       failed=1
