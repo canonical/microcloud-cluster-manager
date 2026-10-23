@@ -9,28 +9,25 @@ import {
   useNotify,
   useToastNotification,
 } from "@canonical/react-components";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import type { FC } from "react";
 import { useFormik } from "formik";
 import { queryKeys } from "util/queryKeys";
 import NotificationRow from "components/NotificationRow";
 import usePanelParams from "context/usePanelParams";
-import { createClusterLink, fetchCluster } from "api/clusters";
+import { createClusterLink } from "api/clusters";
 import * as Yup from "yup";
 import ClusterSelector from "pages/clusters/ClusterSelector";
 
-const CreateClusterLinkPanel: FC = () => {
+interface Props {
+  sourceCluster?: string;
+}
+
+const CreateClusterLinkPanel: FC<Props> = ({ sourceCluster = "" }) => {
   const panelParams = usePanelParams();
   const queryClient = useQueryClient();
   const notify = useNotify();
   const toastNotification = useToastNotification();
-
-  const clusterName = panelParams.cluster ?? "";
-
-  const { data: cluster } = useQuery({
-    queryKey: [queryKeys.clusters, clusterName],
-    queryFn: async () => fetchCluster(clusterName),
-  });
 
   const closePanel = () => {
     panelParams.clear();
@@ -38,6 +35,7 @@ const CreateClusterLinkPanel: FC = () => {
   };
 
   interface CreateClusterLinkFormValues {
+    sourceCluster: string;
     targetCluster: string;
     direction: "bidirectional" | "unidirectional";
   }
@@ -51,7 +49,7 @@ const CreateClusterLinkPanel: FC = () => {
       type: values.direction,
     };
 
-    createClusterLink(clusterName, JSON.stringify(payload))
+    createClusterLink(values.sourceCluster, JSON.stringify(payload))
       .then(() => {
         toastNotification.success(<>Created cluster link.</>);
         closePanel();
@@ -61,9 +59,6 @@ const CreateClusterLinkPanel: FC = () => {
       })
       .finally(() => {
         queryClient.invalidateQueries({
-          queryKey: [queryKeys.clusters, cluster?.name],
-        });
-        queryClient.invalidateQueries({
           queryKey: [queryKeys.clusters],
         });
         formik.setSubmitting(false);
@@ -71,29 +66,28 @@ const CreateClusterLinkPanel: FC = () => {
   };
 
   const ConfigurationSchema = Yup.object().shape({
+    sourceCluster: Yup.string().required("Source cluster is required"),
     targetCluster: Yup.string().required("Target cluster is required"),
   });
 
   const formik = useFormik<CreateClusterLinkFormValues>({
     initialValues: {
+      sourceCluster,
       targetCluster: "",
       direction: "bidirectional",
     },
     validationSchema: ConfigurationSchema,
-    enableReinitialize: true,
     onSubmit: handleSubmit,
   });
-
-  if (!cluster) {
-    return null;
-  }
 
   return (
     <>
       <SidePanel>
         <SidePanel.Header>
           <SidePanel.HeaderTitle>
-            Create cluster link from {cluster.name}
+            {sourceCluster
+              ? `Create cluster link from ${sourceCluster}`
+              : "Create cluster link"}
           </SidePanel.HeaderTitle>
         </SidePanel.Header>
         <NotificationRow className="u-no-padding" />
@@ -111,12 +105,31 @@ const CreateClusterLinkPanel: FC = () => {
             >
               {/* hidden submit to enable enter key in inputs */}
               <Input type="submit" hidden value="Hidden input" />
+              {!sourceCluster && (
+                <ClusterSelector
+                  value={formik.values.sourceCluster}
+                  setValue={(value) => {
+                    formik.setFieldValue("sourceCluster", value);
+                  }}
+                  ignoreOptions={[formik.values.targetCluster]}
+                  selectProps={{
+                    id: "sourceCluster",
+                    label: "Source cluster",
+                    "aria-label": "Source cluster",
+                  }}
+                />
+              )}
               <ClusterSelector
                 value={formik.values.targetCluster}
                 setValue={(value) => {
                   formik.setFieldValue("targetCluster", value);
                 }}
-                ignoreOptions={[cluster.name]}
+                ignoreOptions={[formik.values.sourceCluster]}
+                selectProps={{
+                  id: "targetCluster",
+                  label: "Target cluster",
+                  "aria-label": "Target cluster",
+                }}
               />
               <Select
                 id="direction"
@@ -146,7 +159,7 @@ const CreateClusterLinkPanel: FC = () => {
             appearance="positive"
             className="u-no-margin--bottom"
             loading={formik.isSubmitting}
-            disabled={!formik.isValid || !formik.values.targetCluster}
+            disabled={!formik.isValid}
             onClick={() => void formik.submitForm()}
           >
             Save changes
