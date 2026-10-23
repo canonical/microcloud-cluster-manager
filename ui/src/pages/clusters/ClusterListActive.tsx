@@ -19,6 +19,7 @@ import SelectedTableNotification from "components/SelectedTableNotification";
 import ClusterActions from "pages/clusters/ClusterActions";
 import EnrollClusterButton from "pages/clusters/actions/EnrollClusterButton";
 import usePanelParams from "context/usePanelParams";
+import useSortTableData from "context/useSortTableData";
 
 interface Props {
   clusters: Cluster[];
@@ -132,6 +133,10 @@ const ClusterListActive: FC<Props> = ({
     };
   });
 
+  const { rows: sortedRows, updateSort } = useSortTableData({
+    rows: tableRows,
+  });
+
   return (
     <div
       role="tabpanel"
@@ -156,7 +161,7 @@ const ClusterListActive: FC<Props> = ({
           belowIds={["status-bar"]}
         >
           <TablePagination
-            data={tableRows}
+            data={sortedRows}
             id="pagination"
             itemName=" active cluster"
             className="u-no-margin--top"
@@ -186,8 +191,9 @@ const ClusterListActive: FC<Props> = ({
                 )
               }
               headers={tableHeaders}
-              rows={tableRows}
+              rows={sortedRows}
               sortable
+              onUpdateSort={updateSort}
               selectedNames={selectedNames}
               setSelectedNames={setSelectedNames}
               itemName="cluster"
