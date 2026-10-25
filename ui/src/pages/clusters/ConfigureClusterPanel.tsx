@@ -89,8 +89,8 @@ const ConfigureClusterPanel: FC = () => {
   const formik = useFormik<ConfigureClusterFormValues>({
     initialValues: {
       description: cluster?.description ?? "",
-      diskThreshold: toThresholdFormValue(cluster?.disk_threshold, 80),
-      memoryThreshold: toThresholdFormValue(cluster?.memory_threshold, 80),
+      diskThreshold: toThresholdFormValue(cluster?.disk_threshold),
+      memoryThreshold: toThresholdFormValue(cluster?.memory_threshold),
     },
     validationSchema: ConfigurationSchema,
     enableReinitialize: true,

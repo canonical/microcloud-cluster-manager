@@ -21,14 +21,10 @@ describe("thresholdSchema", () => {
 
 describe("toThresholdFormValue", () => {
   it("leaves a threshold that was never set empty", () => {
-    expect(toThresholdFormValue(0, 80)).toBeUndefined();
+    expect(toThresholdFormValue(0)).toBeUndefined();
   });
 
   it("keeps a stored threshold", () => {
-    expect(toThresholdFormValue(42, 80)).toBe(42);
-  });
-
-  it("uses the fallback while the cluster is loading", () => {
-    expect(toThresholdFormValue(undefined, 80)).toBe(80);
+    expect(toThresholdFormValue(42)).toBe(42);
   });
 });

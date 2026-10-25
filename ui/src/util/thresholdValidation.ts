@@ -12,13 +12,5 @@ export const thresholdSchema = Yup.number()
 // The API reports 0 for a threshold that was never set. Show that as an empty
 // field, which the schema accepts and the form leaves out of the request, so
 // editing another setting doesn't fail validation or store a threshold.
-export const toThresholdFormValue = (
-  threshold: number | undefined,
-  fallback: number,
-): number | undefined => {
-  if (threshold === 0) {
-    return undefined;
-  }
-
-  return threshold ?? fallback;
-};
+export const toThresholdFormValue = (threshold?: number): number | undefined =>
+  threshold === 0 ? undefined : threshold;
