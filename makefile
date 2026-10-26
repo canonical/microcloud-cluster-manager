@@ -51,56 +51,7 @@ tidy-gomod:
 	go mod tidy
 
 # ====================================================================
-# Local dev cluster utility targets. (k8s, kustomize, kind, skaffold)
-
-KIND_CLUSTER := dev-cluster
-
-.PHONY: start-cluster
-start-cluster:
-	@if ! kind get clusters | grep -q "$(KIND_CLUSTER)"; then \
-		echo "Cluster '$(KIND_CLUSTER)' does not exist. Creating..."; \
-		kind create cluster \
-			--image kindest/node:v1.31.0 \
-			--name $(KIND_CLUSTER) \
-			--config deployment/k8s/kind/kind-config.yaml; \
-		kubectl config set-context --current --namespace=default; \
-	else \
-		echo "Cluster '$(KIND_CLUSTER)' already exists."; \
-	fi
-
-.PHONY: delete-cluster
-delete-cluster:
-	kind delete cluster --name $(KIND_CLUSTER)
-
-.PHONY: dev-k8s-deploy
-dev-k8s-deploy:
-	# create custom tmp directory for skaffold to store build artifacts
-	@if [ ! -d "./tmp" ]; then \
-		mkdir tmp; \
-	fi
-	TMPDIR=tmp skaffold dev --no-prune=false -p docker
-
-.PHONY: debug-k8s-deploy
-debug-k8s-deploy:
-	@if [ ! -d "./tmp" ]; then \
-		mkdir tmp; \
-	fi
-	TMPDIR=tmp skaffold dev --no-prune=false -p debug
-
-.PHONY: rock-k8s-deploy
-rock-k8s-deploy:
-	@if [ ! -d "./tmp" ]; then \
-		mkdir tmp; \
-	fi
-	TMPDIR=tmp skaffold dev --no-prune=false --cache-artifacts=false -p rock
-
-# unfortunately necessary as skaffold does not automatically remove images after removing k8s cluster objects
-.PHONY: clean-dev
-clean-dev:
-	rm -rf tmp
-	docker container prune -f --filter "label=io.x-k8s.kind.cluster=dev-cluster"
-	docker images -f "dangling=true" -q | xargs -r docker rmi
-	docker images --filter=reference='microcloud-cluster-manager:*' -q | xargs -I {} docker rmi {} -f
+# Local dev utility targets.
 
 .PHONY: clean
 clean:
@@ -124,12 +75,6 @@ clean:
 dev:
 	./scripts/run-backend.sh
 
-.PHONY: dev-rock
-dev-rock: start-cluster dev-juju-setup rock-k8s-deploy
-
-.PHONY: nuke
-nuke: clean-dev delete-cluster dev-clean-juju
-
 # ====================================================================
 # UI utilities
 .PHONY: ui
@@ -139,8 +84,7 @@ ui:
 # ====================================================================
 # test utilities
 
-# to ensure that all pods are ready before running tests, we check the liveliness of the pods
-# rollout restart seems to break k8s portforwarding, here we make a request to the server to ensure it is up as well as reset the portforwarding
+# make a request to the server to ensure it is up before running tests
 .PHONY: ensure-service-running
 ensure-service-running:
 	@{ curl --insecure https://localhost:9000 > /dev/null 2>&1 || true; } 2>/dev/null
@@ -219,89 +163,13 @@ build-coverage: build-ui copy-ui
 	$(GO) build -C cmd -cover -o app-coverage ./
 
 # ====================================================================
-# CI k8s deployment utilities
-
-.PHONY: deploy-cert-manager
-deploy-cert-manager:
-	@echo "Installing cert-manager.."
-	kubectl apply -f deployment/k8s/cicd/cert/cert-manager.yaml
-	@echo "Waiting for Cert-Manager deployment to become available..."
-	kubectl wait --for=condition=available --timeout=300s deployment --all -n cert-manager
-	@echo "Applying ClusterIssuer..."
-	kubectl apply -f deployment/k8s/cicd/cert/cert-issuer.yaml
-	@echo "Applying Certificates..."
-	kubectl apply -f deployment/k8s/cicd/cert/management-api-cert.yaml
-	kubectl apply -f deployment/k8s/cicd/cert/cluster-connector-cert.yaml
-	@echo "Waiting for the certificate Secrets to be created..."
-	kubectl wait --for=create --timeout=600s secret/management-api-cert-secret -n default
-	kubectl wait --for=create --timeout=600s secret/cluster-connector-cert-secret -n default
-	@echo "Certificates are ready!"
-
-.PHONY: deploy-db
-deploy-db:
-	@echo "Deploying Postgres database..."
-	kubectl apply -f deployment/k8s/cicd/db/config.yaml
-	kubectl apply -f deployment/k8s/cicd/db/pv.yaml
-	kubectl apply -f deployment/k8s/cicd/db/pvc.yaml
-	kubectl apply -f deployment/k8s/cicd/db/svc.yaml
-	kubectl apply -f deployment/k8s/cicd/db/ss.yaml
-	kubectl rollout status --watch --timeout=600s statefulset/db-ss
-	@echo "Postgres database is ready!"
-
-.PHONY: deploy-configs
-deploy-configs:
-	@echo "Deploying configs..."
-	sed -i 's/PROMETHEUS_ADDRESS/$(PROMETHEUS_ADDRESS)/g' deployment/k8s/cicd/config/config.yaml
-	kubectl apply -f deployment/k8s/cicd/config/config.yaml
-	kubectl wait --for=create --timeout=600s cm/config -n default
-	@echo "Configs is ready!"
-
-.PHONY: deploy-management-api
-deploy-management-api:
-	@echo "Deploying management-api..."
-	sed -i 's/IMAGE_NAME/$(IMAGE_NAME)/g' deployment/k8s/cicd/management-api/depl.yaml
-	kubectl apply -f deployment/k8s/cicd/management-api/svc.yaml
-	kubectl apply -f deployment/k8s/cicd/management-api/depl.yaml
-	kubectl rollout status --watch --timeout=600s deployment/management-api-depl
-	@echo "Management-api is ready!"
-
-.PHONY: deploy-cluster-connector
-deploy-cluster-connector:
-	@echo "Deploying cluster-connector..."
-	sed -i 's/IMAGE_NAME/$(IMAGE_NAME)/g' deployment/k8s/cicd/cluster-connector/depl.yaml
-	kubectl apply -f deployment/k8s/cicd/cluster-connector/svc.yaml
-	kubectl apply -f deployment/k8s/cicd/cluster-connector/depl.yaml
-	kubectl rollout status --watch --timeout=600s deployment/cluster-connector-depl
-	@echo "Cluster-connector is ready!"
-
-.PHONY: deploy-ingress
-deploy-ingress:
-	@echo "Deploying HAProxy ingress..."
-	kubectl apply -f deployment/k8s/cicd/ingress/ingress.yaml
-	kubectl apply -f deployment/k8s/cicd/ingress/haproxy.yaml
-	kubectl rollout status --watch --timeout=600s -n haproxy-controller deployment/haproxy-kubernetes-ingress
-	@echo "Ingress is ready!"
-
-.PHONY: deploy-ci-k8s-cluster
-deploy-ci-k8s-cluster:
-	$(MAKE) deploy-cert-manager
-	$(MAKE) deploy-db
-	$(MAKE) deploy-configs PROMETHEUS_ADDRESS=$(PROMETHEUS_ADDRESS)
-	$(MAKE) deploy-management-api IMAGE_NAME=$(IMAGE_NAME)
-	$(MAKE) deploy-cluster-connector IMAGE_NAME=$(IMAGE_NAME)
-	$(MAKE) deploy-ingress
-	$(MAKE) add-hosts
-
-# ====================================================================
 # Development dependencies
 
 .PHONY: install-core
 install-core: install-go install-docker
 
 .PHONY: install-deps
-install-deps: install-kubectl install-kind \
-								install-skaffold install-nvm \
-								install-juju install-dotrun
+install-deps: install-nvm install-dotrun
 
 # install golang based on version in go.mod if it does not exist
 .PHONY: install-go
@@ -349,42 +217,6 @@ install-docker:
 		echo "Docker is already installed."; \
 	fi
 
-# install kubernetes controller if it does not exist
-.PHONY: install-kubectl
-install-kubectl:
-	@if ! command -v kubectl >/dev/null 2>&1; then \
-		echo "\n---------> Installing kubectl..."; \
-		KUBECTL_VERSION=$$(curl -L -s https://dl.k8s.io/release/stable.txt); \
-		curl -LO "https://dl.k8s.io/release/$${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
-		sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
-		rm kubectl; \
-	else \
-		echo "kubectl is already installed."; \
-	fi
-
-# install kind if it does not exist
-.PHONY: install-kind
-install-kind:
-	@if ! command -v kind >/dev/null 2>&1; then \
-		echo "\n---------> Installing Kind..."; \
-		curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64; \
-		chmod +x ./kind; \
-		sudo mv ./kind /usr/local/bin/kind; \
-	else \
-		echo "Kind is already installed."; \
-	fi
-
-# install skaffold if it does not exist
-.PHONY: install-skaffold
-install-skaffold:
-	@if ! command -v skaffold >/dev/null 2>&1; then \
-		echo "\n---------> Installing Skaffold..."; \
-		curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
-		chmod +x skaffold && sudo mv skaffold /usr/local/bin; \
-	else \
-		echo "Skaffold is already installed."; \
-	fi
-
 # install nvm if it does not exist
 .PHONY: install-nvm
 install-nvm:
@@ -411,16 +243,6 @@ install-dotrun:
 		echo "dotrun is already installed."; \
 	fi
 
-# install juju if it does not exist
-.PHONY: install-juju
-install-juju:
-	@if ! command -v juju >/dev/null 2>&1; then \
-		echo "\n---------> Installing Juju..."; \
-		sudo snap install juju --channel=3.6/stable; \
-	else \
-		echo "Juju is already installed."; \
-	fi
-
 # add local host entries to /etc/hosts
 .PHONY: add-hosts
 add-hosts:
@@ -433,66 +255,3 @@ add-hosts:
 	else \
 		echo "Entries already exist in /etc/hosts."; \
 	fi
-
-# ====================================================================
-# juju setup utilities
-
-# development juju setup
-.PHONY: dev-juju-setup
-dev-juju-setup:
-	@echo "Setting up Juju controller for development..."
-	@if ! juju clouds --client --all | grep cluster-manager; then \
-		juju add-k8s --context-name kind-dev-cluster cluster-manager; \
-		juju bootstrap cluster-manager cm-controller; \
-	else \
-		echo "Juju controller already exists."; \
-	fi
-
-.PHONY: dev-cos-deploy
-dev-cos-deploy:
-	@echo "Deploying COS-Lite to the dev cluster..."
-	@if ! kubectl get ns | grep cos; then \
-		echo "Applying DNS configuration..."; \
-		kubectl apply -f deployment/k8s/dev/dns; \
-		@echo "Installing MetalLB for COS-Lite ingress..."; \
-		kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml; \
-		kubectl wait --for=condition=available --timeout=300s deployment --all -n metallb-system; \
-		kubectl rollout status daemonset speaker -n metallb-system --timeout 120s; \
-		echo "Setting MetalLB address pool..."; \
-		ip_addr=$$(ip -4 -j route get 2.2.2.2 | jq -r '.[] | .prefsrc'); \
-		ip_range=$${ip_addr}-$${ip_addr}; \
-		ip_range_str="addresses:\\n      - $${ip_range}"; \
-		sed "s@{{addresses}}@$${ip_range_str}@g" deployment/k8s/dev/metallb/addresspool.yaml | kubectl apply -f -; \
-		echo "Deploying COS-Lite to the dev cluster..."; \
-		juju add-model cos && juju switch cos; \
-		juju deploy cos-lite --trust; \
-	else \
-		echo "COS-Lite already deployed."; \
-	fi
-
-.PHONY: dev-clean-juju
-dev-clean-juju:
-	juju unregister cm-controller --no-prompt
-	juju remove-cloud cluster-manager
-
-.PHONY: update-traefik-port
-update-traefik-port:
-	@SERVICE_NAME="traefik-lb"; \
-	NAMESPACE="cos"; \
-	TIMEOUT=120; \
-	START_TIME=$$(date +%s); \
-	echo "Waiting for service $$SERVICE_NAME to exist in namespace $$NAMESPACE..."; \
-	while true; do \
-	    if kubectl get service "$$SERVICE_NAME" -n "$$NAMESPACE" > /dev/null 2>&1; then \
-	        echo "Service $$SERVICE_NAME exists!"; \
-	        break; \
-	    fi; \
-	    CURRENT_TIME=$$(date +%s); \
-	    ELAPSED_TIME=$$((CURRENT_TIME - START_TIME)); \
-	    if [ "$$ELAPSED_TIME" -ge "$$TIMEOUT" ]; then \
-	        echo "Timed out waiting for service $$SERVICE_NAME to exist."; \
-	        exit 1; \
-	    fi; \
-	    sleep 2; \
-	done
-	kubectl patch svc/traefik-lb -n cos -p '{"spec":{"ports":[{"port":80, "nodePort":30001}]}}'
