@@ -3,12 +3,14 @@ import { useSearchParams } from "react-router-dom";
 export interface PanelHelper {
   panel: string | null;
   cluster: string | null;
+  link: string | null;
   clusters: string | null;
   focusField: string | null;
   clear: () => void;
   openEnrollCluster: () => void;
   openConfigureCluster: (cluster?: string, focusField?: string) => void;
   openCreateClusterLink: (cluster?: string) => void;
+  openEditClusterLink: (cluster: string, link: string) => void;
   openBulkConfigureCluster: (clusterNames: string[]) => void;
 }
 
@@ -16,6 +18,7 @@ export const panels = {
   enrollCluster: "enroll-cluster",
   configureCluster: "configure-cluster",
   createClusterLink: "create-cluster-link",
+  editClusterLink: "edit-cluster-link",
   bulkConfigureCluster: "configure-cluster-bulk",
 };
 
@@ -46,6 +49,7 @@ const usePanelParams = (): PanelHelper => {
     // pre-existing search params should be kept e.g. params from the search bar
     newParams.delete("panel");
     newParams.delete("cluster");
+    newParams.delete("link");
     newParams.delete("clusters");
     newParams.delete("focusField");
     setParams(newParams);
@@ -55,6 +59,7 @@ const usePanelParams = (): PanelHelper => {
   return {
     panel: params.get("panel"),
     cluster: params.get("cluster"),
+    link: params.get("link"),
     clusters: params.get("clusters"),
     focusField: params.get("focusField"),
 
@@ -74,6 +79,10 @@ const usePanelParams = (): PanelHelper => {
     openCreateClusterLink: (cluster?: string) => {
       const params = { cluster: cluster || "" };
       setPanelParams(panels.createClusterLink, params);
+    },
+
+    openEditClusterLink: (cluster: string, link: string) => {
+      setPanelParams(panels.editClusterLink, { cluster, link });
     },
 
     openBulkConfigureCluster: (clusterNames: string[]) => {

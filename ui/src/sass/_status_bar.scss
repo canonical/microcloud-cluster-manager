@@ -28,3 +28,15 @@
     background: #ebebeb;
   }
 }
+
+// let the side panel cover the status bar instead of sitting above it
+.l-application {
+  .l-status {
+    z-index: 100;
+  }
+
+  .l-aside:not(.is-pinned) {
+    grid-column: 2 / 4;
+    grid-row: 2 / 4;
+  }
+}
