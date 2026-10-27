@@ -2,7 +2,6 @@ import {
   CheckboxInput,
   ConfirmationButton,
   Icon,
-  useNotify,
   useToastNotification,
 } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
@@ -21,10 +20,11 @@ interface Props {
 
 const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
   const queryClient = useQueryClient();
-  const notify = useNotify();
   const toastNotification = useToastNotification();
   const [isLoading, setLoading] = useState(false);
-  const [deleteBothEnds, setDeleteBothEnds] = useState(false);
+  const [deleteBothEnds, setDeleteBothEnds] = useState(true);
+  const isBidirectional = link.type.toLowerCase() === "bidirectional";
+  const canCleanTarget = !!targetCluster?.tunnel_registered;
 
   const deleteTargetEnd = async (target: Cluster) => {
     const targetLinks = await fetchClusterLinks(target.name);
@@ -40,7 +40,7 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
 
   const handleDelete = async () => {
     setLoading(true);
-    const removeTargetEnd = deleteBothEnds && !!targetCluster;
+    const removeTargetEnd = isBidirectional && deleteBothEnds && canCleanTarget;
     try {
       await deleteClusterLink(cluster.name, link.name);
 
@@ -61,13 +61,16 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
         ),
       );
     } catch (error) {
-      notify.failure(`Unable to delete cluster link ${link.name}.`, error);
+      toastNotification.failure(
+        `Unable to delete cluster link ${link.name}.`,
+        error,
+      );
     }
 
     await queryClient.invalidateQueries({
       queryKey: [queryKeys.clusters],
     });
-    setDeleteBothEnds(false);
+    setDeleteBothEnds(true);
     setLoading(false);
   };
 
@@ -76,37 +79,35 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
       className="u-no-margin--bottom has-icon"
       loading={isLoading}
       confirmationModalProps={{
-        title: "Confirm delete",
+        title: "Delete cluster link",
         children: (
           <>
             <p>
-              Are you sure you want to delete the cluster link{" "}
-              <strong>{link.name}</strong> on cluster{" "}
-              <strong>{cluster.name}</strong>?
+              This will permanently delete cluster link{" "}
+              <strong>{link.name}</strong>. This action cannot be undone.
             </p>
-            {targetCluster ? (
-              <CheckboxInput
-                id="delete-both-ends"
-                label={
-                  <>
-                    Also delete the link on{" "}
-                    <strong>{targetCluster.name}</strong>
-                  </>
-                }
-                checked={deleteBothEnds}
-                onChange={() => {
-                  setDeleteBothEnds((value) => !value);
-                }}
-              />
-            ) : (
-              <p>
-                Only this side of the link is removed. The linked cluster keeps
-                its own cluster link and needs to be cleaned up separately.
-              </p>
-            )}
+            {isBidirectional &&
+              (canCleanTarget ? (
+                <CheckboxInput
+                  id="delete-both-ends"
+                  label="Delete bidirectional links on both source and target cluster"
+                  checked={deleteBothEnds}
+                  onChange={() => {
+                    setDeleteBothEnds((value) => !value);
+                  }}
+                />
+              ) : (
+                <p>
+                  Only this side of the link is removed. The linked cluster must
+                  be cleaned up separately.
+                </p>
+              ))}
           </>
         ),
-        confirmButtonLabel: "Confirm delete",
+        confirmButtonLabel: "Delete",
+        close: () => {
+          setDeleteBothEnds(true);
+        },
         onConfirm: () => void handleDelete(),
       }}
       shiftClickEnabled
