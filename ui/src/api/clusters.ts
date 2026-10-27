@@ -67,8 +67,8 @@ export const fetchClusterLinks = async (
 export const createClusterLink = async (
   source: string,
   payload: string,
-): Promise<void> => {
-  await fetch(
+): Promise<string | undefined> => {
+  return fetch(
     `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links`,
     {
       method: "POST",
@@ -77,7 +77,13 @@ export const createClusterLink = async (
       },
       body: payload,
     },
-  ).then(handleResponse);
+  )
+    .then(handleResponse)
+    .then((data) => {
+      const metadata = (data as LxdApiResponse<{ fingerprint?: string }>)
+        .metadata;
+      return metadata?.fingerprint;
+    });
 };
 
 export const deleteClusterLink = async (

@@ -103,12 +103,21 @@ type RemoteClusterStatusPostResponse struct {
 type RemoteClusterLinkPost struct {
 	// TargetCluster is the name of the remote cluster to link with.
 	TargetCluster string `json:"target_cluster,omitempty"`
+	// TargetAddress allows the source to use an alternate route when it cannot reach the registered LXD URL.
+	TargetAddress string `json:"target_address,omitempty"`
+	// Fingerprint is the LXD certificate fingerprint confirmed by the user for a public link.
+	Fingerprint string `json:"fingerprint,omitempty"`
 	// Name is the name of the cluster link created on the source cluster.
 	Name string `json:"name,omitempty"`
 	// Description is the description of the cluster link.
 	Description string `json:"description,omitempty"`
-	// AuthGroups is the list of auth groups the cluster link belongs to.
+	// AuthGroups is the list of auth groups the cluster link belongs to. It is not allowed for public links.
 	AuthGroups []string `json:"auth_groups,omitempty"`
-	// Type is the type of the cluster link, either "bidirectional" or "unidirectional".
+	// Type is the type of the cluster link, one of "bidirectional", "unidirectional" or "public".
 	Type string `json:"type,omitempty"`
+}
+
+// RemoteClusterLinkCertificate is returned after the source and connector observe the same target certificate.
+type RemoteClusterLinkCertificate struct {
+	Fingerprint string `json:"fingerprint"`
 }
