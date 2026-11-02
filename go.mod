@@ -14,7 +14,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.12.3
 	github.com/pressly/goose/v3 v3.29.0
-	github.com/prometheus/common v0.72.1
+	github.com/prometheus/common v0.73.0
 	github.com/prometheus/prometheus v0.315.0
 	github.com/spf13/cobra v1.10.2
 	github.com/zitadel/oidc/v3 v3.51.16
@@ -34,6 +34,7 @@ require (
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853 // indirect
+	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
@@ -41,6 +42,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oasdiff/yaml v0.1.1 // indirect
 	github.com/oasdiff/yaml3 v0.0.14 // indirect
+	github.com/pandatix/go-abnf v0.5.1 // indirect
 	github.com/pkg/sftp v1.13.10 // indirect
 	github.com/pkg/xattr v0.4.12 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
