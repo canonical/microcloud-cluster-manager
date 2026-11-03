@@ -153,7 +153,7 @@ Press `Ctrl+C` in the terminal running `make dev`. This stops the services and r
 
 ### Enrolling test clusters
 
-The `scripts/lxd-container-setup.sh` script creates single-member MicroCloud clusters in
+The `scripts/mcm-cluster-onboard.sh` script creates single-member MicroCloud clusters in
 LXD containers and enrolls each of them with the Cluster Manager running on your
 machine. It is useful to test the Cluster Manager against real MicroCloud clusters
 without having to set up multiple machines.
@@ -162,7 +162,7 @@ With `make dev` running, build the Cluster Manager binary and run the script:
 
 ```bash
 make build
-./scripts/lxd-container-setup.sh --count 2
+./scripts/mcm-cluster-onboard.sh --count 2
 ```
 
 The script creates a dedicated LXD project named `microcloud-mcm`. It shares the default
@@ -218,7 +218,7 @@ from this checkout.
 Use `--microcloud-channel` to install the MicroCloud snap from another channel:
 
 ```bash
-./scripts/lxd-container-setup.sh --count 2 --microcloud-channel 3/edge
+./scripts/mcm-cluster-onboard.sh --count 2 --microcloud-channel 3/edge
 ```
 
 The containers are named `microcloud-01`, `microcloud-02`, ... and the MicroCloud
@@ -243,14 +243,14 @@ daemon logs, even when preseed itself produces no output.
 To force-delete the default number of containers, including their data:
 
 ```bash
-./scripts/lxd-container-setup.sh --nuke
+./scripts/mcm-cluster-onboard.sh --nuke
 ```
 
 Use `-n` or `--count` to select how many containers to delete, starting with
 `microcloud-01`. For example, to delete the first three containers:
 
 ```bash
-./scripts/lxd-container-setup.sh --nuke --count 3
+./scripts/mcm-cluster-onboard.sh --nuke --count 3
 ```
 
 Cleanup only targets the selected containers in `microcloud-mcm`. It keeps the project
@@ -258,7 +258,7 @@ and does not require the Cluster Manager development environment or binary.
 Cluster Manager records are not removed; remove the corresponding entries in the UI
 before enrolling replacement clusters with the same names.
 
-Run `./scripts/lxd-container-setup.sh --help` for all options.
+Run `./scripts/mcm-cluster-onboard.sh --help` for all options.
 
 ## End-to-end (e2e) tests
 
