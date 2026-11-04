@@ -2,10 +2,11 @@ import { Notification, Row, Spinner, Strip } from "@canonical/react-components";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCluster } from "api/clusters";
 import BaseLayout from "components/BaseLayout";
+import BreadCrumbHeader from "components/BreadcrumbHeader";
+import TabLinks from "components/TabLinks";
 import type { FC } from "react";
 import { Link, useParams } from "react-router-dom";
 import { queryKeys } from "util/queryKeys";
-import BreadCrumbHeader from "components/BreadcrumbHeader";
 import usePanelParams, { panels } from "context/usePanelParams";
 import ConfigureClusterPanel from "pages/clusters/ConfigureClusterPanel";
 import ClusterUiButton from "pages/clusters/actions/ClusterUiButton";
@@ -14,8 +15,8 @@ import RemoveClusterButton from "pages/clusters/actions/RemoveClusterButton";
 import ConfigureClusterButton from "pages/clusters/actions/ConfigureClusterButton";
 import ClusterOverview from "pages/clusters/ClusterOverview";
 import ClusterLinks from "pages/clusters/ClusterLinks";
-import TabLinks from "components/TabLinks";
 import CreateClusterLinkPanel from "pages/clusters/CreateClusterLinkPanel";
+import ClusterTopology from "pages/clusters/ClusterTopology";
 
 const ClusterDetail: FC = () => {
   const panelParams = usePanelParams();
@@ -99,7 +100,10 @@ const ClusterDetail: FC = () => {
               tabUrl={`/ui/cluster/${cluster.name}`}
             />
             {activeTab === "cluster-links" ? (
-              <ClusterLinks cluster={cluster} />
+              <>
+                <ClusterTopology cluster={cluster} />
+                <ClusterLinks cluster={cluster} />
+              </>
             ) : (
               <ClusterOverview cluster={cluster} />
             )}

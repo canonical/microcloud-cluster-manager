@@ -6,6 +6,7 @@ describe("isPendingPublicLink", () => {
     const link: ClusterLink = {
       name: "target",
       type: "public",
+      description: "",
       config: { "volatile.pending_certificate": "certificate" },
     };
 
@@ -16,11 +17,13 @@ describe("isPendingPublicLink", () => {
     const confirmed: ClusterLink = {
       name: "target",
       type: "public",
+      description: "",
       config: { "volatile.addresses": "10.0.0.2:8443" },
     };
     const bidirectional: ClusterLink = {
       name: "target",
       type: "bidirectional",
+      description: "",
     };
 
     expect(isPendingPublicLink(confirmed)).toBe(false);

@@ -1,0 +1,108 @@
+$line-color: $colors--theme--border-high-contrast;
+$row-height: 2rem;
+$branch-width: 2rem;
+
+.cluster-topology {
+  align-items: flex-start;
+  display: flex;
+  margin-bottom: $spv--x-large;
+
+  .current-cluster {
+    flex-shrink: 0;
+    height: $row-height;
+
+    .active-chip {
+      background-color: $colors--dark-theme--background-active !important;
+
+      * {
+        color: white !important;
+      }
+    }
+  }
+
+  .has-descendents::after,
+  .downstream-item::before,
+  .target-connector {
+    background-color: $line-color;
+    content: "";
+    display: inline-block;
+    height: $row-height;
+    position: relative;
+    transform: translate(0, 0);
+    width: $branch-width;
+  }
+
+  .has-descendents::after,
+  .target-connector {
+    clip-path: polygon(100% 80%, 0 80%, 0 83%, 100% 83%);
+  }
+
+  .target-connector {
+    width: 4rem;
+  }
+
+  .downstream {
+    display: grid;
+    grid-template-columns: $branch-width max-content max-content;
+
+    .downstream-item {
+      align-items: baseline;
+      display: grid;
+      grid-column: 1 / -1;
+      grid-template-columns: subgrid;
+      height: $row-height;
+
+      .link-cell,
+      .target-cell {
+        align-items: baseline;
+        display: flex;
+
+        .resource-link {
+          flex-shrink: 0;
+        }
+      }
+
+      .link-cell .target-connector {
+        flex-grow: 1;
+        min-width: 4rem;
+      }
+
+      // Tree branching lines
+      &::before {
+        // Middle items: ├─
+        clip-path: polygon(
+          100% 80%,
+          4% 80%,
+          4% 0,
+          0 0,
+          0 100%,
+          4% 100%,
+          4% 83%,
+          100% 83%
+        );
+      }
+
+      // First child: ┌─
+      &:first-child::before {
+        clip-path: polygon(100% 80%, 0 80%, 0 100%, 4% 100%, 4% 83%, 100% 83%);
+      }
+
+      // Last child: └─
+      &:last-child::before {
+        clip-path: polygon(100% 80%, 4% 80%, 4% 0, 0 0, 0 83%, 100% 83%);
+      }
+
+      // Only child: ──
+      &:only-child::before {
+        clip-path: polygon(100% 80%, 0 80%, 0 83%, 100% 83%);
+      }
+
+      .trail-dots {
+        color: $colors--theme--text-default;
+        font-size: 1.1rem;
+        letter-spacing: 0.1rem;
+        margin-left: $sph--small;
+      }
+    }
+  }
+}

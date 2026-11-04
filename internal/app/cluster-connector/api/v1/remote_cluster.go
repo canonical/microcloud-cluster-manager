@@ -98,8 +98,23 @@ var RemoteClusterInternal = types.RouteGroup{
 		},
 		{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterLinkGet,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
 			Method:  http.MethodDelete,
 			Handler: remoteClusterLinkDelete,
+		},
+		{
+			Path:    "{remoteClusterName}/auth/identities",
+			Method:  http.MethodGet,
+			Handler: remoteClusterIdentitiesGet,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}/state",
+			Method:  http.MethodGet,
+			Handler: remoteClusterLinkStateGet,
 		},
 	},
 }
@@ -1162,6 +1177,102 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 			logger.Log.Errorw("Failed to list cluster links", "cluster", remoteClusterName, "status", resp.Status, "error", err)
 			return response.SmartError(err).Render(w, r)
 		}
+
+		// Enrich cluster links with auth_groups_count from identities
+		if err := enrichClusterLinksWithGroupCounts(rc, r, remoteClusterName, resp); err != nil {
+			logger.Log.Warnw("Failed to enrich cluster links", "cluster", remoteClusterName, "error", err)
+		}
+
+		writeResponse(w, *resp)
+		return nil
+	}
+}
+
+func remoteClusterLinkGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if clusterLinkName == "" {
+			return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
+		}
+
+		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName) + "?recursion=2"
+		resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, nil)
+		if err != nil {
+			return err
+		}
+		if !isSuccessStatus(resp.Status) {
+			err = tunnel.ResponseError(*resp, remoteClusterName, "get cluster link")
+			logger.Log.Errorw("Failed to get cluster link", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "error", err)
+			return response.SmartError(err).Render(w, r)
+		}
+
+		// Enrich cluster link with auth_groups_count from identities
+		if err := enrichClusterLinksWithGroupCounts(rc, r, remoteClusterName, resp); err != nil {
+			logger.Log.Warnw("Failed to enrich cluster link", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "error", err)
+		}
+
+		writeResponse(w, *resp)
+		return nil
+	}
+}
+
+func remoteClusterIdentitiesGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		path := "/1.0/auth/identities?recursion=2"
+		resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, nil)
+		if err != nil {
+			return err
+		}
+		if !isSuccessStatus(resp.Status) {
+			err = tunnel.ResponseError(*resp, remoteClusterName, "list identities")
+			logger.Log.Errorw("Failed to list identities", "cluster", remoteClusterName, "status", resp.Status, "error", err)
+			return response.SmartError(err).Render(w, r)
+		}
+		writeResponse(w, *resp)
+		return nil
+	}
+}
+
+func remoteClusterLinkStateGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if clusterLinkName == "" {
+			return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
+		}
+
+		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName) + "/state"
+		resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, nil)
+		if err != nil {
+			return err
+		}
+		if !isSuccessStatus(resp.Status) {
+			err = tunnel.ResponseError(*resp, remoteClusterName, "get cluster link state")
+			logger.Log.Errorw("Failed to get cluster link state", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "error", err)
+			return response.SmartError(err).Render(w, r)
+		}
 		writeResponse(w, *resp)
 		return nil
 	}
@@ -1359,4 +1470,102 @@ func setUserSession(resp types.ClusterManagerTunnelResponse, tunnel *types.Tunne
 	tunnel.Mu.Lock()
 	tunnel.UserSessions[authorizationToken] = encryptedSessionID
 	tunnel.Mu.Unlock()
+}
+
+// enrichClusterLinksWithGroupCounts fetches identities and enriches cluster links with auth_groups_count.
+// It builds a map of cluster-link-name -> group count from identities, then injects the count into the response body.
+func enrichClusterLinksWithGroupCounts(rc types.RouteConfig, r *http.Request, remoteClusterName string, linksResp *types.ClusterManagerTunnelResponse) error {
+	if !isSuccessStatus(linksResp.Status) {
+		return nil
+	}
+
+	// Fetch identities for mapping
+	identitiesResp, err := sendTunnelRequest(rc, r, http.MethodGet, "/1.0/auth/identities?recursion=2", remoteClusterName, nil)
+	if err != nil || !isSuccessStatus(identitiesResp.Status) {
+		logger.Log.Warnw("Failed to fetch identities for enrichment", "cluster", remoteClusterName, "error", err)
+		return nil
+	}
+
+	// Parse identities and build group count map
+	groupCounts := buildGroupCountMap(identitiesResp.Body)
+
+	// Enrich the cluster links response
+	return enrichResponseWithGroupCounts(linksResp, groupCounts)
+}
+
+// buildGroupCountMap creates a map of cluster-link-name -> group count from identities JSON.
+func buildGroupCountMap(identitiesBody []byte) map[string]int {
+	groupCounts := make(map[string]int)
+
+	var respData struct {
+		Metadata []api.IdentityInfo `json:"metadata"`
+	}
+
+	if err := json.Unmarshal(identitiesBody, &respData); err != nil {
+		logger.Log.Warnw("Failed to parse identities response", "error", err)
+		return groupCounts
+	}
+
+	for _, identity := range respData.Metadata {
+		if strings.HasPrefix(identity.Type, "Cluster link certificate") {
+			groupCounts[identity.Name] = len(identity.Groups)
+		}
+	}
+
+	return groupCounts
+}
+
+// enrichResponseWithGroupCounts injects auth_groups_count field into cluster link objects in the response body.
+func enrichResponseWithGroupCounts(resp *types.ClusterManagerTunnelResponse, groupCounts map[string]int) error {
+	var respData struct {
+		Metadata json.RawMessage `json:"metadata"`
+	}
+
+	if err := json.Unmarshal(resp.Body, &respData); err != nil {
+		return err
+	}
+
+	// Try to unmarshal as an array (list of links)
+	var links []map[string]interface{}
+	if err := json.Unmarshal(respData.Metadata, &links); err == nil {
+		// It's an array - enrich each link
+		for i := range links {
+			if name, ok := links[i]["name"].(string); ok {
+				links[i]["auth_groups_count"] = groupCounts[name]
+			}
+		}
+
+		// Re-marshal the enriched links
+		enrichedMetadata, err := json.Marshal(links)
+		if err != nil {
+			return err
+		}
+
+		respData.Metadata = enrichedMetadata
+	} else {
+		// Try as a single object (single link)
+		var link map[string]interface{}
+		if err := json.Unmarshal(respData.Metadata, &link); err == nil {
+			if name, ok := link["name"].(string); ok {
+				link["auth_groups_count"] = groupCounts[name]
+			}
+
+			// Re-marshal the enriched link
+			enrichedMetadata, err := json.Marshal(link)
+			if err != nil {
+				return err
+			}
+
+			respData.Metadata = enrichedMetadata
+		}
+	}
+
+	// Re-marshal the entire response
+	enrichedBody, err := json.Marshal(respData)
+	if err != nil {
+		return err
+	}
+
+	resp.Body = enrichedBody
+	return nil
 }

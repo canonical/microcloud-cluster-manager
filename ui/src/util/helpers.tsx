@@ -1,4 +1,5 @@
 import type { Cluster, StatusDistribution } from "types/cluster";
+import type { LxdIdentity } from "types/permissions";
 
 interface ErrorResponse {
   error_code: number;
@@ -16,10 +17,37 @@ export class FetchError extends Error {
 
 export const handleResponse = async (response: Response) => {
   if (!response.ok) {
-    const result = (await response.json()) as ErrorResponse;
-    throw new FetchError(result);
+    try {
+      const result = (await response.json()) as ErrorResponse;
+      throw new FetchError(result);
+    } catch (err) {
+      // If the error response body is empty or not JSON, create a generic error response
+      if (err instanceof FetchError) {
+        throw err;
+      }
+      console.error(
+        `Failed to parse error response from ${response.url}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      const errorResponse: ErrorResponse = {
+        error_code: response.status,
+        error: `HTTP ${response.status}: ${response.statusText}`,
+      };
+      throw new FetchError(errorResponse);
+    }
   }
-  return response.json() as unknown;
+  try {
+    return (await response.json()) as unknown;
+  } catch (err) {
+    // If the success response body is empty or not JSON, throw a descriptive error
+    console.error(
+      `Failed to parse success response from ${response.url}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    const errorResponse: ErrorResponse = {
+      error_code: response.status,
+      error: `Invalid JSON response: ${err instanceof Error ? err.message : "Unknown error"}`,
+    };
+    throw new FetchError(errorResponse);
+  }
 };
 
 export const isDimensionBelow = (
@@ -125,3 +153,27 @@ export const handleSettledResult = (
 
 export const capitalizeFirstLetter = (val: string): string =>
   val.charAt(0).toUpperCase() + val.slice(1);
+
+type EtagObject = LxdIdentity;
+
+interface SortableObject {
+  access_entitlements?: string[];
+  locations?: string[];
+  used_by?: string[];
+}
+
+export const ensureStableSorting = (data: SortableObject) => {
+  // these data fields can be randomly sorted in the API response,
+  // we sort them here to have consistent results
+  // and avoid forms from re-initializing based on different order
+  if (data.access_entitlements) {
+    data.access_entitlements.sort();
+  }
+  if (data.locations) {
+    data.locations.sort();
+  }
+  if (data.used_by) {
+    data.used_by.sort();
+  }
+  return data as EtagObject;
+};

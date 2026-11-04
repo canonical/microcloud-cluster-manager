@@ -6,6 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>MicroCloud Cluster Manager</title>
+        <script>
+      (function() {
+        const path = window.location.pathname;
+
+        const uiIndex = path.indexOf("/ui/");
+        const rootPath = uiIndex > -1 ? path.substring(0, uiIndex) : "";
+        window.ROOT_PATH = rootPath;
+
+        const basePath = rootPath + "/ui/";
+        const baseTag = document.createElement('base');
+        baseTag.href = window.location.origin + basePath;
+        document.head.appendChild(baseTag);
+      })();
+    </script>
     <link rel="shortcut icon" href="/ui/assets/img/favicon-32x32.png" type="image/x-icon">
 
     <script>const global = globalThis;</script>
