@@ -1,5 +1,5 @@
 import type { LxdApiResponse } from "types/apiResponse";
-import type { Cluster, ClusterLink } from "types/cluster";
+import type { Cluster, ClusterLink, ClusterLinkState } from "types/cluster";
 import { handleResponse, handleSettledResult } from "util/helpers";
 
 export const fetchClusters = async (): Promise<Cluster[]> => {
@@ -56,12 +56,30 @@ export const updateClusterBulk = async (
 
 export const fetchClusterLinks = async (
   remoteClusterName: string,
+  recursion?: string,
 ): Promise<ClusterLink[]> => {
+  const params = new URLSearchParams();
+  if (recursion) {
+    params.set("recursion", recursion);
+  }
   return fetch(
-    `/1.0/remote-cluster/${encodeURIComponent(remoteClusterName)}/cluster-links`,
+    `/1.0/remote-cluster/${encodeURIComponent(remoteClusterName)}/cluster-links?${params.toString()}`,
   )
     .then(handleResponse)
     .then((data) => (data as LxdApiResponse<ClusterLink[]>).metadata);
+};
+
+export const fetchClusterLink = async (
+  remoteClusterName: string,
+  linkName: string,
+): Promise<ClusterLink> => {
+  return fetch(
+    `/1.0/remote-cluster/${encodeURIComponent(
+      remoteClusterName,
+    )}/cluster-links/${encodeURIComponent(linkName)}`,
+  )
+    .then(handleResponse)
+    .then((data) => (data as LxdApiResponse<ClusterLink>).metadata);
 };
 
 export const createClusterLink = async (
@@ -90,4 +108,17 @@ export const deleteClusterLink = async (
       method: "DELETE",
     },
   ).then(handleResponse);
+};
+
+export const fetchClusterLinkState = async (
+  remoteClusterName: string,
+  linkName: string,
+): Promise<ClusterLinkState> => {
+  return fetch(
+    `/1.0/remote-cluster/${encodeURIComponent(
+      remoteClusterName,
+    )}/cluster-links/${encodeURIComponent(linkName)}/state`,
+  )
+    .then(handleResponse)
+    .then((data) => (data as LxdApiResponse<ClusterLinkState>).metadata);
 };

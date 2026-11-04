@@ -104,8 +104,23 @@ var RemoteClusterInternal = types.RouteGroup{
 		},
 		{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterLinkGet,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
 			Method:  http.MethodDelete,
 			Handler: remoteClusterLinkDelete,
+		},
+		{
+			Path:    "{remoteClusterName}/auth/identities",
+			Method:  http.MethodGet,
+			Handler: remoteClusterIdentitiesGet,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}/state",
+			Method:  http.MethodGet,
+			Handler: remoteClusterLinkStateGet,
 		},
 	},
 }
@@ -1169,7 +1184,12 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 			return response.SmartError(errors.New("Failed to read request body")).Render(w, r)
 		}
 
+		recursion := r.URL.Query().Get("recursion")
+
 		path := "/1.0/cluster/links?recursion=2"
+		if recursion != "" {
+			path = "/1.0/cluster/links?recursion=" + url.QueryEscape(recursion)
+		}
 		resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, body)
 		if err != nil {
 			return err
@@ -1177,6 +1197,284 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 		if !isSuccessStatus(resp.Status) {
 			err = tunnel.ResponseError(*resp, remoteClusterName, "list cluster links")
 			logger.Log.Errorw("Failed to list cluster links", "cluster", remoteClusterName, "status", resp.Status, "error", err)
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if recursion == "" {
+			writeResponse(w, *resp)
+			return nil
+		}
+
+		// Parse the response to get cluster links
+		var apiResp api.ResponseRaw
+		err = json.Unmarshal(resp.Body, &apiResp)
+		if err != nil {
+			logger.Log.Errorw("Failed to unmarshal response", "error", err)
+			return response.SmartError(errors.New("Failed to unmarshal response")).Render(w, r)
+		}
+
+		var clusterLinks []api.ClusterLink
+		if apiResp.Metadata != nil {
+			metadataBytes, err := json.Marshal(apiResp.Metadata)
+			if err != nil {
+				logger.Log.Errorw("Failed to marshal metadata", "error", err)
+				return response.SmartError(errors.New("Failed to marshal metadata")).Render(w, r)
+			}
+
+			err = json.Unmarshal(metadataBytes, &clusterLinks)
+			if err != nil {
+				logger.Log.Errorw("Failed to unmarshal cluster links", "error", err)
+				return response.SmartError(errors.New("Failed to unmarshal cluster links")).Render(w, r)
+			}
+		}
+
+		// Enrich links with downstream link info using parallel goroutines with timeout
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+
+		enrichedLinks := enrichClusterLinksWithDownstreamInfo(ctx, rc, remoteClusterName, clusterLinks, r)
+
+		// Return the enriched links
+		responseBody := api.ResponseRaw{
+			Type:       apiResp.Type,
+			Status:     apiResp.Status,
+			StatusCode: apiResp.StatusCode,
+			Metadata:   enrichedLinks,
+		}
+
+		respBytes, err := json.Marshal(responseBody)
+		if err != nil {
+			logger.Log.Errorw("Failed to marshal response", "error", err)
+			return response.SmartError(errors.New("Failed to marshal response")).Render(w, r)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(respBytes)
+		if err != nil {
+			logger.Log.Errorw("Failed to write response", "error", err)
+		}
+		return nil
+	}
+}
+
+type enrichedClusterLink struct {
+	api.ClusterLink
+	// Omitted when the target is unenrolled or its onward links cannot be determined.
+	HasOnwardClusterLinks *bool `json:"has_onward_cluster_links,omitempty"`
+}
+
+// enrichClusterLinksWithDownstreamInfo fetches downstream links for each cluster link in parallel.
+func enrichClusterLinksWithDownstreamInfo(
+	ctx context.Context,
+	rc types.RouteConfig,
+	sourceClusterName string,
+	links []api.ClusterLink,
+	r *http.Request,
+) []enrichedClusterLink {
+	enrichedLinks := make([]enrichedClusterLink, len(links))
+	for i, link := range links {
+		enrichedLinks[i].ClusterLink = link
+	}
+
+	if len(links) == 0 {
+		return enrichedLinks
+	}
+
+	var enrolledClusters []store.RemoteClusterWithDetail
+	err := rc.DB.Transaction(ctx, func(txCtx context.Context, tx *sqlx.Tx) error {
+		var err error
+		enrolledClusters, err = store.GetRemoteClustersWithDetails(txCtx, tx)
+		return err
+	})
+	if err != nil {
+		logger.Log.Warnw("Failed to resolve topology clusters", "cluster", sourceClusterName, "error", err)
+		return enrichedLinks
+	}
+
+	sourceIndex := slices.IndexFunc(enrolledClusters, func(cluster store.RemoteClusterWithDetail) bool {
+		return cluster.Name == sourceClusterName
+	})
+	if sourceIndex == -1 {
+		logger.Log.Warnw("Topology source cluster not found", "cluster", sourceClusterName)
+		return enrichedLinks
+	}
+	sourceCluster := enrolledClusters[sourceIndex]
+
+	var wg sync.WaitGroup
+
+	for i, link := range links {
+		wg.Add(1)
+		go func(index int, clusterLink api.ClusterLink) {
+			defer wg.Done()
+
+			targetClusterName := resolveTargetClusterName(clusterLink, enrolledClusters)
+			if targetClusterName == "" {
+				return
+			}
+
+			hasOnward, err := hasDownstreamLinks(ctx, rc, targetClusterName, sourceCluster, r)
+			if err != nil {
+				logger.Log.Warnw("Failed to determine onward cluster links", "source_cluster", sourceClusterName, "target_cluster", targetClusterName, "error", err)
+				return
+			}
+			enrichedLinks[index].HasOnwardClusterLinks = &hasOnward
+		}(i, link)
+	}
+
+	wg.Wait()
+	return enrichedLinks
+}
+
+// resolveTargetClusterName attempts to find the target cluster name by matching:
+// 1. cluster_uuid (volatile.uuid in the link config)
+// 2. LXD addresses (volatile.addresses in the link config)
+// Returns empty string if no enrolled cluster matches.
+func resolveTargetClusterName(link api.ClusterLink, enrolledClusters []store.RemoteClusterWithDetail) string {
+	// Try to match by UUID first (most reliable)
+	uuid := link.Config["volatile.uuid"]
+	if uuid != "" {
+		for _, cluster := range enrolledClusters {
+			if cluster.ClusterUUID == uuid {
+				return cluster.Name
+			}
+		}
+	}
+
+	// Fall back to matching by addresses
+	addresses := link.Config["volatile.addresses"]
+	if addresses != "" {
+		for _, addr := range strings.Split(addresses, ",") {
+			addr = strings.TrimSpace(addr)
+			if addr == "" {
+				continue
+			}
+			for _, cluster := range enrolledClusters {
+				clusterURL, err := url.Parse(cluster.LXDURL)
+				if err == nil && clusterURL.Host == addr {
+					return cluster.Name
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// hasDownstreamLinks checks for target links other than links back to the source.
+func hasDownstreamLinks(ctx context.Context, rc types.RouteConfig, targetClusterName string, sourceCluster store.RemoteClusterWithDetail, r *http.Request) (bool, error) {
+	path := "/1.0/cluster/links?recursion=1"
+
+	resp, err := sendTunnelRequest(rc, r.WithContext(ctx), http.MethodGet, path, targetClusterName, nil)
+	if err != nil {
+		return false, fmt.Errorf("failed to fetch downstream links: %w", err)
+	}
+
+	if !isSuccessStatus(resp.Status) {
+		return false, tunnel.ResponseError(*resp, targetClusterName, "list downstream cluster links")
+	}
+
+	return hasOnwardClusterLinks(resp.Body, sourceCluster)
+}
+
+func hasOnwardClusterLinks(body []byte, sourceCluster store.RemoteClusterWithDetail) (bool, error) {
+	var apiResp struct {
+		Metadata []api.ClusterLink `json:"metadata"`
+	}
+	err := json.Unmarshal(body, &apiResp)
+	if err != nil {
+		return false, fmt.Errorf("failed to unmarshal downstream cluster links: %w", err)
+	}
+	if apiResp.Metadata == nil {
+		return false, errors.New("Missing downstream cluster links metadata")
+	}
+
+	for _, link := range apiResp.Metadata {
+		if resolveTargetClusterName(link, []store.RemoteClusterWithDetail{sourceCluster}) == "" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func remoteClusterLinkGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if clusterLinkName == "" {
+			return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
+		}
+
+		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName) + "?recursion=2"
+		resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, nil)
+		if err != nil {
+			return err
+		}
+		if !isSuccessStatus(resp.Status) {
+			err = tunnel.ResponseError(*resp, remoteClusterName, "get cluster link")
+			logger.Log.Errorw("Failed to get cluster link", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "error", err)
+			return response.SmartError(err).Render(w, r)
+		}
+
+		writeResponse(w, *resp)
+		return nil
+	}
+}
+
+func remoteClusterIdentitiesGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		path := "/1.0/auth/identities?recursion=2"
+		resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, nil)
+		if err != nil {
+			return err
+		}
+		if !isSuccessStatus(resp.Status) {
+			err = tunnel.ResponseError(*resp, remoteClusterName, "list identities")
+			logger.Log.Errorw("Failed to list identities", "cluster", remoteClusterName, "status", resp.Status, "error", err)
+			return response.SmartError(err).Render(w, r)
+		}
+		writeResponse(w, *resp)
+		return nil
+	}
+}
+
+func remoteClusterLinkStateGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if clusterLinkName == "" {
+			return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
+		}
+
+		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName) + "/state"
+		resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, nil)
+		if err != nil {
+			return err
+		}
+		if !isSuccessStatus(resp.Status) {
+			err = tunnel.ResponseError(*resp, remoteClusterName, "get cluster link state")
+			logger.Log.Errorw("Failed to get cluster link state", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "error", err)
 			return response.SmartError(err).Render(w, r)
 		}
 		writeResponse(w, *resp)

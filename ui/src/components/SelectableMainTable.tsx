@@ -1,4 +1,4 @@
-import type { FC, MouseEvent, PointerEvent } from "react";
+import type { FC, ChangeEvent, MouseEvent } from "react";
 import { useState } from "react";
 import type {
   MainTableRow,
@@ -143,14 +143,14 @@ const SelectableMainTable: FC<Props> = ({
     const isRowDisabled = disabledNamesLookup.has(row.name ?? "");
     const isRowIndeterminate = indeterminateNamesLookup.has(row.name ?? "");
 
-    const toggleRow = (event: PointerEvent<HTMLInputElement>) => {
+    const toggleRow = (event: ChangeEvent<HTMLInputElement>) => {
       if (onToggleRow) {
         onToggleRow(row.name ?? "");
         return;
       }
 
       if (
-        event.nativeEvent.shiftKey &&
+        (event.nativeEvent as KeyboardEvent).shiftKey &&
         currentSelectedIndex !== undefined &&
         !isRowSelected
       ) {
