@@ -63,9 +63,29 @@ var RemoteCluster = types.RouteGroup{
 		},
 		{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterLinkGet,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
 			Method:  http.MethodDelete,
 			Handler: remoteClusterLinkDelete,
 		},
+		        {
+            Path:    "{remoteClusterName}/identities",
+            Method:  http.MethodGet,
+            Handler: remoteClusterIdentitiesGet,
+        },
+        {
+            Path:    "{remoteClusterName}/identities/{identityName}",
+            Method:  http.MethodGet,
+            Handler: remoteClusterIdentityGet,
+        },
+        {
+            Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}/state",
+            Method:  http.MethodGet,
+            Handler: remoteClusterLinkStateGet,
+        },
 	},
 }
 
@@ -294,6 +314,18 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 	}
 }
 
+func remoteClusterLinkGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName)
+		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+	}
+}
+
 func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
@@ -304,6 +336,37 @@ func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName)
 		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
 	}
+}
+
+func remoteClusterIdentitiesGet(rc types.RouteConfig) types.EndpointHandler {
+    return func(w http.ResponseWriter, r *http.Request) error {
+        clusterConnectorPath := "/identities"
+        return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+    }
+}
+
+func remoteClusterIdentityGet(rc types.RouteConfig) types.EndpointHandler {
+    return func(w http.ResponseWriter, r *http.Request) error {
+        identityName, err := url.PathUnescape(mux.Vars(r)["identityName"])
+        if err != nil {
+            return response.SmartError(err).Render(w, r)
+        }
+
+        clusterConnectorPath := "/identities/" + url.PathEscape(identityName)
+        return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+    }
+}
+
+func remoteClusterLinkStateGet(rc types.RouteConfig) types.EndpointHandler {
+    return func(w http.ResponseWriter, r *http.Request) error {
+        clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+        if err != nil {
+            return response.SmartError(err).Render(w, r)
+        }
+
+        clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName) + "/state"
+        return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+    }
 }
 
 func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, clusterConnectorPath string) error {

@@ -50,13 +50,14 @@ export type ClusterPercentiles = 0.5 | 0.75 | 0.8 | 0.9;
 
 export interface ClusterLink {
   name: string;
-  type: "bidirectional" | "unidirectional" | "public";
+  type: ClusterLinkType;
   config?: {
     "volatile.addresses"?: string;
     "volatile.uuid"?: string;
     "volatile.pending_address"?: string;
     "volatile.pending_certificate"?: string;
   };
+  description: string;
 }
 
 export interface ClusterLinkPost {
@@ -67,4 +68,18 @@ export interface ClusterLinkPost {
   type: ClusterLink["type"];
   remote_address?: string;
   fingerprint?: string;
+}
+
+export type ClusterLinkType = "bidirectional" | "unidirectional" | "public";
+
+export interface ClusterLinkState {
+  cluster_link_members: ClusterLinkMemberState[];
+}
+
+export type StatusCaption = "Pending" | "Reachable" | "Unreachable";
+
+export interface ClusterLinkMemberState {
+  address: string;
+  server_name: string;
+  status: "Active" | "Unreachable" | "Unauthenticated";
 }
