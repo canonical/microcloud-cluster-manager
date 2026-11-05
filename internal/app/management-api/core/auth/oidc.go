@@ -575,11 +575,9 @@ func (o *Verifier) getSignedSession(sessionID uuid.UUID, expiry time.Time) (stri
 	}
 
 	claims := &sessionTokenClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   sessionID.String(),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(expiry),
-		},
+		Subject:   sessionID.String(),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(expiry),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
