@@ -4,6 +4,26 @@ const getLinkAddresses = (link: ClusterLink): string[] => {
   return link.config?.["volatile.addresses"]?.split(",") ?? [];
 };
 
+export const isPendingPublicLink = (link: ClusterLink): boolean => {
+  return link.type === "public" && !link.config?.["volatile.addresses"];
+};
+
+export const getCertificateFingerprint = async (
+  pem: string,
+): Promise<string> => {
+  const base64 = pem
+    .replace(/-----BEGIN CERTIFICATE-----|-----END CERTIFICATE-----/g, "")
+    .replace(/\s/g, "");
+  const der = Uint8Array.from(atob(base64), (character) =>
+    character.charCodeAt(0),
+  );
+  const digest = await crypto.subtle.digest("SHA-256", der);
+
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+};
+
 // Resolves the cluster a link points at by UUID, falling back to matching its
 // addresses against the lxd URLs of clusters known to the cluster manager.
 export const getLinkedCluster = (

@@ -1,7 +1,8 @@
 import { Notification } from "@canonical/react-components";
 import { useQuery } from "@tanstack/react-query";
-import { fetchClusterLinks, fetchClusters } from "api/clusters";
+import { fetchClusters } from "api/clusters";
 import type { FC } from "react";
+import { useClusterLinks } from "context/useClusters";
 import { queryKeys } from "util/queryKeys";
 import type { Cluster } from "types/cluster";
 import ClusterLinkCard from "pages/clusters/ClusterLinkCard";
@@ -17,11 +18,7 @@ const ClusterLinks: FC<Props> = ({ cluster }) => {
     data: clusterLinks,
     error,
     isLoading,
-  } = useQuery({
-    queryKey: [queryKeys.clusters, cluster.name, queryKeys.links],
-    queryFn: async () => fetchClusterLinks(cluster.name),
-    enabled: cluster.tunnel_registered,
-  });
+  } = useClusterLinks(cluster.name, cluster.tunnel_registered);
 
   const { data: clusters = [], isLoading: isClustersLoading } = useQuery({
     queryKey: [queryKeys.clusters],

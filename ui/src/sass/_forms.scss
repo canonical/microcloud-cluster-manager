@@ -32,3 +32,20 @@
   flex-direction: column;
   width: 100%;
 }
+
+.cluster-link-address-checkbox {
+  margin-left: 8px;
+}
+
+.cluster-link-fingerprint {
+  .command-wrapper {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .command {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
