@@ -5,10 +5,12 @@ export interface PanelHelper {
   cluster: string | null;
   clusters: string | null;
   focusField: string | null;
+  clusterLink: string | null;
   clear: () => void;
   openEnrollCluster: () => void;
   openConfigureCluster: (cluster?: string, focusField?: string) => void;
   openCreateClusterLink: (cluster?: string) => void;
+  openEditClusterLink: (cluster: string, link: string) => void;
   openBulkConfigureCluster: (clusterNames: string[]) => void;
 }
 
@@ -16,6 +18,7 @@ export const panels = {
   enrollCluster: "enroll-cluster",
   configureCluster: "configure-cluster",
   createClusterLink: "create-cluster-link",
+  editClusterLink: "edit-cluster-link",
   bulkConfigureCluster: "configure-cluster-bulk",
 };
 
@@ -48,6 +51,7 @@ const usePanelParams = (): PanelHelper => {
     newParams.delete("cluster");
     newParams.delete("clusters");
     newParams.delete("focusField");
+    newParams.delete("clusterLink");
     setParams(newParams);
     craftResizeEvent();
   };
@@ -57,6 +61,7 @@ const usePanelParams = (): PanelHelper => {
     cluster: params.get("cluster"),
     clusters: params.get("clusters"),
     focusField: params.get("focusField"),
+    clusterLink: params.get("clusterLink"),
 
     clear: () => {
       clearParams();
@@ -74,6 +79,10 @@ const usePanelParams = (): PanelHelper => {
     openCreateClusterLink: (cluster?: string) => {
       const params = { cluster: cluster || "" };
       setPanelParams(panels.createClusterLink, params);
+    },
+
+    openEditClusterLink: (cluster: string, link: string) => {
+      setPanelParams(panels.editClusterLink, { cluster, clusterLink: link });
     },
 
     openBulkConfigureCluster: (clusterNames: string[]) => {
