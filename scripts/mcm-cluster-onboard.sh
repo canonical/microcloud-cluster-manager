@@ -46,6 +46,7 @@ MICROCLOUD_CHANNEL="3/stable"
 TIMEOUT=600
 VERBOSE=0
 NUKE=0
+REREGISTER=0
 SEQUENTIAL=0
 
 WORK_DIR=""
@@ -75,6 +76,9 @@ Options:
       --instance-prefix PREFIX
                Prefix for container and cluster names. (default: ${INSTANCE_PREFIX})
       --nuke                   Force-delete the selected containers instead of setting them up.
+      --re-register            Remove existing Cluster Manager enrollments with
+                               'microcloud cluster-manager delete --force' and enroll the
+                               clusters again.
       --microcloud-channel CHANNEL
                                Channel of the MicroCloud snap. (default: ${MICROCLOUD_CHANNEL})
       --sequential             Set up one container at a time instead of in parallel. Use this
@@ -84,6 +88,7 @@ Options:
 
 The containers are named ${INSTANCE_PREFIX}-01, ${INSTANCE_PREFIX}-02, ... in the ${PROJECT} project.
 An existing container is reused, and clusters that are already enrolled are left as is.
+Use --re-register to enroll clusters that are already enrolled again.
 Use --nuke with the same --instance-prefix and --count to remove the containers, including their data.
 Missing containers are skipped.
 The project and the Cluster Manager records are kept.
@@ -122,6 +127,10 @@ parse_args() {
         ;;
       --nuke)
         NUKE=1
+        shift
+        ;;
+      --re-register)
+        REREGISTER=1
         shift
         ;;
       --sequential)
@@ -620,6 +629,14 @@ enroll_cluster() {
   local name="$1"
   local token
   local output
+
+  if [ "${REREGISTER}" -eq 1 ] && run_in_instance "${name}" --env TEST_CONSOLE=0 -- microcloud cluster-manager show &>/dev/null; then
+    log "Removing the existing Cluster Manager enrollment of cluster ${name}"
+    if ! output="$(run_in_instance "${name}" --env TEST_CONSOLE=0 -- microcloud cluster-manager delete --force 2>&1)"; then
+      log_error "Failed to remove the Cluster Manager enrollment of ${name}: ${output}"
+      return 1
+    fi
+  fi
 
   if run_in_instance "${name}" --env TEST_CONSOLE=0 -- microcloud cluster-manager show &>/dev/null; then
     log "Cluster ${name} is already enrolled with the Cluster Manager"
