@@ -258,6 +258,15 @@ and does not require the Cluster Manager development environment or binary.
 Cluster Manager records are not removed; remove the corresponding entries in the UI
 before enrolling replacement clusters with the same names.
 
+To enroll clusters that are already enrolled again, for example after the Cluster Manager
+database was reset, use `--re-register`. It runs
+`microcloud cluster-manager delete --force` in each enrolled container and then joins it
+again:
+
+```bash
+./scripts/mcm-cluster-onboard.sh --re-register
+```
+
 Run `./scripts/mcm-cluster-onboard.sh --help` for all options.
 
 ## End-to-end (e2e) tests
