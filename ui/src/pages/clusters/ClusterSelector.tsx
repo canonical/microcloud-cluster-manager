@@ -74,7 +74,6 @@ const ClusterSelector: FC<Props> = ({
 
   return (
     <Select
-      name="pool"
       aria-label="Target cluster"
       {...selectProps}
       options={getClusterOptions()}

@@ -16,6 +16,7 @@ import ClusterOverview from "pages/clusters/ClusterOverview";
 import ClusterLinks from "pages/clusters/ClusterLinks";
 import TabLinks from "components/TabLinks";
 import CreateClusterLinkPanel from "pages/clusters/CreateClusterLinkPanel";
+import EditClusterLinkPanel from "pages/clusters/EditClusterLinkPanel";
 
 const ClusterDetail: FC = () => {
   const panelParams = usePanelParams();
@@ -112,6 +113,7 @@ const ClusterDetail: FC = () => {
       {panelParams.panel === panels.createClusterLink && (
         <CreateClusterLinkPanel />
       )}
+      {panelParams.panel === panels.editClusterLink && <EditClusterLinkPanel />}
     </>
   );
 };
