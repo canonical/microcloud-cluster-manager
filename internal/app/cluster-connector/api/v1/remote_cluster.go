@@ -3,6 +3,7 @@ package v1
 import (
 	"bytes"
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -842,35 +843,10 @@ func createUnidirectionalClusterLink(rc types.RouteConfig, w http.ResponseWriter
 	return nil
 }
 
-// createPublicClusterLink creates a public cluster link. A set fingerprint confirms a pending link, otherwise a pending link is created.
+// createPublicClusterLink creates a public cluster link. It creates a pending link on the source cluster,
+// verifies that the target certificate the source cluster observed matches the certificate pinned in cluster
+// manager, and confirms the pending link automatically, so no user verification is required.
 func createPublicClusterLink(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, remoteClusterName string, linkRequest models.RemoteClusterLinkPost) error {
-	if linkRequest.Fingerprint != "" {
-		return confirmPublicClusterLink(rc, w, r, remoteClusterName, linkRequest)
-	}
-
-	return createPendingPublicClusterLink(rc, w, r, remoteClusterName, linkRequest)
-}
-
-// confirmPublicClusterLink pins the target certificate fingerprint that the user verified on the pending public cluster link.
-func confirmPublicClusterLink(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, remoteClusterName string, linkRequest models.RemoteClusterLinkPost) error {
-	publicRequest := api.ClusterLinksPost{
-		Description: linkRequest.Description,
-		Name:        linkRequest.Name,
-		Type:        cluster_link.TypePublic,
-		Fingerprint: linkRequest.Fingerprint,
-	}
-
-	confirmResponse, err := sendClusterLinkRequest(rc, r, remoteClusterName, publicRequest)
-	if err != nil {
-		return response.SmartError(err).Render(w, r)
-	}
-
-	writeResponse(w, *confirmResponse)
-	return nil
-}
-
-// createPendingPublicClusterLink creates a pending public cluster link and returns the target certificate fingerprint for the user to verify.
-func createPendingPublicClusterLink(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, remoteClusterName string, linkRequest models.RemoteClusterLinkPost) error {
 	targetAddressForSourceCluster, err := getPublicClusterLinkAddress(rc, r, linkRequest.TargetCluster, linkRequest.RemoteAddress)
 	if err != nil {
 		return response.SmartError(err).Render(w, r)
@@ -894,9 +870,9 @@ func createPendingPublicClusterLink(rc types.RouteConfig, w http.ResponseWriter,
 		return response.SmartError(err).Render(w, r)
 	}
 
-	keepPending := false
+	confirmed := false
 	defer func() {
-		if !keepPending {
+		if !confirmed {
 			deletePendingClusterLink(rc, r, remoteClusterName, linkRequest.Name)
 		}
 	}()
@@ -907,16 +883,35 @@ func createPendingPublicClusterLink(rc types.RouteConfig, w http.ResponseWriter,
 		return response.SmartError(api.StatusErrorf(http.StatusBadGateway, "Failed to read the certificate fingerprint of the pending public cluster link: %v", err)).Render(w, r)
 	}
 
-	if fingerprint != targetFingerprint {
-		logger.Log.Errorw("Source cluster and cluster manager observed different certificates for public cluster link", "target_cluster", linkRequest.TargetCluster, "address", targetAddressForSourceCluster)
+	// Compare in constant time to avoid leaking the expected fingerprint through timing.
+	// Fingerprints are public hashes, so they are safe to log for diagnosing mismatches.
+	if subtle.ConstantTimeCompare([]byte(fingerprint), []byte(targetFingerprint)) != 1 {
+		logger.Log.Errorw("Source cluster and cluster manager observed different certificates for public cluster link", "target_cluster", linkRequest.TargetCluster, "address", targetAddressForSourceCluster, "source_observed_fingerprint", fingerprint, "expected_fingerprint", targetFingerprint)
 		return response.SmartError(api.StatusErrorf(http.StatusBadGateway, "Source cluster and cluster manager observed different certificates from cluster %q", linkRequest.TargetCluster)).Render(w, r)
 	}
 
-	keepPending = true
-	return response.SyncResponse(true, api.ClusterLinkCertificate{Fingerprint: fingerprint}).Render(w, r)
+	// The fingerprints match, so the certificate the source cluster observed is the one pinned in cluster
+	// manager. Confirm the pending link automatically instead of asking the user to verify the fingerprint.
+	confirmRequest := api.ClusterLinksPost{
+		Description: linkRequest.Description,
+		Name:        linkRequest.Name,
+		Type:        cluster_link.TypePublic,
+		Fingerprint: fingerprint,
+	}
+
+	confirmResponse, err := sendClusterLinkRequest(rc, r, remoteClusterName, confirmRequest)
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
+	}
+
+	confirmed = true
+	writeResponse(w, *confirmResponse)
+	return nil
 }
 
-// getClusterCertificateFingerprint fetches the cluster certificate fingerprint of the given cluster over its tunnel.
+// getClusterCertificateFingerprint fetches the LXD cluster certificate fingerprint of the given cluster over
+// its tunnel. The tunnel is mTLS-authenticated against the certificate pinned at enrollment, so the fingerprint
+// cannot be influenced by an attacker on the public network between the linked clusters.
 func getClusterCertificateFingerprint(rc types.RouteConfig, r *http.Request, clusterName string) (string, error) {
 	server, err := getClusterServer(rc, r, clusterName, "fetch cluster certificate")
 	if err != nil {

@@ -66,5 +66,4 @@ export interface ClusterLinkPost {
   description: string;
   type: ClusterLink["type"];
   remote_address?: string;
-  fingerprint?: string;
 }
