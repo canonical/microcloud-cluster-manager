@@ -98,8 +98,48 @@ var RemoteClusterInternal = types.RouteGroup{
 		},
 		{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterLinkPut,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
 			Method:  http.MethodDelete,
 			Handler: remoteClusterLinkDelete,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators",
+			Method:  http.MethodGet,
+			Handler: remoteClusterReplicatorsGet,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators",
+			Method:  http.MethodPost,
+			Handler: remoteClusterReplicatorsPost,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterReplicatorGet,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterReplicatorPut,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}",
+			Method:  http.MethodDelete,
+			Handler: remoteClusterReplicatorDelete,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}/state",
+			Method:  http.MethodGet,
+			Handler: remoteClusterReplicatorStateGet,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}/state",
+			Method:  http.MethodPut,
+			Handler: remoteClusterReplicatorStatePut,
 		},
 	},
 }
@@ -1202,6 +1242,59 @@ func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 	}
 }
 
+// remoteClusterLinkPut updates the description and config of a cluster link on the remote cluster given in the path.
+// The linked cluster keeps its own cluster link entry unchanged.
+func remoteClusterLinkPut(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if clusterLinkName == "" {
+			return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
+		}
+
+		var linkRequest api.ClusterLinkPut
+		err = decodeBody(r, &linkRequest)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		body, err := json.Marshal(linkRequest)
+		if err != nil {
+			return response.InternalError(fmt.Errorf("Failed to encode cluster link request: %w", err)).Render(w, r)
+		}
+
+		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName)
+		return forwardTunnelRequest(rc, w, r, http.MethodPut, path, remoteClusterName, body, "update cluster link")
+	}
+}
+
+// forwardTunnelRequest sends a request over the tunnel of the given cluster and writes the LXD response.
+// Upstream failures are mapped to client errors, forwarding only the LXD error message.
+func forwardTunnelRequest(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, method string, path string, clusterName string, body []byte, operation string) error {
+	resp, err := sendTunnelRequest(rc, r, method, path, clusterName, body)
+	if err != nil {
+		logger.Log.Errorw("Tunnel request failed", "cluster", clusterName, "operation", operation, "error", err)
+		return response.SmartError(err).Render(w, r)
+	}
+
+	if !isSuccessStatus(resp.Status) {
+		err = tunnel.ResponseError(*resp, clusterName, operation)
+		logger.Log.Errorw("Tunnel request failed", "cluster", clusterName, "operation", operation, "status", resp.Status, "error", err)
+		return response.SmartError(err).Render(w, r)
+	}
+
+	writeResponse(w, *resp)
+	return nil
+}
+
 func sendTunnelRequest(rc types.RouteConfig, r *http.Request, method string, path string, remoteClusterName string, body []byte) (*types.ClusterManagerTunnelResponse, error) {
 	authorizationHeader := r.Header.Get("Authorization")
 	if authorizationHeader == "" {
@@ -1307,6 +1400,22 @@ func readBody(r *http.Request) ([]byte, error) {
 		}
 	}()
 	return io.ReadAll(r.Body)
+}
+
+// decodeBody reads the JSON request body into the given payload.
+func decodeBody(r *http.Request, payload any) error {
+	body, err := readBody(r)
+	if err != nil {
+		logger.Log.Errorw("Failed to read request body", "error", err)
+		return errors.New("Failed to read request body")
+	}
+
+	err = json.Unmarshal(body, payload)
+	if err != nil {
+		return api.StatusErrorf(http.StatusBadRequest, "Failed to parse request body: %v", err)
+	}
+
+	return nil
 }
 
 func writeResponse(w http.ResponseWriter, resp types.ClusterManagerTunnelResponse) {
