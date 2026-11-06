@@ -4,14 +4,14 @@ import {
   CheckboxInput,
   Form,
   Input,
+  RadioInput,
   ScrollableContainer,
-  Select,
   SidePanel,
   useNotify,
   useToastNotification,
 } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
-import type { FC } from "react";
+import { type FC, useState } from "react";
 import { useFormik } from "formik";
 import { queryKeys } from "util/queryKeys";
 import NotificationRow from "components/NotificationRow";
@@ -21,6 +21,8 @@ import { createClusterLink } from "api/clusters";
 import type { ClusterLink, ClusterLinkPost } from "types/cluster";
 import * as Yup from "yup";
 import ClusterSelector from "pages/clusters/ClusterSelector";
+import { LINK_TYPES } from "pages/clusters/clusterLinkTypes";
+import editOffIcon from "icons/edit_off.svg";
 
 const CreateClusterLinkPanel: FC = () => {
   const panelParams = usePanelParams();
@@ -31,6 +33,7 @@ const CreateClusterLinkPanel: FC = () => {
   const clusterName = panelParams.cluster ?? "";
 
   const { data: cluster } = useCluster(clusterName);
+  const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
 
   const closePanel = () => {
     panelParams.clear();
@@ -42,6 +45,8 @@ const CreateClusterLinkPanel: FC = () => {
     type: ClusterLink["type"];
     useDifferentTargetAddress: boolean;
     targetAddress: string;
+    name: string;
+    description: string;
   }
 
   const handleSubmit = async (
@@ -49,9 +54,9 @@ const CreateClusterLinkPanel: FC = () => {
   ): Promise<void> => {
     const payload: ClusterLinkPost = {
       target_cluster: values.targetCluster,
-      name: values.targetCluster,
+      name: values.name.trim(),
       auth_groups: [],
-      description: "",
+      description: values.description,
       type: values.type,
     };
     if (values.type === "public" && values.useDifferentTargetAddress) {
@@ -60,7 +65,11 @@ const CreateClusterLinkPanel: FC = () => {
 
     return createClusterLink(clusterName, JSON.stringify(payload))
       .then(() => {
-        toastNotification.success(<>Created cluster link.</>);
+        toastNotification.success(
+          <>
+            Created cluster link <strong>{payload.name}</strong>.
+          </>,
+        );
         closePanel();
       })
       .catch((error: Error) => {
@@ -88,6 +97,7 @@ const CreateClusterLinkPanel: FC = () => {
             (value) => !value || value.startsWith("https://"),
           ),
     }),
+    name: Yup.string().trim().required("Link name is required"),
   });
 
   const formik = useFormik<CreateClusterLinkFormValues>({
@@ -96,9 +106,10 @@ const CreateClusterLinkPanel: FC = () => {
       type: "bidirectional",
       useDifferentTargetAddress: false,
       targetAddress: "",
+      name: "",
+      description: "",
     },
     validationSchema: ConfigurationSchema,
-    enableReinitialize: true,
     onSubmit: handleSubmit,
   });
 
@@ -115,6 +126,7 @@ const CreateClusterLinkPanel: FC = () => {
   const isSubmitDisabled =
     formik.isSubmitting ||
     !formik.values.targetCluster ||
+    !formik.values.name.trim() ||
     isAlternateTargetAddressInvalid;
 
   if (!cluster) {
@@ -125,9 +137,7 @@ const CreateClusterLinkPanel: FC = () => {
     <>
       <SidePanel>
         <SidePanel.Header>
-          <SidePanel.HeaderTitle>
-            {`Create cluster link from ${cluster.name}`}
-          </SidePanel.HeaderTitle>
+          <SidePanel.HeaderTitle>{`Create cluster link from ${cluster.name}`}</SidePanel.HeaderTitle>
         </SidePanel.Header>
         <NotificationRow className="u-no-padding" />
         <SidePanel.Content className="u-no-padding">
@@ -144,66 +154,128 @@ const CreateClusterLinkPanel: FC = () => {
             >
               {/* hidden submit to enable enter key in inputs */}
               <Input type="submit" hidden value="Hidden input" />
-              <ClusterSelector
-                value={formik.values.targetCluster}
-                setValue={(value) => {
-                  void formik.setFieldValue("targetCluster", value);
-                  resetTargetAddress();
-                }}
-                ignoreOptions={[cluster.name]}
-              />
-              <Select
-                id="type"
-                name="type"
-                label="Type"
-                value={formik.values.type}
-                onChange={(e) => {
-                  void formik.setFieldValue("type", e.target.value);
-                  resetTargetAddress();
-                }}
-                options={[
-                  { value: "bidirectional", label: "Bidirectional" },
-                  { value: "unidirectional", label: "Unidirectional" },
-                  { value: "public", label: "Public" },
-                ]}
-              />
-              {formik.values.type === "public" && (
-                <>
-                  <CheckboxInput
-                    id="use-different-target-address"
-                    className="cluster-link-address-checkbox"
-                    label="Use a different address than the registered LXD URL"
-                    checked={formik.values.useDifferentTargetAddress}
-                    onChange={() => {
-                      void formik.setFieldValue(
-                        "useDifferentTargetAddress",
-                        !formik.values.useDifferentTargetAddress,
-                      );
-                      resetTargetAddress(false);
-                    }}
-                  />
-                  {formik.values.useDifferentTargetAddress && (
-                    <Input
-                      name="targetAddress"
-                      type="url"
-                      label="Alternate LXD URL"
-                      placeholder="https://cluster.example:8443"
-                      value={formik.values.targetAddress}
-                      onBlur={formik.handleBlur}
-                      onChange={(e) => {
-                        void formik.setFieldValue(
-                          "targetAddress",
-                          e.target.value,
-                        );
+              <>
+                <h2 className="p-muted-heading">Link type</h2>
+                <div className="cluster-link-types">
+                  {LINK_TYPES.map((type) => (
+                    <RadioInput
+                      key={type.value}
+                      name="type"
+                      label={type.label}
+                      help={type.help}
+                      checked={formik.values.type === type.value}
+                      onChange={() => {
+                        void formik.setFieldValue("type", type.value);
+                        resetTargetAddress();
                       }}
-                      error={
-                        formik.touched.targetAddress &&
-                        formik.errors.targetAddress
-                      }
                     />
-                  )}
-                </>
-              )}
+                  ))}
+                </div>
+                <hr />
+                <h2 className="p-muted-heading">Details</h2>
+                <div className="cluster-link-endpoints">
+                  <Input
+                    id="source-cluster"
+                    type="text"
+                    label={
+                      <>
+                        Source{" "}
+                        <img src={editOffIcon} alt="" width={16} height={16} />
+                      </>
+                    }
+                    value={cluster.name}
+                    readOnly
+                  />
+                  <span
+                    className="cluster-link-endpoints__arrow"
+                    aria-hidden="true"
+                  >
+                    {formik.values.type === "bidirectional" ? "⇄" : "→"}
+                  </span>
+                  <div>
+                    <label htmlFor="target-cluster">Target</label>
+                    <ClusterSelector
+                      value={formik.values.targetCluster}
+                      setValue={(value) => {
+                        void formik.setValues({
+                          ...formik.values,
+                          targetCluster: value,
+                          useDifferentTargetAddress: false,
+                          targetAddress: "",
+                          ...(nameManuallyEdited
+                            ? {}
+                            : {
+                                name: value
+                                  ? `${cluster.name}-${value}-clusterlink`
+                                  : "",
+                              }),
+                        });
+                      }}
+                      ignoreOptions={[cluster.name]}
+                      selectProps={{
+                        id: "target-cluster",
+                        name: "target",
+                      }}
+                    />
+                  </div>
+                </div>
+                {formik.values.type === "public" && (
+                  <>
+                    <CheckboxInput
+                      id="use-different-target-address"
+                      className="cluster-link-address-checkbox"
+                      label="Use a different address than the registered LXD URL"
+                      checked={formik.values.useDifferentTargetAddress}
+                      onChange={() => {
+                        void formik.setFieldValue(
+                          "useDifferentTargetAddress",
+                          !formik.values.useDifferentTargetAddress,
+                        );
+                        resetTargetAddress(false);
+                      }}
+                    />
+                    {formik.values.useDifferentTargetAddress && (
+                      <Input
+                        name="targetAddress"
+                        type="url"
+                        label="Alternate LXD URL"
+                        placeholder="https://cluster.example:8443"
+                        value={formik.values.targetAddress}
+                        onBlur={formik.handleBlur}
+                        onChange={(e) => {
+                          void formik.setFieldValue(
+                            "targetAddress",
+                            e.target.value,
+                          );
+                        }}
+                        error={
+                          formik.touched.targetAddress &&
+                          formik.errors.targetAddress
+                        }
+                      />
+                    )}
+                  </>
+                )}
+                <Input
+                  id="name"
+                  type="text"
+                  label="Link name"
+                  required
+                  placeholder={`${cluster.name}-target-clusterlink`}
+                  {...formik.getFieldProps("name")}
+                  onChange={(e) => {
+                    setNameManuallyEdited(true);
+                    formik.handleChange(e);
+                  }}
+                  error={formik.touched.name ? formik.errors.name : null}
+                />
+                <Input
+                  id="description"
+                  type="text"
+                  label="Description"
+                  {...formik.getFieldProps("description")}
+                />
+              </>
             </Form>
           </ScrollableContainer>
         </SidePanel.Content>
@@ -222,7 +294,7 @@ const CreateClusterLinkPanel: FC = () => {
             disabled={isSubmitDisabled}
             onClick={() => void formik.submitForm()}
           >
-            Save changes
+            Create
           </ActionButton>
         </SidePanel.Footer>
       </SidePanel>
