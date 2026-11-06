@@ -71,8 +71,48 @@ var RemoteCluster = types.RouteGroup{
 		},
 		{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterLinkPut,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
 			Method:  http.MethodDelete,
 			Handler: remoteClusterLinkDelete,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators",
+			Method:  http.MethodGet,
+			Handler: remoteClusterReplicatorsGet,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators",
+			Method:  http.MethodPost,
+			Handler: remoteClusterReplicatorsPost,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterReplicatorGet,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterReplicatorPut,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}",
+			Method:  http.MethodDelete,
+			Handler: remoteClusterReplicatorDelete,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}/state",
+			Method:  http.MethodGet,
+			Handler: remoteClusterReplicatorStateGet,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}/state",
+			Method:  http.MethodPut,
+			Handler: remoteClusterReplicatorStatePut,
 		},
 	},
 }
@@ -304,6 +344,18 @@ func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		clusterConnectorPath := "/cluster-links"
+		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+	}
+}
+
+func remoteClusterLinkPut(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName)
 		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
 	}
 }
