@@ -1,10 +1,9 @@
-import { Button, Card, Col, Icon, Row } from "@canonical/react-components";
+import { Card, Col, Row } from "@canonical/react-components";
 import type { FC } from "react";
 import type { Cluster, ClusterLink } from "types/cluster";
 import { Link } from "react-router-dom";
 import DeleteClusterLinkBtn from "pages/clusters/actions/DeleteClusterLinkBtn";
-import usePanelParams from "context/usePanelParams";
-import { getLinkedCluster, isPendingPublicLink } from "util/clusterLinks";
+import { getLinkedCluster } from "util/clusterLinks";
 
 interface Props {
   cluster: Cluster;
@@ -13,11 +12,8 @@ interface Props {
 }
 
 const ClusterLinkCard: FC<Props> = ({ cluster, clusters, link }) => {
-  const panelParams = usePanelParams();
   const targetCluster = getLinkedCluster(link, clusters);
-  const pending = isPendingPublicLink(link);
-  const targetClusterName =
-    targetCluster?.name ?? (pending ? link.name : "unknown");
+  const targetClusterName = targetCluster?.name ?? "unknown";
   const targetClusterURL = targetCluster
     ? `/ui/cluster/${targetCluster.name}`
     : "";
@@ -50,22 +46,6 @@ const ClusterLinkCard: FC<Props> = ({ cluster, clusters, link }) => {
       </Row>
       <Row>
         <Col size={12}>
-          {pending && (
-            <p className="u-text--muted">Pending certificate confirmation</p>
-          )}
-          {pending && (
-            <Button
-              appearance=""
-              className="u-no-margin--bottom has-icon"
-              onClick={() => {
-                panelParams.openCreateClusterLink(cluster.name, link.name);
-              }}
-              hasIcon
-            >
-              <Icon name="certificate" />
-              <span>Verify certificate</span>
-            </Button>
-          )}
           <DeleteClusterLinkBtn
             cluster={cluster}
             link={link}
