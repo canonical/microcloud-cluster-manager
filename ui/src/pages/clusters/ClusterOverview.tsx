@@ -14,7 +14,7 @@ interface Props {
 
 const ClusterOverview: FC<Props> = ({ cluster }) => {
   return (
-    <>
+    <div className="cluster-overview">
       <List
         className="cluster-detail-graphs"
         inline
@@ -63,7 +63,7 @@ const ClusterOverview: FC<Props> = ({ cluster }) => {
         }
       />
       <ClusterWarningList cluster={cluster} />
-    </>
+    </div>
   );
 };
 

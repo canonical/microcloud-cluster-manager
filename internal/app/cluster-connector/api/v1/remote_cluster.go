@@ -96,11 +96,31 @@ var RemoteClusterInternal = types.RouteGroup{
 			Method:  http.MethodPost,
 			Handler: remoteClusterLinksPost,
 		},
+		    {
+            Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
+            Method:  http.MethodGet,
+            Handler: remoteClusterLinkGet,
+        },
 		{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
 			Method:  http.MethodDelete,
 			Handler: remoteClusterLinkDelete,
 		},
+		        {
+            Path:    "{remoteClusterName}/identities",
+            Method:  http.MethodGet,
+            Handler: remoteClusterIdentitiesGet,
+        },
+        {
+            Path:    "{remoteClusterName}/identities/{identityName}",
+            Method:  http.MethodGet,
+            Handler: remoteClusterIdentityGet,
+        },
+        {
+            Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}/state",
+            Method:  http.MethodGet,
+            Handler: remoteClusterLinkStateGet,
+        },
 	},
 }
 
@@ -1165,6 +1185,121 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 		writeResponse(w, *resp)
 		return nil
 	}
+}
+
+func remoteClusterLinkGet(rc types.RouteConfig) types.EndpointHandler {
+    return func(w http.ResponseWriter, r *http.Request) error {
+        remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+        if err != nil {
+            return response.SmartError(err).Render(w, r)
+        }
+
+        clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+        if err != nil {
+            return response.SmartError(err).Render(w, r)
+        }
+
+        if clusterLinkName == "" {
+            return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
+        }
+
+        path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName) + "?recursion=2"
+        resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, nil)
+        if err != nil {
+            return err
+        }
+        if !isSuccessStatus(resp.Status) {
+            err = tunnel.ResponseError(*resp, remoteClusterName, "get cluster link")
+            logger.Log.Errorw("Failed to get cluster link", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "error", err)
+            return response.SmartError(err).Render(w, r)
+        }
+        writeResponse(w, *resp)
+        return nil
+    }
+}
+
+func remoteClusterIdentitiesGet(rc types.RouteConfig) types.EndpointHandler {
+    return func(w http.ResponseWriter, r *http.Request) error {
+        remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+        if err != nil {
+            return response.SmartError(err).Render(w, r)
+        }
+
+        path := "/1.0/auth/identities?recursion=2"
+        resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, nil)
+        if err != nil {
+            return err
+        }
+        if !isSuccessStatus(resp.Status) {
+            err = tunnel.ResponseError(*resp, remoteClusterName, "list identities")
+            logger.Log.Errorw("Failed to list identities", "cluster", remoteClusterName, "status", resp.Status, "error", err)
+            return response.SmartError(err).Render(w, r)
+        }
+        writeResponse(w, *resp)
+        return nil
+    }
+}
+
+func remoteClusterIdentityGet(rc types.RouteConfig) types.EndpointHandler {
+    return func(w http.ResponseWriter, r *http.Request) error {
+        remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+        if err != nil {
+            return response.SmartError(err).Render(w, r)
+        }
+
+        identityName, err := url.PathUnescape(mux.Vars(r)["identityName"])
+        if err != nil {
+            return response.SmartError(err).Render(w, r)
+        }
+
+        if identityName == "" {
+            return response.BadRequest(errors.New("Missing identity name")).Render(w, r)
+        }
+
+        path := "/1.0/auth/identities/tls/" + url.PathEscape(identityName) + "?recursion=2"
+        resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, nil)
+        if err != nil {
+            return err
+        }
+        if !isSuccessStatus(resp.Status) {
+            err = tunnel.ResponseError(*resp, remoteClusterName, "get identity")
+            logger.Log.Errorw("Failed to get identity", "cluster", remoteClusterName, "identity", identityName, "status", resp.Status, "error", err)
+            return response.SmartError(err).Render(w, r)
+        }
+        writeResponse(w, *resp)
+        return nil
+    }
+}
+
+func remoteClusterLinkStateGet(rc types.RouteConfig) types.EndpointHandler {
+    return func(w http.ResponseWriter, r *http.Request) error {
+        remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+        if err != nil {
+            return response.SmartError(err).Render(w, r)
+        }
+
+        clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+        if err != nil {
+            return response.SmartError(err).Render(w, r)
+        }
+
+        if clusterLinkName == "" {
+            return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
+        }
+
+        path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName) + "/state"
+        resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, nil)
+        if err != nil {
+            return err
+        }
+        if !isSuccessStatus(resp.Status) {
+            err = tunnel.ResponseError(*resp, remoteClusterName, "get cluster link state")
+            logger.Log.Errorw("Failed to get cluster link state", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "error", err)
+            return response.SmartError(err).Render(w, r)
+        }
+        writeResponse(w, *resp)
+        return nil
+    }
 }
 
 // remoteClusterLinkDelete removes a single edge of a cluster link, meaning the link is only removed on the
