@@ -1,5 +1,5 @@
 import type { LxdApiResponse } from "types/apiResponse";
-import type { Cluster, ClusterLink } from "types/cluster";
+import type { Cluster, ClusterLink, ClusterLinkGroup } from "types/cluster";
 import { handleResponse, handleSettledResult } from "util/helpers";
 
 export const fetchClusters = async (): Promise<Cluster[]> => {
@@ -62,6 +62,12 @@ export const fetchClusterLinks = async (
   )
     .then(handleResponse)
     .then((data) => (data as LxdApiResponse<ClusterLink[]>).metadata);
+};
+
+export const fetchClusterLinkGroups = async (): Promise<ClusterLinkGroup[]> => {
+  return fetch("/1.0/cluster-link")
+    .then(handleResponse)
+    .then((data) => (data as LxdApiResponse<ClusterLinkGroup[]>).metadata);
 };
 
 export const createClusterLink = async (

@@ -1,19 +1,36 @@
 // Mirrors the .actions-list pattern from LXD-UI: icon buttons separated by a
 // thin vertical divider, right-aligned in the table cell.
 .actions-list {
-  display: inline-block;
+  display: inline-flex;
+  flex-wrap: nowrap;
 
   .p-inline-list__item {
     margin-right: 0;
   }
 
   > * {
-    border-right: 1px solid var(--vf-color-border-default);
     margin: 0;
     padding-left: 0;
     padding-right: 0;
+    position: relative;
+
+    &:not(:last-child)::after {
+      border-right: 1px solid var(--vf-color-border-default);
+      content: "";
+      height: 1rem;
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+    }
 
     button {
+      margin: 0;
+      width: 44px;
+    }
+
+    a {
+      justify-content: center;
       margin: 0;
       width: 44px;
     }

@@ -56,26 +56,36 @@ export const getClusterLinkId = (
   linkName: string,
 ): string => `${sourceName}/${linkName}`;
 
-// Flattens per-cluster link query results into entries in cluster order, so
-// grouping by source cluster later preserves the order of the cluster list.
+// Flattens per-cluster links into connections in cluster order, so grouping by
+// source cluster later preserves the order of the cluster list. The targets of
+// the connections are not resolved yet.
 export const flattenClusterLinks = (
   sourceClusters: Cluster[],
   linksByCluster: Record<string, ClusterLink[] | undefined>,
-  enrolledClusters: Cluster[] = sourceClusters,
 ): ClusterConnection[] => {
-  const entries: ClusterConnection[] = [];
+  const connections: ClusterConnection[] = [];
   for (const source of sourceClusters) {
     for (const link of linksByCluster[source.name] ?? []) {
-      entries.push({
+      connections.push({
         id: getClusterLinkId(source.name, link.name),
         source,
         link,
-        target: getLinkedCluster(link, enrolledClusters),
       });
     }
   }
-  return entries;
+  return connections;
 };
+
+// Resolves the target of each connection among the clusters known to the
+// cluster manager.
+export const resolveClusterLinkTargets = (
+  connections: ClusterConnection[],
+  clusters: Cluster[],
+): ClusterConnection[] =>
+  connections.map((connection) => ({
+    ...connection,
+    target: getLinkedCluster(connection.link, clusters),
+  }));
 
 export interface SourceClusterGroup {
   cluster: Cluster;

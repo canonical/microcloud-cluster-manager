@@ -2,7 +2,11 @@ import { Button, Icon } from "@canonical/react-components";
 import type { FC } from "react";
 import usePanelParams from "context/usePanelParams";
 
-const CreateClusterLinkBtn: FC = () => {
+interface Props {
+  clusterName?: string;
+}
+
+const CreateClusterLinkBtn: FC<Props> = ({ clusterName }) => {
   const panelParams = usePanelParams();
 
   return (
@@ -10,7 +14,7 @@ const CreateClusterLinkBtn: FC = () => {
       appearance="positive"
       className="u-no-margin--bottom has-icon"
       onClick={() => {
-        panelParams.openCreateClusterLink();
+        panelParams.openCreateClusterLink(clusterName);
       }}
       hasIcon
     >

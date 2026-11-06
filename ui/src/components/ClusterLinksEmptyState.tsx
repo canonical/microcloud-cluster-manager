@@ -3,10 +3,14 @@ import type { FC } from "react";
 import emptyIcon from "icons/empty.svg";
 import CreateClusterLinkBtn from "pages/clusters/actions/CreateClusterLinkBtn";
 
+interface Props {
+  clusterName: string;
+}
+
 const CLUSTER_LINKS_DOC_URL =
   "https://documentation.ubuntu.com/lxd/latest/howto/cluster_links_create/";
 
-const ClusterLinksEmptyState: FC = () => {
+const ClusterLinksEmptyState: FC<Props> = ({ clusterName }) => {
   return (
     <div className="cluster-links-empty-state">
       <EmptyState
@@ -29,7 +33,7 @@ const ClusterLinksEmptyState: FC = () => {
             />
           </a>
         </p>
-        <CreateClusterLinkBtn />
+        <CreateClusterLinkBtn clusterName={clusterName} />
       </EmptyState>
     </div>
   );

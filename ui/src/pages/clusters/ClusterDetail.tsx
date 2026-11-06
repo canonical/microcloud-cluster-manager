@@ -110,7 +110,7 @@ const ClusterDetail: FC = () => {
         <ConfigureClusterPanel />
       )}
       {panelParams.panel === panels.createClusterLink && (
-        <CreateClusterLinkPanel sourceCluster={name} />
+        <CreateClusterLinkPanel />
       )}
     </>
   );

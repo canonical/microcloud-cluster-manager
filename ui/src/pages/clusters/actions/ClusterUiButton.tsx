@@ -1,29 +1,29 @@
-import { Icon } from "@canonical/react-components";
 import type { FC } from "react";
-import classnames from "classnames";
+import ExternalLinkButton from "components/ExternalLinkButton";
 
 interface Props {
   lxdUrl: string;
   className?: string;
   onClose?: () => void;
+  hasLabel?: boolean;
 }
 
-const ClusterUiButton: FC<Props> = ({ lxdUrl, className, onClose }) => {
-  if (!lxdUrl) {
-    return null;
-  }
-
+const ClusterUiButton: FC<Props> = ({
+  lxdUrl,
+  className,
+  onClose,
+  hasLabel = true,
+}) => {
   return (
-    <a
-      className={classnames("p-button u-no-margin--bottom has-icon", className)}
-      onClick={onClose}
-      href={lxdUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <Icon name="external-link" />
-      <span>LXD UI</span>
-    </a>
+    <ExternalLinkButton
+      href={lxdUrl || undefined}
+      label="LXD UI"
+      iconName="external-link"
+      unavailableReason="The cluster has not reported an LXD UI address"
+      className={className}
+      onClose={onClose}
+      hasLabel={hasLabel}
+    />
   );
 };
 

@@ -1,52 +1,43 @@
-import { useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "util/queryKeys";
-import type { Cluster, ClusterLink } from "types/cluster";
-import { fetchClusterLinks } from "api/clusters";
+import type { Cluster, ClusterLink, ClusterLinkGroup } from "types/cluster";
+import { fetchClusterLinkGroups } from "api/clusters";
 import type { ClusterConnection } from "util/clusterLinks";
-import { flattenClusterLinks } from "util/clusterLinks";
+import {
+  flattenClusterLinks,
+  resolveClusterLinkTargets,
+} from "util/clusterLinks";
 
 interface UseClusterLinksResult {
   connections: ClusterConnection[];
-  failedClusters: Cluster[];
+  failedGroups: ClusterLinkGroup[];
+  error: Error | null;
   isLoading: boolean;
 }
 
-// Fans out one query per tunnel-enabled cluster. The management API only
-// exposes per-cluster link endpoints, so aggregation happens here; React Query
-// caches and retries each cluster independently.
-export const useClusterLinks = (
-  sourceClusters: Cluster[],
-  enrolledClusters: Cluster[] = sourceClusters,
-): UseClusterLinksResult => {
-  const tunnelClusters = sourceClusters.filter(
-    (cluster) => cluster.tunnel_registered,
-  );
-
-  const linkQueries = useQueries({
-    queries: tunnelClusters.map((cluster) => ({
-      queryKey: [queryKeys.clusters, cluster.name, queryKeys.links],
-      queryFn: async () => fetchClusterLinks(cluster.name),
-    })),
+// The management API groups the links by cluster and reports the clusters it
+// failed to load next to the links it could load.
+export const useClusterLinks = (clusters: Cluster[]): UseClusterLinksResult => {
+  const {
+    data: groups = [],
+    error,
+    isLoading,
+  } = useQuery({
+    queryKey: [queryKeys.clusters, queryKeys.links],
+    queryFn: fetchClusterLinkGroups,
   });
 
   const linksByCluster: Record<string, ClusterLink[] | undefined> = {};
-  tunnelClusters.forEach((cluster, index) => {
-    linksByCluster[cluster.name] = linkQueries[index]?.data;
-  });
+  for (const group of groups) {
+    linksByCluster[group.cluster] = group.links;
+  }
 
-  const connections = flattenClusterLinks(
-    sourceClusters,
-    linksByCluster,
-    enrolledClusters,
-  );
-
-  const failedClusters = tunnelClusters.filter(
-    (_, index) => linkQueries[index]?.isError,
-  );
+  const allLinks = flattenClusterLinks(clusters, linksByCluster);
 
   return {
-    connections,
-    failedClusters,
-    isLoading: linkQueries.some((query) => query.isLoading),
+    connections: resolveClusterLinkTargets(allLinks, clusters),
+    failedGroups: groups.filter((group) => group.error),
+    error,
+    isLoading,
   };
 };

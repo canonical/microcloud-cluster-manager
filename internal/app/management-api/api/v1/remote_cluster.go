@@ -16,6 +16,7 @@ import (
 
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/shared"
+	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/auth"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
@@ -280,40 +281,66 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 	return remoteClusters, nil
 }
 
-func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
+func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		clusterConnectorPath := "/cluster-links"
-		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+		return forwardClusterLinkToClusterConnector(rc, w, r)
 	}
 }
 
-func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
+func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		clusterConnectorPath := "/cluster-links"
-		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+		return forwardClusterLinkToClusterConnector(rc, w, r)
 	}
 }
 
 func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
-		if err != nil {
-			return response.SmartError(err).Render(w, r)
-		}
-
-		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName)
-		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+		return forwardClusterLinkToClusterConnector(rc, w, r)
 	}
 }
 
-func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, clusterConnectorPath string) error {
+// forwardClusterLinkToClusterConnector forwards a cluster link request to the cluster connector and streams the
+// response back. The remote cluster and the optional cluster link are taken from the route.
+func forwardClusterLinkToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *http.Request) error {
 	remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
 	if err != nil {
 		return response.SmartError(err).Render(w, r)
 	}
 
+	clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
+	}
+
+	clusterLinkConnectorPath := "/cluster-links"
+
+	if clusterLinkName != "" {
+		clusterLinkConnectorPath += "/" + url.PathEscape(clusterLinkName)
+	}
+
+	resp, err := forwardToClusterConnector(rc, r, remoteClusterName, clusterLinkConnectorPath)
+	if err != nil {
+		return response.SmartError(err).Render(w, r)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	for key, values := range resp.Header {
+		w.Header()[key] = append([]string(nil), values...)
+	}
+	w.WriteHeader(resp.StatusCode)
+	if _, err := io.Copy(w, resp.Body); err != nil {
+		logger.Log.Errorw("Failed to stream response body", "error", err)
+	}
+	return nil
+}
+
+// forwardToClusterConnector sends the request to the cluster connector member holding the tunnel of the remote
+// cluster and returns its response, which the caller must close.
+func forwardToClusterConnector(rc types.RouteConfig, r *http.Request, remoteClusterName string, clusterConnectorPath string) (*http.Response, error) {
 	var clusterDetails *store.RemoteClusterDetail
-	err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
+	err := rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
 		cluster, err := store.GetRemoteCluster(ctx, tx, remoteClusterName)
 		if err != nil {
 			return err
@@ -323,34 +350,34 @@ func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *h
 		return err
 	})
 	if err != nil {
-		return response.SmartError(err).Render(w, r)
+		return nil, err
 	}
 
 	if clusterDetails.TunnelManagerMemberURL == "" {
-		return response.BadRequest(fmt.Errorf("remote cluster does not have an active tunnel")).Render(w, r)
+		return nil, api.StatusErrorf(http.StatusBadRequest, "remote cluster does not have an active tunnel")
 	}
 
-	reqURL := clusterDetails.TunnelManagerMemberURL + "/1.0/remote-cluster/" + remoteClusterName + clusterConnectorPath
+	reqURL := clusterDetails.TunnelManagerMemberURL + "/1.0/remote-cluster/" + url.PathEscape(remoteClusterName) + clusterConnectorPath
 
 	sessionProvider, ok := r.Context().Value(auth.SessionCredentialsProviderKey).(*auth.SessionCredentialsProvider)
 	if !ok {
-		return response.InternalError(fmt.Errorf("failed to get session credentials provider from the request context")).Render(w, r)
+		return nil, fmt.Errorf("failed to get session credentials provider from the request context")
 	}
 
 	accessToken, err := sessionProvider.GetAccessToken()
 	if err != nil {
-		return response.InternalError(fmt.Errorf("failed to get access token: %w", err)).Render(w, r)
+		return nil, fmt.Errorf("failed to get access token: %w", err)
 	}
 
 	userSecret, err := sessionProvider.GetUserSecret()
 	if err != nil {
-		return response.InternalError(fmt.Errorf("failed to get user secret: %w", err)).Render(w, r)
+		return nil, fmt.Errorf("failed to get user secret: %w", err)
 	}
 
 	// Buffer the body so that it can be sent again if the request needs to be retried after a token refresh.
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return response.SmartError(fmt.Errorf("failed to read request body: %w", err)).Render(w, r)
+		return nil, fmt.Errorf("failed to read request body: %w", err)
 	}
 
 	defer func() {
@@ -362,7 +389,7 @@ func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *h
 
 	resp, err := sendInternalRequest(r, accessToken, userSecret, reqURL, rc, body)
 	if err != nil {
-		return response.SmartError(err).Render(w, r)
+		return nil, err
 	}
 
 	// Only replay requests that have no side effects. A 401/403 from a non-idempotent request may be the
@@ -370,11 +397,14 @@ func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *h
 	isRetriable := r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions
 	needsTokenRefresh := isRetriable && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden)
 	if needsTokenRefresh {
-		refreshCtx, cancelRefresh := context.WithTimeout(context.Background(), 30*time.Second)
+		// Detached from the request so that cancelling it cannot interrupt a refresh after the identity provider
+		// has already rotated the refresh token and before the new tokens are stored.
+		refreshCtx, cancelRefresh := context.WithTimeout(context.WithoutCancel(r.Context()), 30*time.Second)
 		defer cancelRefresh()
-		accessToken, err = sessionProvider.RefreshSessionTokens(refreshCtx)
+		accessToken, err = sessionProvider.RefreshSessionTokens(refreshCtx, accessToken)
 		if err != nil {
-			return response.InternalError(fmt.Errorf("failed to refresh access token: %w", err)).Render(w, r)
+			_ = resp.Body.Close()
+			return nil, fmt.Errorf("failed to refresh access token: %w", err)
 		}
 
 		err = resp.Body.Close()
@@ -384,28 +414,10 @@ func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *h
 
 		resp, err = sendInternalRequest(r, accessToken, userSecret, reqURL, rc, body)
 		if err != nil {
-			return response.InternalError(fmt.Errorf("failed to send request after token refresh: %w", err)).Render(w, r)
+			return nil, fmt.Errorf("failed to send request after token refresh: %w", err)
 		}
 	}
-
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			logger.Log.Errorf("failed to close response body: %v", err)
-		}
-	}()
-
-	for k, values := range resp.Header {
-		w.Header()[k] = append([]string(nil), values...)
-	}
-
-	w.WriteHeader(resp.StatusCode)
-	if _, err = io.Copy(w, resp.Body); err != nil {
-		logger.Log.Errorf("failed to stream response body", "err", err)
-		return nil
-	}
-
-	return nil
+	return resp, nil
 }
 
 func sendInternalRequest(r *http.Request, accessToken string, userSecret string, reqURL string, rc types.RouteConfig, body []byte) (*http.Response, error) {

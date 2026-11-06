@@ -16,25 +16,18 @@ import { useFormik } from "formik";
 import { queryKeys } from "util/queryKeys";
 import NotificationRow from "components/NotificationRow";
 import usePanelParams from "context/usePanelParams";
-import { useCluster } from "context/useClusters";
 import { createClusterLink } from "api/clusters";
 import type { ClusterLink, ClusterLinkPost } from "types/cluster";
 import * as Yup from "yup";
 import ClusterSelector from "pages/clusters/ClusterSelector";
 
-interface Props {
-  sourceCluster?: string;
-}
-
-const CreateClusterLinkPanel: FC<Props> = ({ sourceCluster = "" }) => {
+const CreateClusterLinkPanel: FC = () => {
   const panelParams = usePanelParams();
   const queryClient = useQueryClient();
   const notify = useNotify();
   const toastNotification = useToastNotification();
 
   const clusterName = panelParams.cluster ?? "";
-
-  const { data: cluster } = useCluster(clusterName);
 
   const closePanel = () => {
     panelParams.clear();
@@ -63,7 +56,7 @@ const CreateClusterLinkPanel: FC<Props> = ({ sourceCluster = "" }) => {
       payload.remote_address = values.targetAddress;
     }
 
-    return createClusterLink(clusterName, JSON.stringify(payload))
+    return createClusterLink(values.sourceCluster, JSON.stringify(payload))
       .then(() => {
         toastNotification.success(<>Created cluster link.</>);
         closePanel();
@@ -98,12 +91,14 @@ const CreateClusterLinkPanel: FC<Props> = ({ sourceCluster = "" }) => {
 
   const formik = useFormik<CreateClusterLinkFormValues>({
     initialValues: {
+      sourceCluster: clusterName,
       targetCluster: "",
       type: "bidirectional",
       useDifferentTargetAddress: false,
       targetAddress: "",
     },
     validationSchema: ConfigurationSchema,
+    enableReinitialize: true,
     onSubmit: handleSubmit,
   });
 
@@ -119,19 +114,18 @@ const CreateClusterLinkPanel: FC<Props> = ({ sourceCluster = "" }) => {
     (!formik.values.targetAddress || !!formik.errors.targetAddress);
   const isSubmitDisabled =
     formik.isSubmitting ||
+    !formik.values.sourceCluster ||
     !formik.values.targetCluster ||
     isAlternateTargetAddressInvalid;
-
-  if (!cluster) {
-    return null;
-  }
 
   return (
     <>
       <SidePanel>
         <SidePanel.Header>
           <SidePanel.HeaderTitle>
-            {`Create cluster link from ${cluster.name}`}
+            {clusterName
+              ? `Create cluster link from ${clusterName}`
+              : "Create cluster link"}
           </SidePanel.HeaderTitle>
         </SidePanel.Header>
         <NotificationRow className="u-no-padding" />
@@ -149,13 +143,32 @@ const CreateClusterLinkPanel: FC<Props> = ({ sourceCluster = "" }) => {
             >
               {/* hidden submit to enable enter key in inputs */}
               <Input type="submit" hidden value="Hidden input" />
+              {!clusterName && (
+                <ClusterSelector
+                  value={formik.values.sourceCluster}
+                  setValue={(value) => {
+                    void formik.setFieldValue("sourceCluster", value);
+                  }}
+                  ignoreOptions={[formik.values.targetCluster]}
+                  selectProps={{
+                    id: "sourceCluster",
+                    label: "Source cluster",
+                    "aria-label": "Source cluster",
+                  }}
+                />
+              )}
               <ClusterSelector
                 value={formik.values.targetCluster}
                 setValue={(value) => {
                   void formik.setFieldValue("targetCluster", value);
                   resetTargetAddress();
                 }}
-                ignoreOptions={[cluster.name]}
+                ignoreOptions={[formik.values.sourceCluster]}
+                selectProps={{
+                  id: "targetCluster",
+                  label: "Target cluster",
+                  "aria-label": "Target cluster",
+                }}
               />
               <Select
                 id="type"

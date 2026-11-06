@@ -24,7 +24,7 @@ import ClusterLinkTable from "pages/cluster-links/ClusterLinkTable";
 import CreateClusterLinkButton from "pages/cluster-links/actions/CreateClusterLinkButton";
 import ResourceIcon from "components/ResourceIcon";
 
-const ClusterLinkList: FC = () => {
+const GlobalClusterLinkList: FC = () => {
   const panelParams = usePanelParams();
   const [searchParams] = useSearchParams();
 
@@ -35,7 +35,8 @@ const ClusterLinkList: FC = () => {
   } = useClusters();
   const {
     connections: links,
-    failedClusters,
+    failedGroups,
+    error: linksError,
     isLoading: isLinksLoading,
   } = useClusterLinks(clusters);
 
@@ -53,7 +54,8 @@ const ClusterLinkList: FC = () => {
     !isLoading &&
     !hasFilters &&
     !clustersError &&
-    failedClusters.length === 0;
+    !linksError &&
+    failedGroups.length === 0;
 
   return (
     <>
@@ -78,19 +80,32 @@ const ClusterLinkList: FC = () => {
         }
       >
         <Row>
-          <NotificationRow />
+          {panelParams.panel !== panels.createClusterLink && (
+            <NotificationRow />
+          )}
           {clustersError && (
             <Notification severity="negative" title="Loading clusters failed">
               {clustersError.message}
             </Notification>
           )}
-          {failedClusters.length > 0 && (
+          {linksError && (
             <Notification
               severity="negative"
               title="Loading cluster links failed"
             >
-              Unable to load cluster links for{" "}
-              {failedClusters.map((cluster) => cluster.name).join(", ")}.
+              {linksError.message}
+            </Notification>
+          )}
+          {failedGroups.length > 0 && (
+            <Notification
+              severity="negative"
+              title="Loading cluster links failed"
+            >
+              {failedGroups.map(({ cluster, error }) => (
+                <p key={cluster} className="u-no-margin--bottom">
+                  {`Unable to load cluster links for ${cluster}: ${error}`}
+                </p>
+              ))}
             </Notification>
           )}
           {isEmptyState ? (
@@ -114,7 +129,7 @@ const ClusterLinkList: FC = () => {
             </div>
           ) : (
             <ScrollableTable
-              dependencies={[links, failedClusters.length, isLoading]}
+              dependencies={[links, failedGroups.length, isLoading]}
               tableId="cluster-link-table"
               belowIds={["status-bar", "pagination"]}
             >
@@ -140,4 +155,4 @@ const ClusterLinkList: FC = () => {
   );
 };
 
-export default ClusterLinkList;
+export default GlobalClusterLinkList;
