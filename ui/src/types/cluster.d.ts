@@ -50,6 +50,7 @@ export type ClusterPercentiles = 0.5 | 0.75 | 0.8 | 0.9;
 
 export interface ClusterLink {
   name: string;
+  description?: string;
   type: "bidirectional" | "unidirectional" | "public";
   config?: {
     "volatile.addresses"?: string;
@@ -57,6 +58,7 @@ export interface ClusterLink {
     "volatile.pending_address"?: string;
     "volatile.pending_certificate"?: string;
   };
+  used_by?: string[];
 }
 
 export interface ClusterLinkPost {
@@ -66,4 +68,11 @@ export interface ClusterLinkPost {
   description: string;
   type: ClusterLink["type"];
   remote_address?: string;
+}
+
+// The cluster links of one remote cluster, as returned by GET /1.0/cluster-link.
+export interface ClusterLinkGroup {
+  cluster: string;
+  links: ClusterLink[];
+  error?: string;
 }

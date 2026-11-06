@@ -45,6 +45,8 @@ const RevokeTokenButton: FC<Props> = ({ token }) => {
   return (
     <ConfirmationButton
       appearance="base"
+      aria-label={`Revoke token for ${token.cluster_name}`}
+      onHoverText="Revoke"
       loading={loading}
       className="u-no-margin--bottom has-icon"
       confirmationModalProps={{

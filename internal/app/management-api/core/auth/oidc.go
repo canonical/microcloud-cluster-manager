@@ -150,12 +150,7 @@ func (o *Verifier) Auth(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	groups := extractIdpGroups(claims)
 	setUserInfoInRequest(claims.Email, claims.Name, groups, r)
 
-	provider := &SessionCredentialsProvider{
-		verifier:             o,
-		sessionID:            sessionID,
-		userSecret:           userSecret,
-		encryptedAccessToken: encryptedAccessToken,
-	}
+	provider := NewSessionCredentialsProvider(o, sessionID, userSecret, encryptedAccessToken)
 
 	providerCtx := context.WithValue(r.Context(), SessionCredentialsProviderKey, provider)
 	*r = *r.WithContext(providerCtx)

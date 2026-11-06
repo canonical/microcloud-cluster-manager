@@ -1,9 +1,10 @@
 import { test } from "@playwright/test";
 import { expect } from "./fixtures/test-extension";
+import { gotoURL } from "./helpers/navigate";
 
 test.describe("Cluster Bulk Configuration", () => {
   test("should bulk configure clusters ", async ({ page }) => {
-    await page.goto("/ui/clusters");
+    await gotoURL(page, "/ui/clusters");
     await page.waitForSelector(".scrollable-table");
     const rows = page
       .locator(".clusterlist-table")

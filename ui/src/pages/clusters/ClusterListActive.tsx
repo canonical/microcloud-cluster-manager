@@ -70,7 +70,7 @@ const ClusterListActive: FC<Props> = ({
       className: "warnings",
     },
     {
-      content: "",
+      content: <Icon name="settings" />,
       "aria-label": "Actions",
       className: "actions",
     },
@@ -158,16 +158,17 @@ const ClusterListActive: FC<Props> = ({
         </div>
       ) : (
         <ScrollableTable
-          dependencies={[clusters, notify.notification]}
+          dependencies={[clusters, notify.notification, selectedNames.length]}
           tableId="clusterlist-table"
-          belowIds={["status-bar"]}
+          belowIds={["status-bar", "pagination"]}
         >
           <TablePagination
             data={sortedRows}
             id="pagination"
             itemName=" active cluster"
-            className="u-no-margin--top"
+            className="u-no-margin--bottom"
             aria-label="Table pagination control"
+            position="below"
             description={
               selectedNames.length > 0 && (
                 <SelectedTableNotification
