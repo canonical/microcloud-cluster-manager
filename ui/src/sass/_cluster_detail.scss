@@ -102,7 +102,7 @@
 
     height: 16px;
 
-    // centres the icon on an input
+    // centers the icon on an input
     margin-bottom: calc(($input-height - 16px) / 2);
     width: 16px;
 
@@ -125,10 +125,22 @@
   }
 }
 
+.read-only-label {
+  > img {
+    margin-left: $sph--small;
+  }
+}
+
 .read-only-input {
   // transparent keeps the same height as editable inputs
   border-bottom-color: transparent;
-  color: #000;
+  color: var(--vf-color-text-default);
   opacity: 1;
-  -webkit-text-fill-color: #000;
+  -webkit-text-fill-color: var(--vf-color-text-default);
+}
+
+.edit-cluster-link-panel {
+  .link-type-label {
+    margin-bottom: $spv--small;
+  }
 }

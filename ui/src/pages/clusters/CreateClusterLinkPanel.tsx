@@ -24,6 +24,8 @@ import ClusterSelector from "pages/clusters/ClusterSelector";
 import { getLinkIconType, LINK_TYPES } from "pages/clusters/clusterLinkTypes";
 import ReadOnlyInput from "components/forms/ReadOnlyInput";
 import ResourceIcon from "components/ResourceIcon";
+import { isPublic } from "util/clusterLinks";
+import PanelSection from "components/PanelSection";
 
 const CreateClusterLinkPanel: FC = () => {
   const panelParams = usePanelParams();
@@ -59,7 +61,7 @@ const CreateClusterLinkPanel: FC = () => {
       description: values.description,
       type: values.type,
     };
-    if (values.type === "public" && values.useDifferentTargetAddress) {
+    if (isPublic(values) && values.useDifferentTargetAddress) {
       payload.remote_address = values.targetAddress;
     }
 
@@ -154,109 +156,107 @@ const CreateClusterLinkPanel: FC = () => {
               {/* hidden submit to enable enter key in inputs */}
               <Input type="submit" hidden value="Hidden input" />
               <>
-                <h2 className="p-muted-heading">Link type</h2>
-                <div className="cluster-link-types cluster-link-types--radio-buttons">
-                  {LINK_TYPES.map((type) => (
-                    <RadioInput
-                      key={type.value}
-                      name="type"
-                      label={type.label}
-                      help={type.help}
-                      checked={formik.values.type === type.value}
-                      onChange={() => {
-                        void formik.setFieldValue("type", type.value);
-                        resetTargetAddress();
-                      }}
-                    />
-                  ))}
-                </div>
-                <hr />
-                <h2 className="p-muted-heading">Details</h2>
-                <div className="cluster-link-endpoints">
-                  <ReadOnlyInput
-                    id="source-cluster"
-                    label="Source"
-                    value={cluster.name}
-                  />
-                  <span
-                    className="cluster-link-endpoints__arrow"
-                    aria-hidden="true"
-                  >
-                    <ResourceIcon type={getLinkIconType(formik.values.type)} />
-                  </span>
-                  <div>
-                    <label htmlFor="target-cluster">Target</label>
-                    <ClusterSelector
-                      value={formik.values.targetCluster}
-                      setValue={(value) => {
-                        void formik.setValues({
-                          ...formik.values,
-                          targetCluster: value,
-                          useDifferentTargetAddress: false,
-                          targetAddress: "",
-                          name: value ? `${value}-link` : "",
-                        });
-                      }}
-                      ignoreOptions={[cluster.name]}
-                      selectProps={{
-                        id: "target-cluster",
-                        name: "target",
-                      }}
-                    />
+                <PanelSection header="Link type" isFirst>
+                  <div className="cluster-link-types cluster-link-types--radio-buttons">
+                    {LINK_TYPES.map((type) => (
+                      <RadioInput
+                        key={type.value}
+                        name="type"
+                        label={type.label}
+                        help={type.help}
+                        checked={formik.values.type === type.value}
+                        onChange={() => {
+                          void formik.setFieldValue("type", type.value);
+                          resetTargetAddress();
+                        }}
+                      />
+                    ))}
                   </div>
-                </div>
-                {formik.values.type === "public" && (
-                  <>
-                    <CheckboxInput
-                      id="use-different-target-address"
-                      className="cluster-link-address-checkbox"
-                      label="Use a different address than the registered LXD URL"
-                      checked={formik.values.useDifferentTargetAddress}
-                      onChange={() => {
-                        void formik.setFieldValue(
-                          "useDifferentTargetAddress",
-                          !formik.values.useDifferentTargetAddress,
-                        );
-                        resetTargetAddress(false);
-                      }}
-                    />
-                    <Input
-                      name="targetAddress"
-                      type="url"
-                      aria-label="Alternate LXD URL"
-                      disabled={!formik.values.targetCluster}
-                      placeholder="https://cluster.example:8443"
-                      value={formik.values.targetAddress}
-                      onBlur={formik.handleBlur}
-                      onChange={(e) => {
-                        void formik.setFieldValue(
-                          "useDifferentTargetAddress",
-                          true,
-                        );
-                        void formik.setFieldValue(
-                          "targetAddress",
-                          e.target.value,
-                        );
-                      }}
-                      error={
-                        formik.touched.targetAddress &&
-                        formik.errors.targetAddress
-                      }
-                    />
-                  </>
-                )}
-                <ReadOnlyInput
-                  id="name"
-                  label="Link name"
-                  value={formik.values.name}
-                  placeholder="target-link"
-                />
-                <Input
-                  id="description"
-                  type="text"
-                  label="Description"
-                  {...formik.getFieldProps("description")}
-                />
+                </PanelSection>
+                <PanelSection header="Details">
+                  <div className="cluster-link-endpoints">
+                    <ReadOnlyInput label="Source" value={cluster.name} />
+                    <span
+                      className="cluster-link-endpoints__arrow"
+                      aria-hidden="true"
+                    >
+                      <ResourceIcon
+                        type={getLinkIconType(formik.values.type)}
+                      />
+                    </span>
+                    <div>
+                      <label htmlFor="target-cluster">Target</label>
+                      <ClusterSelector
+                        value={formik.values.targetCluster}
+                        setValue={(value) => {
+                          void formik.setValues({
+                            ...formik.values,
+                            targetCluster: value,
+                            useDifferentTargetAddress: false,
+                            targetAddress: "",
+                            name: value ? `${value}-link` : "",
+                          });
+                        }}
+                        ignoreOptions={[cluster.name]}
+                        selectProps={{
+                          id: "target-cluster",
+                          name: "target",
+                        }}
+                      />
+                    </div>
+                  </div>
+                  {isPublic(formik.values) && (
+                    <>
+                      <CheckboxInput
+                        id="use-different-target-address"
+                        className="cluster-link-address-checkbox"
+                        label="Use a different address than the registered LXD URL"
+                        checked={formik.values.useDifferentTargetAddress}
+                        onChange={() => {
+                          void formik.setFieldValue(
+                            "useDifferentTargetAddress",
+                            !formik.values.useDifferentTargetAddress,
+                          );
+                          resetTargetAddress(false);
+                        }}
+                      />
+                      <Input
+                        name="targetAddress"
+                        type="url"
+                        aria-label="Alternate LXD URL"
+                        disabled={!formik.values.targetCluster}
+                        placeholder="https://cluster.example:8443"
+                        value={formik.values.targetAddress}
+                        onBlur={formik.handleBlur}
+                        onChange={(e) => {
+                          void formik.setFieldValue(
+                            "useDifferentTargetAddress",
+                            true,
+                          );
+                          void formik.setFieldValue(
+                            "targetAddress",
+                            e.target.value,
+                          );
+                        }}
+                        error={
+                          formik.touched.targetAddress &&
+                          formik.errors.targetAddress
+                        }
+                      />
+                    </>
+                  )}
+                  <ReadOnlyInput
+                    label="Link name"
+                    value={formik.values.name}
+                    placeholder="target-link"
+                  />
+                  <Input
+                    id="description"
+                    type="text"
+                    label="Description"
+                    {...formik.getFieldProps("description")}
+                  />
+                </PanelSection>
               </>
             </Form>
           </ScrollableContainer>

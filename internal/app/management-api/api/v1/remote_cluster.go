@@ -150,6 +150,11 @@ var RemoteCluster = types.RouteGroup{
 			Method:  http.MethodGet,
 			Handler: remoteClusterOperationGet,
 		},
+		{
+			Path:    "{remoteClusterName}/auth/identities",
+			Method:  http.MethodGet,
+			Handler: remoteClusterIdentitiesGet,
+		},
 	},
 }
 
@@ -367,6 +372,12 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 func remoteClusterAuthGroupsGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		return forwardToClusterConnector(rc, w, r, "/auth-groups")
+	}
+}
+
+func remoteClusterIdentitiesGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		return forwardToClusterConnector(rc, w, r, "/auth/identities")
 	}
 }
 
