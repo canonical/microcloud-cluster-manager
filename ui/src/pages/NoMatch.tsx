@@ -1,13 +1,16 @@
 import type { FC } from "react";
-import { Link, LoginPageLayout } from "@canonical/react-components";
+import { Row } from "@canonical/react-components";
+import { Link } from "react-router-dom";
+import BaseLayout from "components/BaseLayout";
 
 const NoMatch: FC = () => {
   return (
-    <LoginPageLayout title="404 Page not found">
-      Sorry, we cannot find the page that you are looking for.
-      <br />
-      <Link href="/">Go to index page</Link>
-    </LoginPageLayout>
+    <BaseLayout title="404 Page not found">
+      <Row>
+        <p>Sorry, we cannot find the page that you are looking for.</p>
+        <Link to="/ui/clusters">Go to index page</Link>
+      </Row>
+    </BaseLayout>
   );
 };
 

@@ -16,12 +16,14 @@ interface Props {
   clusterName: string;
   className?: string;
   onClose?: () => void;
+  hasLabel?: boolean;
 }
 
 const RemoveClusterButton: FC<Props> = ({
   clusterName,
   className,
   onClose,
+  hasLabel = true,
 }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
@@ -52,6 +54,9 @@ const RemoveClusterButton: FC<Props> = ({
   return (
     <ConfirmationButton
       className={classnames("u-no-margin--bottom has-icon", className)}
+      appearance={hasLabel ? "default" : "base"}
+      aria-label={hasLabel ? undefined : `Remove cluster ${clusterName}`}
+      onHoverText={hasLabel ? undefined : "Remove"}
       loading={isLoading}
       confirmationModalProps={{
         title: "Confirm remove",
@@ -73,7 +78,7 @@ const RemoveClusterButton: FC<Props> = ({
       shiftClickEnabled
     >
       <Icon name="delete" />
-      <span>Remove</span>
+      {hasLabel && <span>Remove</span>}
     </ConfirmationButton>
   );
 };

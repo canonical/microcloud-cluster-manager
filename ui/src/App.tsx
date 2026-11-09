@@ -8,6 +8,9 @@ import { logout } from "util/helpers";
 
 const ClusterList = lazy(async () => import("pages/clusters/ClusterList"));
 const ClusterDetail = lazy(async () => import("pages/clusters/ClusterDetail"));
+const GlobalClusterLinkList = lazy(
+  async () => import("pages/cluster-links/GlobalClusterLinkList"),
+);
 const Settings = lazy(async () => import("pages/Settings"));
 const Login = lazy(async () => import("pages/Login"));
 
@@ -32,6 +35,7 @@ const App: FC = () => {
       <Route path="/ui/clusters/:activeTab" element={<ClusterList />} />
       <Route path="/ui/cluster/:name" element={<ClusterDetail />} />
       <Route path="/ui/cluster/:name/:activeTab" element={<ClusterDetail />} />
+      <Route path="/ui/cluster-links" element={<GlobalClusterLinkList />} />
       <Route path="/ui/settings" element={<Settings />} />
       <Route path="*" element={<NoMatch />} />
     </>

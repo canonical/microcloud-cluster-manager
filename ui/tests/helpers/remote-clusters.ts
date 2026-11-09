@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { randomNameSuffix } from "./name";
 import { expect } from "../fixtures/test-extension";
+import { gotoURL } from "./navigate";
 
 export const randomClusterName = (): string => {
   return `playwright-token-${randomNameSuffix()}`;
@@ -15,7 +16,7 @@ export const ensureClusterExists = async (
   page: Page,
   cluster: string,
 ): Promise<void> => {
-  await page.goto("/ui");
+  await gotoURL(page, "/ui");
   const clusterNameCell = page.getByRole("row").filter({ hasText: cluster });
   await expect(clusterNameCell).toBeVisible();
 };
@@ -24,7 +25,7 @@ export const goToClusterDetail = async (
   page: Page,
   cluster: string,
 ): Promise<void> => {
-  await page.goto("/ui");
+  await gotoURL(page, "/ui");
   await page.getByRole("link", { name: cluster }).click();
 };
 
