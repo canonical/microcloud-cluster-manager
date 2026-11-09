@@ -1,10 +1,7 @@
 package v1
 
 import (
-	"bytes"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,14 +9,16 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/canonical/lxd/lxd/response"
-	"github.com/canonical/lxd/shared"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/auth"
+	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/connector"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/request"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -76,9 +75,14 @@ var RemoteCluster = types.RouteGroup{
 
 func remoteClustersGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		withLinks, err := parseWithLinks(r)
+		if err != nil {
+			return response.BadRequest(err).Render(w, r)
+		}
+
 		var dbRemoteClusterDetails []store.RemoteClusterWithDetail
 
-		err := rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
+		err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
 			var err error
 			dbRemoteClusterDetails, err = store.GetRemoteClustersWithDetails(ctx, tx)
 			return err
@@ -93,8 +97,27 @@ func remoteClustersGet(rc types.RouteConfig) types.EndpointHandler {
 			return response.InternalError(err).Render(w, r)
 		}
 
+		if withLinks {
+			addClusterLinks(rc, r, dbRemoteClusterDetails, result)
+		}
+
 		return response.SyncResponse(true, result).Render(w, r)
 	}
+}
+
+// parseWithLinks returns whether the with-links query parameter asks for the cluster links of each cluster.
+func parseWithLinks(r *http.Request) (bool, error) {
+	value := r.URL.Query().Get("with-links")
+	if value == "" {
+		return false, nil
+	}
+
+	withLinks, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, fmt.Errorf("invalid with-links value %q", value)
+	}
+
+	return withLinks, nil
 }
 
 func remoteClusterGet(rc types.RouteConfig) types.EndpointHandler {
@@ -285,23 +308,24 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 	return remoteClusters, nil
 }
 
+// authGroupsConnectorPath is the cluster connector path of the auth groups of a remote cluster.
+const authGroupsConnectorPath = "/auth-groups"
+
 func remoteClusterAuthGroupsGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		return forwardToClusterConnector(rc, w, r, "/auth-groups")
-	}
-}
-
-func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		clusterConnectorPath := "/cluster-links"
-		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+		return forwardToClusterConnector(rc, w, r, authGroupsConnectorPath)
 	}
 }
 
 func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		clusterConnectorPath := "/cluster-links"
-		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+		return forwardToClusterConnector(rc, w, r, clusterLinksConnectorPath)
+	}
+}
+
+func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		return forwardToClusterConnector(rc, w, r, clusterLinksConnectorPath)
 	}
 }
 
@@ -312,150 +336,46 @@ func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 			return response.SmartError(err).Render(w, r)
 		}
 
-		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName)
-		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+		return forwardToClusterConnector(rc, w, r, clusterLinksConnectorPath+"/"+url.PathEscape(clusterLinkName))
 	}
 }
 
+// forwardToClusterConnector forwards the request to the cluster connector path of the remote cluster of the route and
+// streams the response back.
 func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, clusterConnectorPath string) error {
 	remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
 	if err != nil {
 		return response.SmartError(err).Render(w, r)
 	}
 
-	var clusterDetails *store.RemoteClusterDetail
+	var dbRemoteClusterDetail *store.RemoteClusterWithDetail
 	err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
-		cluster, err := store.GetRemoteCluster(ctx, tx, remoteClusterName)
-		if err != nil {
-			return err
-		}
-
-		clusterDetails, err = store.GetRemoteClusterDetail(ctx, tx, cluster.ID)
+		var err error
+		dbRemoteClusterDetail, err = store.GetRemoteClusterWithDetailByName(ctx, tx, remoteClusterName)
 		return err
 	})
 	if err != nil {
 		return response.SmartError(err).Render(w, r)
 	}
 
-	if clusterDetails.TunnelManagerMemberURL == "" {
-		return response.BadRequest(fmt.Errorf("remote cluster does not have an active tunnel")).Render(w, r)
+	if dbRemoteClusterDetail == nil {
+		return response.NotFound(fmt.Errorf("RemoteCluster not found")).Render(w, r)
 	}
 
-	reqURL := clusterDetails.TunnelManagerMemberURL + "/1.0/remote-cluster/" + remoteClusterName + clusterConnectorPath
-
-	sessionProvider, ok := r.Context().Value(auth.SessionCredentialsProviderKey).(*auth.SessionCredentialsProvider)
-	if !ok {
-		return response.InternalError(fmt.Errorf("failed to get session credentials provider from the request context")).Render(w, r)
-	}
-
-	accessToken, err := sessionProvider.GetAccessToken()
-	if err != nil {
-		return response.InternalError(fmt.Errorf("failed to get access token: %w", err)).Render(w, r)
-	}
-
-	userSecret, err := sessionProvider.GetUserSecret()
-	if err != nil {
-		return response.InternalError(fmt.Errorf("failed to get user secret: %w", err)).Render(w, r)
-	}
-
-	// Buffer the body so that it can be sent again if the request needs to be retried after a token refresh.
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return response.SmartError(fmt.Errorf("failed to read request body: %w", err)).Render(w, r)
-	}
-
-	defer func() {
-		err := r.Body.Close()
-		if err != nil {
-			logger.Log.Warnw("Failed to close request body", "error", err)
-		}
-	}()
-
-	resp, err := sendInternalRequest(r, accessToken, userSecret, reqURL, rc, body)
+	resp, err := connector.Forward(rc, r, remoteClusterName, clusterConnectorPath, dbRemoteClusterDetail.TunnelManagerMemberURL)
 	if err != nil {
 		return response.SmartError(err).Render(w, r)
 	}
-
-	// Only replay requests that have no side effects. A 401/403 from a non-idempotent request may be the
-	// result of a partially applied change, so replaying it could apply the change twice.
-	isRetriable := r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions
-	needsTokenRefresh := isRetriable && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden)
-	if needsTokenRefresh {
-		refreshCtx, cancelRefresh := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancelRefresh()
-		accessToken, err = sessionProvider.RefreshSessionTokens(refreshCtx)
-		if err != nil {
-			return response.InternalError(fmt.Errorf("failed to refresh access token: %w", err)).Render(w, r)
-		}
-
-		err = resp.Body.Close()
-		if err != nil {
-			logger.Log.Warnw("Failed to close response body before retry", "error", err)
-		}
-
-		resp, err = sendInternalRequest(r, accessToken, userSecret, reqURL, rc, body)
-		if err != nil {
-			return response.InternalError(fmt.Errorf("failed to send request after token refresh: %w", err)).Render(w, r)
-		}
-	}
-
 	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			logger.Log.Errorf("failed to close response body: %v", err)
-		}
+		_ = resp.Body.Close()
 	}()
 
-	for k, values := range resp.Header {
-		w.Header()[k] = append([]string(nil), values...)
-	}
-
+	request.CopyResponseHeaders(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
-	if _, err = io.Copy(w, resp.Body); err != nil {
-		logger.Log.Errorf("failed to stream response body", "err", err)
-		return nil
-	}
+	_, err = io.Copy(w, resp.Body)
 
+	if err != nil {
+		logger.Log.Errorw("Failed to stream response body", "error", err)
+	}
 	return nil
-}
-
-func sendInternalRequest(r *http.Request, accessToken string, userSecret string, reqURL string, rc types.RouteConfig, body []byte) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(r.Context(), r.Method, reqURL, bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-
-	if contentType := r.Header.Get("Content-Type"); contentType != "" {
-		req.Header.Set("Content-Type", contentType)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("X-User-Secret", userSecret)
-
-	// send request
-	serverCert := rc.Env.ClusterConnectorCert.CA()
-	tlsConfig := shared.InitTLSConfig()
-	tlsConfig.Certificates = []tls.Certificate{}
-	tlsConfig.RootCAs = x509.NewCertPool()
-	tlsConfig.RootCAs.AddCert(serverCert)
-	cert := rc.Env.ManagementAPICert.KeyPair()
-	tlsConfig.GetClientCertificate = func(info *tls.CertificateRequestInfo) (*tls.Certificate, error) {
-		// GetClientCertificate is called if not nil instead of performing the default selection of an appropriate
-		// certificate from the `Certificates` list. We only have one-key pair to send, and we always want to send it
-		// because this is what uniquely identifies the caller to the server.
-		return &cert, nil
-	}
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: tlsConfig,
-		},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
 }
