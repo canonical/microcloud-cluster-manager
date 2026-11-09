@@ -9,6 +9,7 @@ import {
 import classnames from "classnames";
 import Logo from "./Logo";
 import NavLink from "components/NavLink";
+import ResourceIcon from "components/ResourceIcon";
 import { useMenuCollapsed } from "context/menuCollapsed";
 import { isDimensionBelow, logout } from "util/helpers";
 import { useAuth } from "context/auth";
@@ -83,13 +84,27 @@ const Navigation: FC = () => {
                 <NavLink
                   to={`/ui/clusters`}
                   title={`Clusters List`}
+                  ignoreUrlMatches={["/ui/cluster-links"]}
                   onClick={softToggleMenu}
                 >
-                  <Icon
+                  <ResourceIcon
                     className="is-light p-side-navigation__icon"
-                    name="cluster-host"
+                    type="cluster"
                   />
                   Clusters
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to={`/ui/cluster-links`}
+                  title={`Cluster Links`}
+                  onClick={softToggleMenu}
+                >
+                  <ResourceIcon
+                    className="is-light p-side-navigation__icon"
+                    type="cluster-link"
+                  />
+                  Cluster links
                 </NavLink>
               </li>
               <li>
@@ -98,9 +113,9 @@ const Navigation: FC = () => {
                   title={`Settings`}
                   onClick={softToggleMenu}
                 >
-                  <Icon
+                  <ResourceIcon
                     className="is-light p-side-navigation__icon"
-                    name="settings"
+                    type="setting"
                   />
                   Settings
                 </NavLink>

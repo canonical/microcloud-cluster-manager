@@ -16,9 +16,17 @@ interface Props {
   cluster: Cluster;
   link: ClusterLink;
   targetCluster?: Cluster;
+  hasLabel?: boolean;
+  disabled?: boolean;
 }
 
-const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
+const DeleteClusterLinkBtn: FC<Props> = ({
+  cluster,
+  link,
+  targetCluster,
+  hasLabel = true,
+  disabled = false,
+}) => {
   const queryClient = useQueryClient();
   const toastNotification = useToastNotification();
   const [isLoading, setLoading] = useState(false);
@@ -26,30 +34,47 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
   const isBidirectional = link.type.toLowerCase() === "bidirectional";
   const canCleanTarget = !!targetCluster?.tunnel_registered;
 
-  const deleteTargetEnd = async (target: Cluster) => {
-    const targetLinks = await fetchClusterLinks(target.name);
-    const reverseLink = getReverseLink(targetLinks, cluster);
-    if (!reverseLink) {
-      throw new Error(
-        `No cluster link pointing back at ${cluster.name} found on cluster ${target.name}.`,
-      );
-    }
-
-    await deleteClusterLink(target.name, reverseLink.name);
+  const finish = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: [queryKeys.clusters],
+    });
+    setDeleteBothEnds(true);
+    setLoading(false);
   };
 
   const handleDelete = async () => {
     setLoading(true);
     const removeTargetEnd = isBidirectional && deleteBothEnds && canCleanTarget;
     try {
-      await deleteClusterLink(cluster.name, link.name);
-
+      let reverseLinkName: string | undefined;
       if (targetCluster && removeTargetEnd) {
-        await deleteTargetEnd(targetCluster);
+        const targetLinks = await fetchClusterLinks(targetCluster.name);
+        const reverseLink = getReverseLink(targetLinks, cluster);
+        if (!reverseLink) {
+          throw new Error(
+            `No cluster link pointing back at ${cluster.name} found on cluster ${targetCluster.name}.`,
+          );
+        }
+        reverseLinkName = reverseLink.name;
+      }
+
+      await deleteClusterLink(cluster.name, link.name);
+      if (targetCluster && reverseLinkName) {
+        try {
+          await deleteClusterLink(targetCluster.name, reverseLinkName);
+        } catch (error) {
+          // The source end is already gone, so a generic failure would be misleading.
+          toastNotification.failure(
+            `Deleted cluster link ${link.name} on cluster ${cluster.name}, but unable to delete the reverse link ${reverseLinkName} on cluster ${targetCluster.name}.`,
+            error,
+          );
+          await finish();
+          return;
+        }
       }
 
       toastNotification.success(
-        removeTargetEnd ? (
+        reverseLinkName ? (
           <>
             Deleted cluster link between <strong>{cluster.name}</strong> and{" "}
             <strong>{targetCluster?.name}</strong>.
@@ -67,17 +92,17 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
       );
     }
 
-    await queryClient.invalidateQueries({
-      queryKey: [queryKeys.clusters],
-    });
-    setDeleteBothEnds(true);
-    setLoading(false);
+    await finish();
   };
 
   return (
     <ConfirmationButton
       className="u-no-margin--bottom has-icon"
+      appearance={hasLabel ? "default" : "base"}
       loading={isLoading}
+      disabled={disabled || undefined}
+      aria-label={hasLabel ? undefined : `Delete cluster link ${link.name}`}
+      onHoverText={hasLabel ? undefined : "Delete"}
       confirmationModalProps={{
         title: "Delete cluster link",
         children: (
@@ -113,7 +138,7 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
       shiftClickEnabled
     >
       <Icon name="delete" />
-      <span>Delete</span>
+      {hasLabel && <span>Delete</span>}
     </ConfirmationButton>
   );
 };

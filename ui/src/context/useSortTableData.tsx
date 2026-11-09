@@ -3,14 +3,22 @@ import type { MainTableRow } from "@canonical/react-components/dist/components/M
 
 type SortDirection = "ascending" | "descending";
 
-interface Props {
-  rows: MainTableRow[];
+type SortRows<T> = (
+  rows: T[],
+  sortKey: string | null | undefined,
+  direction: SortDirection,
+) => T[];
+
+interface Props<T> {
+  rows: T[];
+  // Sorts the rows. It has to use the same order as the sortFunction of the MainTable.
+  sortRows: SortRows<T>;
   defaultSort?: string;
   defaultSortDirection?: SortDirection;
 }
 
-interface SortTableData {
-  rows: MainTableRow[];
+interface SortTableData<T> {
+  rows: T[];
   updateSort: (sortKey?: string | null) => void;
 }
 
@@ -48,11 +56,14 @@ export const sortTableRows = (
 // sort order would only apply within a page. This hook sorts all rows before they are paginated. Pass the returned
 // rows to TablePagination, and updateSort to MainTable as onUpdateSort. updateSort follows the same cycle as the
 // MainTable headers: unsorted -> ascending -> descending -> unsorted.
-const useSortTableData = ({
+//
+// Use sortTableRows to sort MainTable rows by their sort data.
+const useSortTableData = <T,>({
   rows,
+  sortRows,
   defaultSort,
   defaultSortDirection = "descending",
-}: Props): SortTableData => {
+}: Props<T>): SortTableData<T> => {
   const [sort, setSort] = useState<{
     key?: string | null;
     direction: SortDirection;
@@ -67,7 +78,7 @@ const useSortTableData = ({
   };
 
   return {
-    rows: sortTableRows(rows, sort.key, sort.direction),
+    rows: sortRows(rows, sort.key, sort.direction),
     updateSort,
   };
 };

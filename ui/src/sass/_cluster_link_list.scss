@@ -1,0 +1,309 @@
+.scrollable-table .cluster-link-table {
+  margin: 0;
+
+  th,
+  td {
+    display: table-cell;
+    vertical-align: top;
+  }
+
+  thead,
+  tbody {
+    display: block;
+    overflow: hidden auto;
+    scrollbar-gutter: stable;
+  }
+
+  thead tr,
+  tbody tr {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .cluster {
+    width: 9rem;
+  }
+
+  .type {
+    width: 9.5rem;
+
+    // keep the neutral border on the read-only type chip; vanilla removes it
+    // for filter-panel chips, but here it is a static label
+    .p-chip.is-readonly {
+      border-color: $colors--theme--border-neutral;
+    }
+  }
+
+  // name, target, description and addresses share the remaining space equally
+  .addresses {
+    white-space: nowrap;
+
+    .u-truncate {
+      display: block;
+      max-width: 100%;
+    }
+
+    .p-contextual-menu {
+      display: block;
+    }
+  }
+
+  .used-by {
+    text-align: right;
+    width: 6.5rem;
+  }
+
+  @media screen and (width <= 1500px) {
+    .description {
+      display: none;
+    }
+  }
+
+  @media screen and (min-width: $breakpoint-small) and (max-width: $breakpoint-large) {
+    .used-by,
+    .addresses {
+      display: none;
+    }
+
+    .cluster {
+      width: 7rem;
+    }
+  }
+
+  .cluster-link-toggle {
+    text-align: center;
+    width: 2.5rem;
+
+    button {
+      background-color: transparent;
+      display: inline-block;
+      width: auto;
+
+      &:hover,
+      &:active,
+      &:focus {
+        background-color: transparent;
+      }
+    }
+  }
+
+  .actions {
+    text-align: right;
+    width: 4rem;
+
+    .actions-list button {
+      padding-bottom: 0;
+      padding-top: 0;
+    }
+  }
+
+  .cluster-link-row .name {
+    white-space: nowrap;
+
+    > .u-truncate {
+      display: inline-block;
+      max-width: 100%;
+      vertical-align: middle;
+    }
+  }
+
+  .cluster-link-group-row td {
+    background-color: $colors--theme--background-default;
+    font-weight: $font-weight-bold;
+    padding-bottom: $spv--x-small;
+    padding-top: $spv--x-small;
+  }
+
+  .cluster-link-group-name {
+    overflow: visible;
+    white-space: nowrap;
+
+    a {
+      vertical-align: middle;
+    }
+  }
+
+  @media screen and (max-width: $breakpoint-large) {
+    .used-by {
+      text-align: inherit;
+    }
+  }
+}
+
+.cluster-link-field-label {
+  display: none;
+}
+
+@media screen and (width < $breakpoint-small) {
+  .cluster-link-page {
+    .page-header,
+    .page-header__left {
+      flex-direction: column;
+      gap: $spv--small;
+    }
+
+    .page-header__left,
+    .page-header__base-actions {
+      max-width: 100%;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .page-header .page-header__left {
+      .page-header__search,
+      .p-search-and-filter__panel {
+        max-width: 100%;
+        min-width: 0;
+        width: 100%;
+      }
+    }
+
+    .page-header__base-actions > div {
+      float: none;
+    }
+
+    .page-header__base-actions button {
+      white-space: normal;
+    }
+  }
+
+  .scrollable-table .cluster-link-table {
+    display: block;
+    overflow: visible;
+
+    thead {
+      display: none;
+    }
+
+    tbody {
+      display: block;
+      overflow: hidden auto;
+      scrollbar-gutter: auto;
+      width: 100%;
+    }
+
+    tbody tr {
+      display: block;
+      width: 100%;
+    }
+
+    td {
+      display: block;
+      min-width: 0;
+      padding: $spv--x-small $sph--small;
+      width: auto;
+    }
+
+    .cluster-link-field-label {
+      color: $colors--theme--text-muted;
+      display: block;
+      font-size: 0.875rem;
+      margin-bottom: $spv--x-small;
+      white-space: normal;
+    }
+
+    tbody tr.cluster-link-group-row {
+      align-items: center;
+      display: grid;
+      grid-template-columns: 2.5rem minmax(0, 1fr);
+      margin-top: $spv--small;
+
+      td:last-child {
+        display: none;
+      }
+
+      .cluster-link-toggle {
+        overflow: visible;
+        padding-left: 0;
+        padding-right: 0;
+        text-align: left;
+        width: auto;
+      }
+    }
+
+    .cluster-link-group-name {
+      overflow-wrap: anywhere;
+      white-space: normal;
+      width: auto;
+    }
+
+    tbody tr.cluster-link-row {
+      border: 1px solid $colors--theme--border-default;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 3rem;
+      margin-bottom: $spv--small;
+      padding: $spv--small;
+
+      > .cluster-link-toggle,
+      > .cluster,
+      > .description,
+      > .used-by {
+        display: none;
+      }
+
+      .name {
+        grid-column: 1;
+        grid-row: 1;
+      }
+
+      .type {
+        grid-column: 1;
+        grid-row: 2;
+        width: auto;
+      }
+
+      .target {
+        grid-column: 1;
+        grid-row: 3;
+      }
+
+      .addresses {
+        grid-column: 1 / -1;
+        grid-row: 4;
+      }
+
+      .actions {
+        grid-column: 2;
+        grid-row: 1;
+        text-align: right;
+        width: auto;
+      }
+    }
+  }
+}
+
+.cluster-link-unknown-target-icon {
+  margin-left: $sph--x-small;
+}
+
+.cluster-link-addresses-more {
+  color: $colors--theme--text-muted;
+
+  &:hover,
+  &:active {
+    color: $colors--theme--text-muted;
+  }
+}
+
+.cluster-link-addresses-more,
+.cluster-link-name-link,
+.cluster-link-source-link {
+  &:hover,
+  &:active {
+    background-color: transparent;
+    text-decoration: none;
+  }
+
+  &:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+.cluster-link-addresses-menu {
+  max-width: calc(100vw - 2rem);
+  overflow-x: auto;
+  padding: $spv--small $sph--large;
+  white-space: nowrap;
+  width: max-content;
+}

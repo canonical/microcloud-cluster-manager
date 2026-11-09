@@ -239,7 +239,7 @@ test.describe("Cluster links tab", () => {
     await page.goto(`/ui/cluster/${cluster}/cluster-links`);
     await expect(page.getByText("No cluster links found")).toBeVisible();
     await expect(
-      page.getByText("There are no cluster links on this server."),
+      page.getByText("There are no cluster links on this cluster."),
     ).toBeVisible();
   });
 
