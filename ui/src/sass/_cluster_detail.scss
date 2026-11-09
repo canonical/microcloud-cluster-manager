@@ -102,7 +102,7 @@
 
     height: 16px;
 
-    // centres the icon on an input
+    // centers the icon on an input
     margin-bottom: calc(($input-height - 16px) / 2);
     width: 16px;
 
@@ -118,6 +118,10 @@
 .cluster-link-types {
   &--radio-buttons {
     padding-left: $sph--small;
+
+    > .p-radio-wrapper:last-child .p-form-help-text {
+      margin-bottom: 0;
+    }
   }
 
   &__help {
@@ -125,10 +129,44 @@
   }
 }
 
+.read-only-label {
+  > img {
+    margin-left: $sph--small;
+  }
+}
+
 .read-only-input {
   // transparent keeps the same height as editable inputs
   border-bottom-color: transparent;
-  color: #000;
+  color: var(--vf-color-text-default);
   opacity: 1;
-  -webkit-text-fill-color: #000;
+  -webkit-text-fill-color: var(--vf-color-text-default);
+}
+
+.create-cluster-link-panel,
+.edit-cluster-link-panel {
+  .cluster-link-types--radio-buttons,
+  .cluster-link-type-summary {
+    margin-bottom: 0;
+  }
+
+  .cluster-link-type-summary > :last-child {
+    margin-bottom: 0;
+  }
+
+  hr {
+    margin-bottom: $spv--small;
+    margin-top: $spv--x-large;
+  }
+
+  hr + .p-muted-heading {
+    margin-top: 0;
+    padding-top: 0;
+  }
+}
+
+.edit-cluster-link-panel {
+  .link-type-label {
+    margin-bottom: $spv--small;
+  }
 }

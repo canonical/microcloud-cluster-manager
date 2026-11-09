@@ -24,6 +24,7 @@ import ClusterSelector from "pages/clusters/ClusterSelector";
 import { getLinkIconType, LINK_TYPES } from "pages/clusters/clusterLinkTypes";
 import ReadOnlyInput from "components/forms/ReadOnlyInput";
 import ResourceIcon from "components/ResourceIcon";
+import { isPublic } from "util/clusterLinks";
 
 const CreateClusterLinkPanel: FC = () => {
   const panelParams = usePanelParams();
@@ -59,7 +60,7 @@ const CreateClusterLinkPanel: FC = () => {
       description: values.description,
       type: values.type,
     };
-    if (values.type === "public" && values.useDifferentTargetAddress) {
+    if (isPublic(values) && values.useDifferentTargetAddress) {
       payload.remote_address = values.targetAddress;
     }
 
@@ -139,7 +140,7 @@ const CreateClusterLinkPanel: FC = () => {
           <SidePanel.HeaderTitle>Create cluster link</SidePanel.HeaderTitle>
         </SidePanel.Header>
         <NotificationRow className="u-no-padding" />
-        <SidePanel.Content className="u-no-padding">
+        <SidePanel.Content className="u-no-padding create-cluster-link-panel">
           <ScrollableContainer
             dependencies={[notify.notification]}
             belowIds={["panel-footer"]}
@@ -173,11 +174,7 @@ const CreateClusterLinkPanel: FC = () => {
                 <hr />
                 <h2 className="p-muted-heading">Details</h2>
                 <div className="cluster-link-endpoints">
-                  <ReadOnlyInput
-                    id="source-cluster"
-                    label="Source"
-                    value={cluster.name}
-                  />
+                  <ReadOnlyInput label="Source" value={cluster.name} />
                   <span
                     className="cluster-link-endpoints__arrow"
                     aria-hidden="true"
@@ -205,7 +202,7 @@ const CreateClusterLinkPanel: FC = () => {
                     />
                   </div>
                 </div>
-                {formik.values.type === "public" && (
+                {isPublic(formik.values) && (
                   <>
                     <CheckboxInput
                       id="use-different-target-address"
@@ -246,7 +243,6 @@ const CreateClusterLinkPanel: FC = () => {
                   </>
                 )}
                 <ReadOnlyInput
-                  id="name"
                   label="Link name"
                   value={formik.values.name}
                   placeholder="target-link"

@@ -1,4 +1,5 @@
 import type { Cluster, ClusterLink } from "types/cluster";
+import type { LxdIdentity } from "types/permissions";
 
 const getLinkAddresses = (link: ClusterLink): string[] => {
   return link.config?.["volatile.addresses"]?.split(",") ?? [];
@@ -47,3 +48,19 @@ export const isBidirectional = (link: ClusterLink): boolean =>
 
 export const isUnidirectional = (link: ClusterLink): boolean =>
   link.type.toLowerCase() === "unidirectional";
+
+export const isPublic = (link: ClusterLink): boolean =>
+  link.type.toLowerCase() === "public";
+
+export const getLinkIdentity = (
+  identities: LxdIdentity[],
+  linkName: string | undefined | null,
+) => {
+  if (!linkName) return undefined;
+
+  return identities.find(
+    (identity) =>
+      identity.name === linkName &&
+      identity.type.startsWith("Cluster link certificate"),
+  );
+};
