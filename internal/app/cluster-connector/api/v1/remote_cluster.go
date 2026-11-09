@@ -88,6 +88,11 @@ var RemoteClusterInternal = types.RouteGroup{
 	},
 	Endpoints: []types.Endpoint{
 		{
+			Path:    "{remoteClusterName}/auth-groups",
+			Method:  http.MethodGet,
+			Handler: remoteClusterAuthGroupsGet,
+		},
+		{
 			Path:    "{remoteClusterName}/cluster-links",
 			Method:  http.MethodGet,
 			Handler: remoteClusterLinksGet,
@@ -1132,6 +1137,23 @@ func checkTunnelRequirements(rc types.RouteConfig, r *http.Request, clusterName 
 	}
 
 	return nil
+}
+
+func remoteClusterAuthGroupsGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.BadRequest(err).Render(w, r)
+		}
+
+		resp, err := sendTunnelRequest(rc, r, http.MethodGet, "/1.0/auth/groups?recursion=1", remoteClusterName, nil)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		writeResponse(w, *resp)
+		return nil
+	}
 }
 
 func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {

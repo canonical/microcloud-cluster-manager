@@ -52,6 +52,11 @@ var RemoteCluster = types.RouteGroup{
 			Handler: remoteClusterPatch,
 		},
 		{
+			Path:    "{remoteClusterName}/auth-groups",
+			Method:  http.MethodGet,
+			Handler: remoteClusterAuthGroupsGet,
+		},
+		{
 			Path:    "{remoteClusterName}/cluster-links",
 			Method:  http.MethodGet,
 			Handler: remoteClusterLinksGet,
@@ -278,6 +283,12 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 	})
 
 	return remoteClusters, nil
+}
+
+func remoteClusterAuthGroupsGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		return forwardToClusterConnector(rc, w, r, "/auth-groups")
+	}
 }
 
 func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
