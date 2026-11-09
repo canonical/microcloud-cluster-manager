@@ -91,7 +91,7 @@ jobs:
 
   build-rock:
     name: Build Rock
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       image-name: ${{ steps.rock-to-docker.outputs.image-name }}
     steps:
@@ -215,7 +215,7 @@ jobs:
 
   ui-e2e:
     name: UI E2E tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
