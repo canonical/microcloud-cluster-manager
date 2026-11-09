@@ -1,4 +1,3 @@
-import type { IconName } from "@canonical/ds-assets";
 import type { FC } from "react";
 import DsIcon from "components/DsIcon";
 
@@ -6,15 +5,25 @@ export type ResourceIconType =
   | "cluster"
   | "cluster-link-bidirectional"
   | "cluster-link-unidirectional"
-  | "cluster-link-public";
+  | "cluster-link-public"
+  | "cluster-link"
+  | "setting";
 
-// Icons available in @canonical/ds-assets — rendered via DsIcon (<svg><use>).
-// Move entries here from vanillaResourceIcons as ds-assets gains coverage.
-const dsResourceIcons: Record<ResourceIconType, IconName> = {
+type DsIconName =
+  | "cluster-host"
+  | "swap"
+  | "arrow-right"
+  | "exposed"
+  | "applications"
+  | "settings";
+
+const dsResourceIcons: Record<ResourceIconType, DsIconName> = {
   cluster: "cluster-host",
   "cluster-link-bidirectional": "swap",
   "cluster-link-unidirectional": "arrow-right",
   "cluster-link-public": "exposed",
+  "cluster-link": "applications",
+  setting: "settings",
 };
 
 interface Props {

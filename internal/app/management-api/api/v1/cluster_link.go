@@ -75,7 +75,9 @@ func clusterLinksDeadline(rc types.RouteConfig) time.Duration {
 	// The server closes the connection once its write timeout passed, so the response must be ready before that.
 	writeTimeout := time.Duration(rc.Env.WriteTimeout) * time.Second
 	if writeTimeout > 0 {
-		deadline = min(deadline, max(writeTimeout-clusterLinksResponseMargin, clusterLinksTimeout))
+		// For very short write timeouts, reserve half the budget so the collection deadline stays positive.
+		margin := min(clusterLinksResponseMargin, writeTimeout/2)
+		deadline = min(deadline, writeTimeout-margin)
 	}
 
 	return deadline

@@ -99,9 +99,12 @@ export const convertToISOFormat = (datetimeLocalString: string) => {
   return date.toISOString();
 };
 
-// this works only for words that form the plural by adding an "s" at the end
-export const pluralize = (word: string, count: number): string => {
-  return count === 1 ? word : `${word}s`;
+export const pluralize = (
+  word: string,
+  count: number,
+  plural = `${word}s`,
+): string => {
+  return count === 1 ? word : plural;
 };
 
 export const statusCount = (

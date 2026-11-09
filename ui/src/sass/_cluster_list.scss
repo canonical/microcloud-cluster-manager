@@ -43,6 +43,10 @@
   .actions {
     text-align: right;
     width: 4rem;
+
+    .p-contextual-menu {
+      margin-top: -0.3rem;
+    }
   }
 
   @media screen and (max-width: $breakpoint-large) {
@@ -63,5 +67,17 @@
     cursor: pointer;
     padding-left: $sph--small;
     width: fit-content;
+  }
+}
+
+.cluster-actions-menu .p-contextual-menu__link {
+  border: 0;
+  text-align: left;
+  width: 100%;
+
+  &.is-disabled {
+    color: var(--vf-color-text-muted);
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 }

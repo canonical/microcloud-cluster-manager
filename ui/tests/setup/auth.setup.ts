@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test as setup } from "../fixtures/test-extension";
 import { authFile } from "../fixtures/constants";
+import { gotoURL } from "../helpers/navigate";
 
 const loginUser = async (page: Page, sso: boolean) => {
   await page.getByRole("link", { name: "Login" }).click();
@@ -15,7 +16,7 @@ const loginUser = async (page: Page, sso: boolean) => {
 };
 
 setup("authenticate", async ({ page }) => {
-  await page.goto("/ui");
+  await gotoURL(page, "/ui");
   await loginUser(page, true);
   // Check logout functionality
   await page.getByText("Log out").click();
