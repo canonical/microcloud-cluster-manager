@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -155,9 +156,14 @@ var RemoteCluster = types.RouteGroup{
 
 func remoteClustersGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		withLinks, err := parseWithLinks(r)
+		if err != nil {
+			return response.BadRequest(err).Render(w, r)
+		}
+
 		var dbRemoteClusterDetails []store.RemoteClusterWithDetail
 
-		err := rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
+		err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
 			var err error
 			dbRemoteClusterDetails, err = store.GetRemoteClustersWithDetails(ctx, tx)
 			return err
@@ -172,8 +178,27 @@ func remoteClustersGet(rc types.RouteConfig) types.EndpointHandler {
 			return response.InternalError(err).Render(w, r)
 		}
 
+		if withLinks {
+			addClusterLinks(rc, r, dbRemoteClusterDetails, result)
+		}
+
 		return response.SyncResponse(true, result).Render(w, r)
 	}
+}
+
+// parseWithLinks reports whether the caller requested cluster links in the remote cluster list.
+func parseWithLinks(r *http.Request) (bool, error) {
+	value := r.URL.Query().Get("with-links")
+	if value == "" {
+		return false, nil
+	}
+
+	withLinks, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, fmt.Errorf("invalid with-links value %q", value)
+	}
+
+	return withLinks, nil
 }
 
 func remoteClusterGet(rc types.RouteConfig) types.EndpointHandler {
@@ -195,7 +220,7 @@ func remoteClusterGet(rc types.RouteConfig) types.EndpointHandler {
 		}
 
 		if dbRemoteClusterDetail == nil {
-			return response.NotFound(fmt.Errorf("RemoteCluster not found")).Render(w, r)
+			return response.NotFound(fmt.Errorf("remote cluster %q not found", remoteClusterName)).Render(w, r)
 		}
 
 		result, err := toRemoteClustersAPI([]store.RemoteClusterWithDetail{*dbRemoteClusterDetail})
