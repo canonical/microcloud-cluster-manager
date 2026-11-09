@@ -76,7 +76,7 @@ func Forward(rc types.RouteConfig, r *http.Request, remoteClusterName string, cl
 	isRetriable := r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions
 	needsTokenRefresh := isRetriable && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden)
 	if needsTokenRefresh {
-		refreshCtx, cancelRefresh := context.WithTimeout(context.Background(), 30*time.Second)
+		refreshCtx, cancelRefresh := context.WithTimeout(r.Context(), 30*time.Second)
 		defer cancelRefresh()
 		accessToken, err = sessionProvider.RefreshSessionTokens(refreshCtx)
 		if err != nil {

@@ -8,6 +8,12 @@ export const fetchClusters = async (): Promise<Cluster[]> => {
     .then((data) => (data as LxdApiResponse<Cluster[]>).metadata ?? []);
 };
 
+export const fetchClustersWithLinks = async (): Promise<Cluster[]> => {
+  return fetch("/1.0/remote-cluster?with-links=1")
+    .then(handleResponse)
+    .then((data) => (data as LxdApiResponse<Cluster[]>).metadata ?? []);
+};
+
 export const fetchCluster = async (
   remoteClusterName: string,
 ): Promise<Cluster> => {

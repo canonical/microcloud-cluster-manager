@@ -36,6 +36,9 @@ export interface Cluster {
   status: string;
   tunnel_registered: boolean;
   lxd_url: string;
+  // Only set when the clusters are listed with their cluster links.
+  cluster_links?: ClusterLink[];
+  cluster_links_error?: string;
 }
 
 export type ClusterInstanceStatus = "Running" | "Frozen" | "Error" | "Stopped";
@@ -50,6 +53,7 @@ export type ClusterPercentiles = 0.5 | 0.75 | 0.8 | 0.9;
 
 export interface ClusterLink {
   name: string;
+  description?: string;
   type: "bidirectional" | "unidirectional" | "public";
   config?: {
     "volatile.addresses"?: string;
@@ -57,6 +61,7 @@ export interface ClusterLink {
     "volatile.pending_address"?: string;
     "volatile.pending_certificate"?: string;
   };
+  used_by?: string[];
 }
 
 export interface ClusterLinkPost {

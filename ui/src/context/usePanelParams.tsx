@@ -21,6 +21,13 @@ export const panels = {
 
 type ParamMap = Record<string, string>;
 
+const deletePanelParams = (params: URLSearchParams): void => {
+  params.delete("panel");
+  params.delete("cluster");
+  params.delete("clusters");
+  params.delete("focusField");
+};
+
 const usePanelParams = (): PanelHelper => {
   const [params, setParams] = useSearchParams();
 
@@ -29,7 +36,9 @@ const usePanelParams = (): PanelHelper => {
   };
 
   const setPanelParams = (panel: string, args: ParamMap = {}) => {
-    const newParams = new URLSearchParams();
+    // keep the search params of the list behind the panel e.g. params from the search bar
+    const newParams = new URLSearchParams(params);
+    deletePanelParams(newParams);
     newParams.set("panel", panel);
     for (const [key, value] of Object.entries(args)) {
       if (value) {
@@ -44,10 +53,7 @@ const usePanelParams = (): PanelHelper => {
     const newParams = new URLSearchParams(params);
     // we only want to remove search params set when opening the panel
     // pre-existing search params should be kept e.g. params from the search bar
-    newParams.delete("panel");
-    newParams.delete("cluster");
-    newParams.delete("clusters");
-    newParams.delete("focusField");
+    deletePanelParams(newParams);
     setParams(newParams);
     craftResizeEvent();
   };
