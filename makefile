@@ -75,6 +75,11 @@ clean:
 dev:
 	./scripts/run-backend.sh
 
+# start the backend without building the UI
+.PHONY: backend
+backend:
+	BUILD_TARGET=build-backend ./scripts/run-backend.sh
+
 # ====================================================================
 # UI utilities
 .PHONY: ui
@@ -156,6 +161,12 @@ copy-ui:
 # create a binary "app" located in project root
 .PHONY: build
 build: build-ui copy-ui
+	$(GO) build -C cmd -o $(GO_BIN) ./
+
+# create a binary "app" without building or embedding the UI
+.PHONY: build-backend
+build-backend:
+	rm -rf $(GO_UI_FOLDER)/ui
 	$(GO) build -C cmd -o $(GO_BIN) ./
 
 .PHONY: build-coverage
