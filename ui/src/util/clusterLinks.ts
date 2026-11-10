@@ -41,3 +41,9 @@ export const getReverseLink = (
     );
   });
 };
+
+export const isBidirectional = (link: ClusterLink): boolean =>
+  link.type.toLowerCase() === "bidirectional";
+
+export const isUnidirectional = (link: ClusterLink): boolean =>
+  link.type.toLowerCase() === "unidirectional";

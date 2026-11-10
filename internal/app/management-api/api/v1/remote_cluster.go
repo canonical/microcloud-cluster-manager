@@ -12,11 +12,14 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/shared"
+	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/auth"
+	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/cluster_link"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
@@ -305,6 +308,10 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 	}
 }
 
+// remoteClusterLinkDelete deletes a cluster link on the given remote cluster. When the removeReverseEdge query
+// parameter is true, it also removes the other edge of the link on the linked cluster: the reverse cluster link for
+// bidirectional links, or the cluster link identity for unidirectional links. The link type and the linked cluster
+// are resolved from the link on the source cluster.
 func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
@@ -313,49 +320,223 @@ func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 		}
 
 		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName)
-		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+
+		removeReverseEdge := shared.IsTrue(r.URL.Query().Get("removeReverseEdge"))
+		if !removeReverseEdge {
+			return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+		}
+
+		sourceClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		var sourceLinks []api.ClusterLink
+		err = requestClusterConnector(rc, r, http.MethodGet, sourceClusterName, "/cluster-links", &sourceLinks)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		sourceLink := cluster_link.FindLinkByName(sourceLinks, clusterLinkName)
+		if sourceLink == nil {
+			return response.NotFound(fmt.Errorf("cluster link %q not found on cluster %q", clusterLinkName, sourceClusterName)).Render(w, r)
+		}
+
+		linkType := strings.ToLower(sourceLink.Type)
+		if linkType != api.ClusterLinkTypeBidirectional && linkType != api.ClusterLinkTypeUnidirectional {
+			return response.BadRequest(fmt.Errorf("removing the reverse edge is only supported for %s and %s cluster links", api.ClusterLinkTypeBidirectional, api.ClusterLinkTypeUnidirectional)).Render(w, r)
+		}
+
+		var clusters []store.RemoteClusterWithDetail
+		err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
+			var err error
+			clusters, err = store.GetRemoteClustersWithDetails(ctx, tx)
+			return err
+		})
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		var sourceCluster *store.RemoteClusterWithDetail
+		for i := range clusters {
+			if clusters[i].Name == sourceClusterName {
+				sourceCluster = &clusters[i]
+				break
+			}
+		}
+
+		if sourceCluster == nil {
+			return response.NotFound(fmt.Errorf("remote cluster %q not found", sourceClusterName)).Render(w, r)
+		}
+
+		targetCluster := findLinkedCluster(*sourceLink, clusters, sourceClusterName)
+		if targetCluster == nil {
+			return response.BadRequest(fmt.Errorf("cluster link %q on cluster %q does not point at a registered cluster", clusterLinkName, sourceClusterName)).Render(w, r)
+		}
+
+		targetClusterName := targetCluster.Name
+
+		// Remove the target edge before the source link. A failure on the target then leaves the source link in
+		// place, so the deletion can be retried. Target cleanup treats an already missing edge as done, so a retry
+		// after the target edge was removed but the source link deletion failed also succeeds.
+		if linkType == api.ClusterLinkTypeBidirectional {
+			err = deleteReverseClusterLink(rc, r, sourceCluster, targetClusterName)
+		} else {
+			err = deleteClusterLinkIdentity(rc, r, sourceClusterName, targetClusterName)
+		}
+
+		if err != nil {
+			logger.Log.Errorw("Failed to delete the target edge of a cluster link", "source_cluster", sourceClusterName, "target_cluster", targetClusterName, "cluster_link", clusterLinkName, "type", linkType, "error", err)
+			return response.SmartError(fmt.Errorf("failed to delete the link edge on cluster %q, cluster link %q on cluster %q was not deleted: %w", targetClusterName, clusterLinkName, sourceClusterName, err)).Render(w, r)
+		}
+
+		err = requestClusterConnector(rc, r, http.MethodDelete, sourceClusterName, clusterConnectorPath, nil)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		return response.EmptySyncResponse.Render(w, r)
 	}
+}
+
+// findLinkedCluster resolves the registered cluster the link points at, other than the source cluster. A match by
+// cluster UUID is preferred over a match by address.
+func findLinkedCluster(link api.ClusterLink, clusters []store.RemoteClusterWithDetail, sourceClusterName string) *store.RemoteClusterWithDetail {
+	for i := range clusters {
+		if clusters[i].Name != sourceClusterName && cluster_link.LinkPointsAt(link, clusters[i].ClusterUUID, "") {
+			return &clusters[i]
+		}
+	}
+
+	for i := range clusters {
+		if clusters[i].Name != sourceClusterName && cluster_link.LinkPointsAt(link, "", clusters[i].LXDURL) {
+			return &clusters[i]
+		}
+	}
+
+	return nil
+}
+
+// deleteReverseClusterLink deletes the bidirectional cluster link on the target cluster that points back at the
+// source cluster. A missing reverse link is treated as already deleted.
+func deleteReverseClusterLink(rc types.RouteConfig, r *http.Request, sourceCluster *store.RemoteClusterWithDetail, targetClusterName string) error {
+	var targetLinks []api.ClusterLink
+	err := requestClusterConnector(rc, r, http.MethodGet, targetClusterName, "/cluster-links", &targetLinks)
+	if err != nil {
+		return err
+	}
+
+	reverseLink := cluster_link.FindReverseLink(targetLinks, sourceCluster.ClusterUUID, sourceCluster.LXDURL)
+	if reverseLink == nil {
+		logger.Log.Infow("No reverse cluster link found on target cluster, assuming it was already deleted", "source_cluster", sourceCluster.Name, "target_cluster", targetClusterName)
+		return nil
+	}
+
+	err = requestClusterConnector(rc, r, http.MethodDelete, targetClusterName, "/cluster-links/"+url.PathEscape(reverseLink.Name), nil)
+	if api.StatusErrorCheck(err, http.StatusNotFound) {
+		return nil
+	}
+
+	return err
+}
+
+// deleteClusterLinkIdentity deletes the cluster link identity on the target cluster that holds the certificate of
+// the source cluster. A missing identity is treated as already deleted.
+func deleteClusterLinkIdentity(rc types.RouteConfig, r *http.Request, sourceClusterName string, targetClusterName string) error {
+	var sourceServer api.Server
+	err := requestClusterConnector(rc, r, http.MethodGet, sourceClusterName, "/info", &sourceServer)
+	if err != nil {
+		return err
+	}
+
+	fingerprint := sourceServer.Environment.CertificateFingerprint
+	if fingerprint == "" && sourceServer.Environment.Certificate != "" {
+		fingerprint, err = shared.CertFingerprintStr(sourceServer.Environment.Certificate)
+		if err != nil {
+			return api.StatusErrorf(http.StatusBadGateway, "cluster %q reported an invalid certificate: %v", sourceClusterName, err)
+		}
+	}
+
+	if fingerprint == "" {
+		return api.StatusErrorf(http.StatusBadGateway, "cluster %q did not report a certificate", sourceClusterName)
+	}
+
+	var identities []api.Identity
+	err = requestClusterConnector(rc, r, http.MethodGet, targetClusterName, "/auth/identities", &identities)
+	if err != nil {
+		return err
+	}
+
+	identity := cluster_link.FindIdentity(identities, fingerprint)
+	if identity == nil {
+		logger.Log.Infow("No cluster link identity found on target cluster, assuming it was already deleted", "source_cluster", sourceClusterName, "target_cluster", targetClusterName)
+		return nil
+	}
+
+	err = requestClusterConnector(rc, r, http.MethodDelete, targetClusterName, "/auth/identities/tls/"+url.PathEscape(identity.Identifier), nil)
+	if api.StatusErrorCheck(err, http.StatusNotFound) {
+		return nil
+	}
+
+	return err
+}
+
+// requestClusterConnector sends a request without a body for the given remote cluster to the cluster connector and
+// decodes the metadata of the response into target, unless target is nil. A non-2xx response is returned as an error
+// carrying the upstream status code.
+func requestClusterConnector(rc types.RouteConfig, r *http.Request, method string, remoteClusterName string, clusterConnectorPath string, target any) error {
+	resp, err := sendToClusterConnector(rc, r, method, remoteClusterName, clusterConnectorPath, nil)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			logger.Log.Errorf("failed to close response body: %v", err)
+		}
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response for cluster %q: %w", remoteClusterName, err)
+	}
+
+	var lxdResponse struct {
+		Metadata json.RawMessage `json:"metadata"`
+		Error    string          `json:"error"`
+	}
+
+	decodeErr := json.Unmarshal(body, &lxdResponse)
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		if decodeErr != nil || lxdResponse.Error == "" {
+			return api.StatusErrorf(resp.StatusCode, "request %s %s for cluster %q failed with HTTP status %d", method, clusterConnectorPath, remoteClusterName, resp.StatusCode)
+		}
+
+		return api.StatusErrorf(resp.StatusCode, "%s", lxdResponse.Error)
+	}
+
+	if target == nil {
+		return nil
+	}
+
+	if decodeErr != nil {
+		return api.StatusErrorf(http.StatusBadGateway, "invalid response for cluster %q: %v", remoteClusterName, decodeErr)
+	}
+
+	err = json.Unmarshal(lxdResponse.Metadata, target)
+	if err != nil {
+		return api.StatusErrorf(http.StatusBadGateway, "invalid response metadata for cluster %q: %v", remoteClusterName, err)
+	}
+
+	return nil
 }
 
 func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, clusterConnectorPath string) error {
 	remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
 	if err != nil {
 		return response.SmartError(err).Render(w, r)
-	}
-
-	var clusterDetails *store.RemoteClusterDetail
-	err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
-		cluster, err := store.GetRemoteCluster(ctx, tx, remoteClusterName)
-		if err != nil {
-			return err
-		}
-
-		clusterDetails, err = store.GetRemoteClusterDetail(ctx, tx, cluster.ID)
-		return err
-	})
-	if err != nil {
-		return response.SmartError(err).Render(w, r)
-	}
-
-	if clusterDetails.TunnelManagerMemberURL == "" {
-		return response.BadRequest(fmt.Errorf("remote cluster does not have an active tunnel")).Render(w, r)
-	}
-
-	reqURL := clusterDetails.TunnelManagerMemberURL + "/1.0/remote-cluster/" + remoteClusterName + clusterConnectorPath
-
-	sessionProvider, ok := r.Context().Value(auth.SessionCredentialsProviderKey).(*auth.SessionCredentialsProvider)
-	if !ok {
-		return response.InternalError(fmt.Errorf("failed to get session credentials provider from the request context")).Render(w, r)
-	}
-
-	accessToken, err := sessionProvider.GetAccessToken()
-	if err != nil {
-		return response.InternalError(fmt.Errorf("failed to get access token: %w", err)).Render(w, r)
-	}
-
-	userSecret, err := sessionProvider.GetUserSecret()
-	if err != nil {
-		return response.InternalError(fmt.Errorf("failed to get user secret: %w", err)).Render(w, r)
 	}
 
 	// Buffer the body so that it can be sent again if the request needs to be retried after a token refresh.
@@ -371,32 +552,9 @@ func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *h
 		}
 	}()
 
-	resp, err := sendInternalRequest(r, accessToken, userSecret, reqURL, rc, body)
+	resp, err := sendToClusterConnector(rc, r, r.Method, remoteClusterName, clusterConnectorPath, body)
 	if err != nil {
 		return response.SmartError(err).Render(w, r)
-	}
-
-	// Only replay requests that have no side effects. A 401/403 from a non-idempotent request may be the
-	// result of a partially applied change, so replaying it could apply the change twice.
-	isRetriable := r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions
-	needsTokenRefresh := isRetriable && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden)
-	if needsTokenRefresh {
-		refreshCtx, cancelRefresh := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancelRefresh()
-		accessToken, err = sessionProvider.RefreshSessionTokens(refreshCtx)
-		if err != nil {
-			return response.InternalError(fmt.Errorf("failed to refresh access token: %w", err)).Render(w, r)
-		}
-
-		err = resp.Body.Close()
-		if err != nil {
-			logger.Log.Warnw("Failed to close response body before retry", "error", err)
-		}
-
-		resp, err = sendInternalRequest(r, accessToken, userSecret, reqURL, rc, body)
-		if err != nil {
-			return response.InternalError(fmt.Errorf("failed to send request after token refresh: %w", err)).Render(w, r)
-		}
 	}
 
 	defer func() {
@@ -419,8 +577,78 @@ func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *h
 	return nil
 }
 
-func sendInternalRequest(r *http.Request, accessToken string, userSecret string, reqURL string, rc types.RouteConfig, body []byte) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(r.Context(), r.Method, reqURL, bytes.NewReader(body))
+// sendToClusterConnector sends a request for the given remote cluster to the cluster connector holding its tunnel.
+// Requests without side effects are retried once with refreshed session tokens after a 401 or 403 response.
+// The caller must close the body of the returned response.
+func sendToClusterConnector(rc types.RouteConfig, r *http.Request, method string, remoteClusterName string, clusterConnectorPath string, body []byte) (*http.Response, error) {
+	var clusterDetails *store.RemoteClusterDetail
+	err := rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
+		cluster, err := store.GetRemoteCluster(ctx, tx, remoteClusterName)
+		if err != nil {
+			return err
+		}
+
+		clusterDetails, err = store.GetRemoteClusterDetail(ctx, tx, cluster.ID)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if clusterDetails.TunnelManagerMemberURL == "" {
+		return nil, api.StatusErrorf(http.StatusBadRequest, "remote cluster %q does not have an active tunnel", remoteClusterName)
+	}
+
+	reqURL := clusterDetails.TunnelManagerMemberURL + "/1.0/remote-cluster/" + url.PathEscape(remoteClusterName) + clusterConnectorPath
+
+	sessionProvider, ok := r.Context().Value(auth.SessionCredentialsProviderKey).(*auth.SessionCredentialsProvider)
+	if !ok {
+		return nil, api.StatusErrorf(http.StatusInternalServerError, "failed to get session credentials provider from the request context")
+	}
+
+	accessToken, err := sessionProvider.GetAccessToken()
+	if err != nil {
+		return nil, api.StatusErrorf(http.StatusInternalServerError, "failed to get access token: %v", err)
+	}
+
+	userSecret, err := sessionProvider.GetUserSecret()
+	if err != nil {
+		return nil, api.StatusErrorf(http.StatusInternalServerError, "failed to get user secret: %v", err)
+	}
+
+	resp, err := sendInternalRequest(r, method, accessToken, userSecret, reqURL, rc, body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Only replay requests that have no side effects. A 401/403 from a non-idempotent request may be the
+	// result of a partially applied change, so replaying it could apply the change twice.
+	isRetriable := method == http.MethodGet || method == http.MethodHead || method == http.MethodOptions
+	needsTokenRefresh := isRetriable && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden)
+	if needsTokenRefresh {
+		refreshCtx, cancelRefresh := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancelRefresh()
+		accessToken, err = sessionProvider.RefreshSessionTokens(refreshCtx)
+		if err != nil {
+			return nil, api.StatusErrorf(http.StatusInternalServerError, "failed to refresh access token: %v", err)
+		}
+
+		err = resp.Body.Close()
+		if err != nil {
+			logger.Log.Warnw("Failed to close response body before retry", "error", err)
+		}
+
+		resp, err = sendInternalRequest(r, method, accessToken, userSecret, reqURL, rc, body)
+		if err != nil {
+			return nil, api.StatusErrorf(http.StatusInternalServerError, "failed to send request after token refresh: %v", err)
+		}
+	}
+
+	return resp, nil
+}
+
+func sendInternalRequest(r *http.Request, method string, accessToken string, userSecret string, reqURL string, rc types.RouteConfig, body []byte) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(r.Context(), method, reqURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
