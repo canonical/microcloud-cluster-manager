@@ -6,8 +6,8 @@ set -x
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "$SCRIPT_DIR/setup-env.sh"
 
-# build golang app
-make build
+# build golang app; BUILD_TARGET=build-backend skips the UI build (see `make backend`)
+make "${BUILD_TARGET:-build}"
 
 # run the cluster connector
 export SERVICE=cluster-connector

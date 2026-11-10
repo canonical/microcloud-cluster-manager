@@ -106,6 +106,14 @@ This starts Postgres and Prometheus in Docker, builds the application and runs t
 
 **NOTE**: If it's your first time starting the development environment, it may take a while for the container images to be pulled.
 
+To start the backend without building the UI, run:
+
+```bash
+make backend
+```
+
+This starts the same services as `make dev`, but builds the backend without rebuilding the UI.
+
 ### Run the UI in a separate terminal
 
 First, add the local development hosts `ma.lxd-cm.local` and `cc.lxd-cm.local` to your `/etc/hosts` file. You can do this with the following command:
