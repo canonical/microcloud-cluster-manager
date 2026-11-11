@@ -105,7 +105,7 @@ test-e2e:
 .PHONY: test-openapi
 test-openapi:
 	$(MAKE) ensure-service-running
-	curl -Lo test/openapi/cluster-manager-api.yaml https://raw.githubusercontent.com/canonical/microcloud/main/doc/_extra/cluster-manager-api.yaml ; \
+	cp doc/api/cluster-manager-api.yaml test/openapi/cluster-manager-api.yaml ; \
 	export management_api_cert_secret="$(shell pwd)/test/keys" ; \
 	export cluster_connector_cert_secret="$(shell pwd)/test/keys" ; \
 	export CLUSTER_CONNECTOR_PORT=9000 ; \
