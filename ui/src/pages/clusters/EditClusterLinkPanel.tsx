@@ -19,7 +19,7 @@ import { useCluster, useClusterLinks } from "context/useClusters";
 import { fetchClusters } from "api/clusters";
 import { queryKeys } from "util/queryKeys";
 import { getLinkedCluster } from "util/clusterLinks";
-import { getLinkIconType, LINK_TYPES } from "pages/clusters/clusterLinkTypes";
+import { getLinkIconType, LINK_TYPES } from "util/clusterLinkTypes";
 import ReadOnlyInput from "components/forms/ReadOnlyInput";
 import ResourceIcon from "components/ResourceIcon";
 

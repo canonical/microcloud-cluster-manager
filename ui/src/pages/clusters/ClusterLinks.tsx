@@ -5,8 +5,7 @@ import type { FC } from "react";
 import { useClusterLinks } from "context/useClusters";
 import { queryKeys } from "util/queryKeys";
 import type { Cluster } from "types/cluster";
-import ClusterLinkCard from "pages/clusters/ClusterLinkCard";
-import CreateClusterLinkBtn from "pages/clusters/actions/CreateClusterLinkBtn";
+import ClusterLinksTable from "pages/clusters/ClusterLinksTable";
 import ClusterLinksEmptyState from "components/ClusterLinksEmptyState";
 
 interface Props {
@@ -46,22 +45,11 @@ const ClusterLinks: FC<Props> = ({ cluster }) => {
         </Notification>
       )}
       {cluster.tunnel_registered && clusterLinks && clusterLinks.length > 0 && (
-        <>
-          <div className="cluster-links-header">
-            <h2 className="p-heading--4 u-no-margin--bottom u-no-padding--top">
-              Cluster links
-            </h2>
-            <CreateClusterLinkBtn cluster={cluster} />
-          </div>
-          {clusterLinks.map((link) => (
-            <ClusterLinkCard
-              key={link.name}
-              cluster={cluster}
-              link={link}
-              clusters={clusters}
-            />
-          ))}
-        </>
+        <ClusterLinksTable
+          cluster={cluster}
+          clusters={clusters}
+          links={clusterLinks}
+        />
       )}
       {cluster.tunnel_registered &&
         !error &&

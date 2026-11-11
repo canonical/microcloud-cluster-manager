@@ -21,7 +21,7 @@ import { createClusterLink } from "api/clusters";
 import type { ClusterLink, ClusterLinkPost } from "types/cluster";
 import * as Yup from "yup";
 import ClusterSelector from "pages/clusters/ClusterSelector";
-import { getLinkIconType, LINK_TYPES } from "pages/clusters/clusterLinkTypes";
+import { getLinkIconType, LINK_TYPES } from "util/clusterLinkTypes";
 import ReadOnlyInput from "components/forms/ReadOnlyInput";
 import ResourceIcon from "components/ResourceIcon";
 
