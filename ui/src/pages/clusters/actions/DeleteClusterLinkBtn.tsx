@@ -1,7 +1,6 @@
 import {
   CheckboxInput,
   ConfirmationButton,
-  Icon,
   useToastNotification,
 } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
@@ -11,6 +10,7 @@ import { useState } from "react";
 import { queryKeys } from "util/queryKeys";
 import type { Cluster, ClusterLink } from "types/cluster";
 import { getReverseLink } from "util/clusterLinks";
+import DsIcon from "components/DsIcon";
 
 interface Props {
   cluster: Cluster;
@@ -112,7 +112,7 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
       }}
       shiftClickEnabled
     >
-      <Icon name="delete" />
+      <DsIcon icon="delete" />
       <span>Delete</span>
     </ConfirmationButton>
   );

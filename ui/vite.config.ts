@@ -15,6 +15,16 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      "^/ui/assets/icons/": {
+        target: "http://localhost:3000",
+        rewrite: (path) =>
+          path.replace(
+            /^\/ui\/assets\/icons/,
+            "/node_modules/@canonical/ds-assets/icons",
+          ),
+        secure: false,
+        changeOrigin: true,
+      },
       "/ui/assets": {
         target: "https://ma.lxd-cm.local:8414/",
         rewrite: (path) => path.replace(/^\/ui/, ""),

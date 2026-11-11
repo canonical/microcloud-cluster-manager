@@ -37,6 +37,63 @@
 @import "selectable_main_table";
 @import "status_bar";
 
+// Vanilla's legacy %icon placeholder centers icons against the surrounding
+// text using a cap-height-based formula (see _base_placeholders.scss),
+// but pragma DsIcon svgs (class="ds icon") only get `vertical-align: middle`
+// from @canonical/react-ds-global, which sits visibly lower. Apply the same
+// formula so ds-assets icons line up with legacy vanilla icons wherever
+// they appear inline with text. `@canonical/styles` (imported below, see
+// `@import "@canonical/styles"`) re-declares `.ds.icon` with the same
+// specificity, so `!important` is needed to reliably win the tie.
+// Note: the icon-size term intentionally uses a literal 1rem, not
+// `var(--icon-size, ...)` — `--icon-size` defaults to `1em` globally, which
+// scales with the *local* font-size (e.g. 24px inside a heading), whereas
+// vanilla's own $default-icon-size is always a fixed, root-relative 1rem
+// regardless of the surrounding font-size or the icon's actual rendered
+// size. Using the CSS var here would make icons drift lower again inside
+// larger text (e.g. card titles). Issue is tracked in WD-38790
+.ds.icon {
+  vertical-align: calc(0.5px + 0.5 * #{$cap-height} - 0.5 * 1rem) !important;
+}
+
+// Vanilla's %vf-button-has-icon spacing rule only targets legacy
+// [class*='p-icon'] elements, so pragma DsIcon svgs (class="ds icon") lose
+// their button spacing. Restore just the margins here, mirroring vanilla's
+// rule exactly (no flex/align-items) — vertical centering is already
+// handled by the global `.ds.icon` vertical-align rule above, the same way
+// vanilla centers legacy icons. Adding `display: inline-flex` here (as a
+// previous version of this rule did) made the button's height track the
+// icon's own box height instead of the button's normal line-height, which
+// could grow/shrink the button and push the icon out of alignment with
+// its label. Issue is tracked in WD-38790
+[class*="p-button"].has-icon {
+  .ds.icon {
+    margin-left: $sph--small;
+    margin-right: $sph--small;
+
+    &:first-child {
+      margin-left: -$sph--small;
+    }
+
+    &:last-child {
+      margin-right: -$sph--small;
+    }
+  }
+
+  &.is-small .ds.icon {
+    margin-left: $sph--x-small;
+    margin-right: $sph--x-small;
+
+    &:first-child {
+      margin-left: -$sph--x-small;
+    }
+
+    &:last-child {
+      margin-right: -$sph--x-small;
+    }
+  }
+}
+
 body {
   // needed for notification list expanding animation
   overflow: hidden;
