@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/canonical/lxd/lxd/request"
+	lxdRequest "github.com/canonical/lxd/lxd/request"
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/auth"
@@ -29,6 +29,7 @@ import (
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/config"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/request"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/golang/snappy"
 	"github.com/google/uuid"
@@ -161,6 +162,41 @@ var RemoteClusterInternal = types.RouteGroup{
 			Path:    "{remoteClusterName}/replicators/{replicatorName}/state",
 			Method:  http.MethodPut,
 			Handler: remoteClusterReplicatorStatePut,
+		},
+		{
+			Path:    "{remoteClusterName}/projects",
+			Method:  http.MethodGet,
+			Handler: remoteClusterProjectsGet,
+		},
+		{
+			Path:    "{remoteClusterName}/projects",
+			Method:  http.MethodPost,
+			Handler: remoteClusterProjectsPost,
+		},
+		{
+			Path:    "{remoteClusterName}/projects/{projectName}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterProjectGet,
+		},
+		{
+			Path:    "{remoteClusterName}/projects/{projectName}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterProjectPut,
+		},
+		{
+			Path:    "{remoteClusterName}/projects/{projectName}/state",
+			Method:  http.MethodGet,
+			Handler: remoteClusterProjectStateGet,
+		},
+		{
+			Path:    "{remoteClusterName}/projects/{projectName}/state",
+			Method:  http.MethodPut,
+			Handler: remoteClusterProjectStatePut,
+		},
+		{
+			Path:    "{remoteClusterName}/operations/{operationID}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterOperationGet,
 		},
 	},
 }
@@ -297,7 +333,7 @@ func remoteClusterStatusPost(rc types.RouteConfig) types.EndpointHandler {
 			return response.BadRequest(err).Render(w, r)
 		}
 
-		remoteClusterID, err := request.GetContextValue[int](r.Context(), auth.CtxRemoteClusterID)
+		remoteClusterID, err := lxdRequest.GetContextValue[int](r.Context(), auth.CtxRemoteClusterID)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -495,7 +531,7 @@ func forwardMetricsToPrometheus(timeSeries []prompb.TimeSeries, rc types.RouteCo
 // mtls applied by the auth middleware for this endpoint.
 func remoteClusterDelete(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterID, err := request.GetContextValue[int](r.Context(), auth.CtxRemoteClusterID)
+		remoteClusterID, err := lxdRequest.GetContextValue[int](r.Context(), auth.CtxRemoteClusterID)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -520,7 +556,7 @@ func remoteClusterDelete(rc types.RouteConfig) types.EndpointHandler {
 // mtls applied by the auth middleware for this endpoint.
 func remoteClusterWsGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterID, err := request.GetContextValue[int](r.Context(), auth.CtxRemoteClusterID)
+		remoteClusterID, err := lxdRequest.GetContextValue[int](r.Context(), auth.CtxRemoteClusterID)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -707,7 +743,7 @@ func getClusterTunnel(rc types.RouteConfig, remoteClusterID int) *types.Tunnel {
 
 func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		remoteClusterName, err := request.RemoteClusterName(r)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -1214,7 +1250,7 @@ func remoteClusterInfoGet(rc types.RouteConfig) types.EndpointHandler {
 
 func remoteClusterAuthGroupsGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		remoteClusterName, err := request.RemoteClusterName(r)
 		if err != nil {
 			return response.BadRequest(err).Render(w, r)
 		}
@@ -1231,7 +1267,7 @@ func remoteClusterAuthGroupsGet(rc types.RouteConfig) types.EndpointHandler {
 
 func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		remoteClusterName, err := request.RemoteClusterName(r)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -1251,18 +1287,14 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 // remote cluster given in the path. The linked cluster keeps its own cluster link entry.
 func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		remoteClusterName, err := request.RemoteClusterName(r)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
 
-		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		clusterLinkName, err := request.RequiredPathParam(r, request.ClusterLinkNameParam, "cluster link name")
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
-		}
-
-		if clusterLinkName == "" {
-			return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
 		}
 
 		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName)
@@ -1274,18 +1306,14 @@ func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 // The linked cluster keeps its own cluster link entry unchanged.
 func remoteClusterLinkPut(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		remoteClusterName, err := request.RemoteClusterName(r)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
 
-		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		clusterLinkName, err := request.RequiredPathParam(r, request.ClusterLinkNameParam, "cluster link name")
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
-		}
-
-		if clusterLinkName == "" {
-			return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
 		}
 
 		var linkRequest api.ClusterLinkPut
@@ -1319,9 +1347,8 @@ func forwardTunnelRequest(rc types.RouteConfig, w http.ResponseWriter, r *http.R
 		return response.SmartError(err).Render(w, r)
 	}
 
-		writeResponse(w, *resp)
-		return nil
-	}
+	writeResponse(w, *resp)
+	return nil
 }
 
 func remoteClusterIdentitiesGet(rc types.RouteConfig) types.EndpointHandler {
@@ -1369,8 +1396,9 @@ func remoteClusterIdentityDelete(rc types.RouteConfig) types.EndpointHandler {
 			return response.SmartError(err).Render(w, r)
 		}
 
-	writeResponse(w, *resp)
-	return nil
+		writeResponse(w, *resp)
+		return nil
+	}
 }
 
 func sendTunnelRequest(rc types.RouteConfig, r *http.Request, method string, path string, remoteClusterName string, body []byte) (*types.ClusterManagerTunnelResponse, error) {

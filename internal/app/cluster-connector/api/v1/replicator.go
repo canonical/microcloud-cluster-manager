@@ -5,13 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/cluster-connector/core/replicator"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/request"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
-	"github.com/gorilla/mux"
 )
 
 // replicatorScope identifies the remote cluster and project a replicator request targets.
@@ -144,14 +143,19 @@ func remoteClusterReplicatorStatePut(rc types.RouteConfig) types.EndpointHandler
 // getReplicatorScope reads the remote cluster from the path and the project from the query.
 // An empty project is only allowed if the project is not required.
 func getReplicatorScope(r *http.Request, requireProject bool) (replicatorScope, error) {
-	remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+	remoteClusterName, err := request.RemoteClusterName(r)
 	if err != nil {
-		return replicatorScope{}, api.StatusErrorf(http.StatusBadRequest, "Invalid remote cluster name: %v", err)
+		return replicatorScope{}, err
 	}
 
-	project := r.URL.Query().Get("project")
-	if requireProject && project == "" {
-		return replicatorScope{}, api.StatusErrorf(http.StatusBadRequest, "Missing project")
+	var project string
+	if requireProject {
+		project, err = request.RequiredQueryParam(r, "project")
+		if err != nil {
+			return replicatorScope{}, err
+		}
+	} else {
+		project = request.QueryParam(r, "project")
 	}
 
 	return replicatorScope{remoteClusterName: remoteClusterName, project: project}, nil
@@ -164,13 +168,9 @@ func getReplicatorScopeAndName(r *http.Request) (replicatorScope, string, error)
 		return replicatorScope{}, "", err
 	}
 
-	replicatorName, err := url.PathUnescape(mux.Vars(r)["replicatorName"])
+	replicatorName, err := request.RequiredPathParam(r, request.ReplicatorNameParam, "replicator name")
 	if err != nil {
-		return replicatorScope{}, "", api.StatusErrorf(http.StatusBadRequest, "Invalid replicator name: %v", err)
-	}
-
-	if replicatorName == "" {
-		return replicatorScope{}, "", api.StatusErrorf(http.StatusBadRequest, "Missing replicator name")
+		return replicatorScope{}, "", err
 	}
 
 	return scope, replicatorName, nil

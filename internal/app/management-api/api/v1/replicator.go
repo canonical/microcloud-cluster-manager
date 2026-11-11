@@ -5,8 +5,8 @@ import (
 	"net/url"
 
 	"github.com/canonical/lxd/lxd/response"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/request"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
-	"github.com/gorilla/mux"
 )
 
 func remoteClusterReplicatorsGet(rc types.RouteConfig) types.EndpointHandler {
@@ -43,19 +43,18 @@ func forwardReplicatorToClusterConnector(rc types.RouteConfig, pathSuffix string
 	return func(w http.ResponseWriter, r *http.Request) error {
 		clusterConnectorPath := "/replicators"
 
-		rawReplicatorName, hasReplicatorName := mux.Vars(r)["replicatorName"]
-		if hasReplicatorName {
-			replicatorName, err := url.PathUnescape(rawReplicatorName)
-			if err != nil {
-				return response.SmartError(err).Render(w, r)
-			}
+		replicatorName, hasReplicatorName, err := request.OptionalPathParam(r, request.ReplicatorNameParam, "replicator name")
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
 
+		if hasReplicatorName {
 			clusterConnectorPath += "/" + url.PathEscape(replicatorName)
 		}
 
 		clusterConnectorPath += pathSuffix
 
-		project := r.URL.Query().Get("project")
+		project := request.QueryParam(r, "project")
 		if project != "" {
 			query := url.Values{}
 			query.Set("project", project)

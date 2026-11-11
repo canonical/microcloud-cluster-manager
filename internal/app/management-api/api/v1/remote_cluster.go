@@ -23,6 +23,7 @@ import (
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/request"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -114,6 +115,41 @@ var RemoteCluster = types.RouteGroup{
 			Method:  http.MethodPut,
 			Handler: remoteClusterReplicatorStatePut,
 		},
+		{
+			Path:    "{remoteClusterName}/projects",
+			Method:  http.MethodGet,
+			Handler: remoteClusterProjectsGet,
+		},
+		{
+			Path:    "{remoteClusterName}/projects",
+			Method:  http.MethodPost,
+			Handler: remoteClusterProjectsPost,
+		},
+		{
+			Path:    "{remoteClusterName}/projects/{projectName}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterProjectGet,
+		},
+		{
+			Path:    "{remoteClusterName}/projects/{projectName}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterProjectPut,
+		},
+		{
+			Path:    "{remoteClusterName}/projects/{projectName}/state",
+			Method:  http.MethodGet,
+			Handler: remoteClusterProjectStateGet,
+		},
+		{
+			Path:    "{remoteClusterName}/projects/{projectName}/state",
+			Method:  http.MethodPut,
+			Handler: remoteClusterProjectStatePut,
+		},
+		{
+			Path:    "{remoteClusterName}/operations/{operationID}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterOperationGet,
+		},
 	},
 }
 
@@ -142,7 +178,7 @@ func remoteClustersGet(rc types.RouteConfig) types.EndpointHandler {
 
 func remoteClusterGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		remoteClusterName, err := request.RemoteClusterName(r)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -173,7 +209,7 @@ func remoteClusterGet(rc types.RouteConfig) types.EndpointHandler {
 
 func remoteClusterDelete(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		remoteClusterName, err := request.RemoteClusterName(r)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -192,7 +228,7 @@ func remoteClusterDelete(rc types.RouteConfig) types.EndpointHandler {
 
 func remoteClusterPatch(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		remoteClusterName, err := request.RemoteClusterName(r)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -350,7 +386,7 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 
 func remoteClusterLinkPut(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		clusterLinkName, err := request.PathParam(r, request.ClusterLinkNameParam, "cluster link name")
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -366,7 +402,7 @@ func remoteClusterLinkPut(rc types.RouteConfig) types.EndpointHandler {
 // are resolved from the link on the source cluster.
 func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		clusterLinkName, err := request.PathParam(r, request.ClusterLinkNameParam, "cluster link name")
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -586,7 +622,7 @@ func requestClusterConnector(rc types.RouteConfig, r *http.Request, method strin
 }
 
 func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, clusterConnectorPath string) error {
-	remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+	remoteClusterName, err := request.RemoteClusterName(r)
 	if err != nil {
 		return response.SmartError(err).Render(w, r)
 	}
