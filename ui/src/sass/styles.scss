@@ -8,7 +8,9 @@
 @include vf-p-icon-certificate;
 @include vf-p-icon-cluster-host;
 @include vf-p-icon-copy;
+@include vf-p-icon-devtools;
 @include vf-p-icon-edit;
+@include vf-p-icon-exposed;
 @include vf-p-icon-export;
 @include vf-p-icon-profile;
 @include vf-p-icon-submit-bug;
@@ -28,12 +30,14 @@
 @import "cluster_graphs";
 @import "cluster_list";
 @import "cluster_token_list";
+@import "cluster_topology";
 @import "empty_state";
 @import "forms";
 @import "meter";
+@import "not_authorized";
 @import "page_header";
 @import "pattern_navigation";
-@import "not_authorized";
+@import "resources";
 @import "selectable_main_table";
 @import "status_bar";
 
@@ -74,10 +78,6 @@ body {
   .p-modal__dialog {
     max-width: 40rem;
   }
-}
-
-.warning-list {
-  max-width: 50rem;
 }
 
 .u-flex {

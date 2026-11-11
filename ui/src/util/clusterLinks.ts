@@ -1,4 +1,11 @@
-import type { Cluster, ClusterLink } from "types/cluster";
+import type {
+  Cluster,
+  ClusterLink,
+  ClusterLinkMemberState,
+  ClusterLinkState,
+  StatusCaption,
+} from "types/cluster";
+import type { LxdIdentity } from "types/permissions";
 
 const getLinkAddresses = (link: ClusterLink): string[] => {
   return link.config?.["volatile.addresses"]?.split(",") ?? [];
@@ -40,4 +47,54 @@ export const getReverseLink = (
       cluster.lxd_url.endsWith(address),
     );
   });
+};
+
+// Public links never present a client certificate, so LXD reports a reachable remote as "Unauthenticated"
+const isReachableMember = (
+  member: ClusterLinkMemberState,
+  link?: ClusterLink,
+): boolean => {
+  return (
+    member.status === "Active" ||
+    (link?.type === "public" && member.status === "Unauthenticated")
+  );
+};
+
+// A public link stays pending until its certificate is confirmed, which sets volatile.addresses
+export const isPendingPublicLink = (link?: ClusterLink): boolean => {
+  return link?.type === "public" && !link?.config?.["volatile.addresses"];
+};
+
+export const getClusterLinksStatus = (
+  identity?: LxdIdentity,
+  state?: ClusterLinkState,
+  link?: ClusterLink,
+): StatusCaption => {
+  if (identity?.type.toLowerCase().includes("(pending)")) {
+    return "Pending";
+  }
+  if (link && isPendingPublicLink(link)) {
+    return "Pending";
+  }
+  if (
+    state?.cluster_link_members.some((member) =>
+      isReachableMember(member, link),
+    )
+  ) {
+    return "Reachable";
+  }
+  return "Unreachable";
+};
+
+export const getLinkIdentity = (
+  identities: LxdIdentity[],
+  linkName: string | undefined | null,
+) => {
+  if (!linkName) return undefined;
+
+  return identities.find(
+    (identity) =>
+      identity.name === linkName &&
+      identity.type.startsWith("Cluster link certificate"),
+  );
 };

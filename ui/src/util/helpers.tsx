@@ -1,4 +1,5 @@
 import type { Cluster, StatusDistribution } from "types/cluster";
+import type { LxdIdentity } from "types/permissions";
 
 interface ErrorResponse {
   error_code: number;
@@ -125,3 +126,27 @@ export const handleSettledResult = (
 
 export const capitalizeFirstLetter = (val: string): string =>
   val.charAt(0).toUpperCase() + val.slice(1);
+
+type EtagObject = LxdIdentity;
+
+interface SortableObject {
+  access_entitlements?: string[];
+  locations?: string[];
+  used_by?: string[];
+}
+
+export const ensureStableSorting = (data: SortableObject) => {
+  // these data fields can be randomly sorted in the API response,
+  // we sort them here to have consistent results
+  // and avoid forms from re-initializing based on different order
+  if (data.access_entitlements) {
+    data.access_entitlements.sort();
+  }
+  if (data.locations) {
+    data.locations.sort();
+  }
+  if (data.used_by) {
+    data.used_by.sort();
+  }
+  return data as EtagObject;
+};

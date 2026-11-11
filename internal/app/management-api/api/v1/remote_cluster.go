@@ -68,8 +68,23 @@ var RemoteCluster = types.RouteGroup{
 		},
 		{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterLinkGet,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
 			Method:  http.MethodDelete,
 			Handler: remoteClusterLinkDelete,
+		},
+		{
+			Path:    "{remoteClusterName}/auth/identities",
+			Method:  http.MethodGet,
+			Handler: remoteClusterIdentitiesGet,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}/state",
+			Method:  http.MethodGet,
+			Handler: remoteClusterLinkStateGet,
 		},
 	},
 }
@@ -301,6 +316,21 @@ func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		clusterConnectorPath := "/cluster-links"
+		if r.URL.Query().Get("recursion") != "" {
+			clusterConnectorPath += "?recursion=" + url.QueryEscape(r.URL.Query().Get("recursion"))
+		}
+		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+	}
+}
+
+func remoteClusterLinkGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName)
 		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
 	}
 }
@@ -313,6 +343,25 @@ func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 		}
 
 		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName)
+		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+	}
+}
+
+func remoteClusterIdentitiesGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		clusterConnectorPath := "/auth/identities"
+		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+	}
+}
+
+func remoteClusterLinkStateGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName) + "/state"
 		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
 	}
 }

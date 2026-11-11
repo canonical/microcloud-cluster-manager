@@ -2,7 +2,7 @@ import { Notification } from "@canonical/react-components";
 import { useQuery } from "@tanstack/react-query";
 import { fetchClusters } from "api/clusters";
 import type { FC } from "react";
-import { useClusterLinks } from "context/useClusters";
+import { useClusterLinks } from "context/useClusterLinks";
 import { queryKeys } from "util/queryKeys";
 import type { Cluster } from "types/cluster";
 import ClusterLinkCard from "pages/clusters/ClusterLinkCard";
