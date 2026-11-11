@@ -25,7 +25,10 @@ const toRow = (name: string) => ({
 
 const Harness: FC = () => {
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
-  const { rows, updateSort } = useSortTableData({ rows: names.map(toRow) });
+  const { rows, updateSort } = useSortTableData({
+    rows: names.map(toRow),
+    sortRows: sortTableRows,
+  });
 
   return (
     <>

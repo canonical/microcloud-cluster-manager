@@ -8,22 +8,31 @@ interface Props {
   cluster: Cluster;
   className?: string;
   onClose?: () => void;
+  hasLabel?: boolean;
 }
 
-const ConfigureClusterButton: FC<Props> = ({ cluster, className, onClose }) => {
+const ConfigureClusterButton: FC<Props> = ({
+  cluster,
+  className,
+  onClose,
+  hasLabel = true,
+}) => {
   const panelParams = usePanelParams();
 
   return (
     <Button
+      appearance={hasLabel ? "default" : "base"}
       className={classnames("u-no-margin--bottom", className)}
       hasIcon
+      title={hasLabel ? undefined : "Edit"}
+      aria-label={hasLabel ? undefined : `Edit cluster ${cluster.name}`}
       onClick={() => {
         panelParams.openConfigureCluster(cluster.name);
         onClose?.();
       }}
     >
-      <Icon name="settings" />
-      <span>Configure</span>
+      <Icon name={hasLabel ? "settings" : "edit"} />
+      {hasLabel && <span>Configure</span>}
     </Button>
   );
 };

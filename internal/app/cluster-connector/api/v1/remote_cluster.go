@@ -29,6 +29,7 @@ import (
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/config"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
+	mcmrequest "github.com/canonical/microcloud-cluster-manager/internal/pkg/request"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/golang/snappy"
 	"github.com/google/uuid"
@@ -707,11 +708,6 @@ func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 	}
 }
 
-// isSuccessStatus reports whether the status is a 2xx status code.
-func isSuccessStatus(status int) bool {
-	return status >= http.StatusOK && status < http.StatusMultipleChoices
-}
-
 func sendClusterLinkRequest(rc types.RouteConfig, r *http.Request, clusterName string, requestBody any) (*types.ClusterManagerTunnelResponse, error) {
 	body, err := json.Marshal(requestBody)
 	if err != nil {
@@ -730,7 +726,7 @@ func sendClusterLinkRequest(rc types.RouteConfig, r *http.Request, clusterName s
 		}
 		return nil, api.StatusErrorf(http.StatusBadGateway, "Request to cluster %q failed: %v", clusterName, err)
 	}
-	if !isSuccessStatus(resp.Status) {
+	if !mcmrequest.IsSuccessStatus(resp.Status) {
 		err = tunnel.ResponseError(*resp, clusterName, "send cluster link request")
 		logger.Log.Errorw("Cluster link request failed", "cluster", clusterName, "status", resp.Status, "error", err)
 		return nil, err
@@ -941,7 +937,7 @@ func getClusterServer(rc types.RouteConfig, r *http.Request, clusterName string,
 		return api.Server{}, api.StatusErrorf(http.StatusBadGateway, "Cluster %q is unreachable: %s", clusterName, err)
 	}
 
-	if !isSuccessStatus(resp.Status) {
+	if !mcmrequest.IsSuccessStatus(resp.Status) {
 		err = tunnel.ResponseError(*resp, clusterName, operation)
 		logger.Log.Errorw("Cluster server request failed", "cluster", clusterName, "operation", operation, "error", err)
 		return api.Server{}, err
@@ -1010,7 +1006,7 @@ func deletePendingResource(rc types.RouteConfig, r *http.Request, clusterName st
 		return
 	}
 
-	if !isSuccessStatus(resp.Status) {
+	if !mcmrequest.IsSuccessStatus(resp.Status) {
 		err = tunnel.ResponseError(*resp, clusterName, "remove pending resource")
 		logger.Log.Errorw("Failed to remove pending resource", "cluster", clusterName, "path", path, "status", resp.Status, "error", err)
 	}
@@ -1110,7 +1106,7 @@ func checkTunnelRequirements(rc types.RouteConfig, r *http.Request, clusterName 
 		return api.StatusErrorf(http.StatusBadGateway, "Cluster %q is unreachable: %s", clusterName, err)
 	}
 
-	if !isSuccessStatus(resp.Status) {
+	if !mcmrequest.IsSuccessStatus(resp.Status) {
 		err = tunnel.ResponseError(*resp, clusterName, "check cluster permissions")
 		logger.Log.Errorw("Cluster permission check failed", "cluster", clusterName, "error", err)
 		return err
@@ -1174,7 +1170,7 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 		if err != nil {
 			return err
 		}
-		if !isSuccessStatus(resp.Status) {
+		if !mcmrequest.IsSuccessStatus(resp.Status) {
 			err = tunnel.ResponseError(*resp, remoteClusterName, "list cluster links")
 			logger.Log.Errorw("Failed to list cluster links", "cluster", remoteClusterName, "status", resp.Status, "error", err)
 			return response.SmartError(err).Render(w, r)
@@ -1208,7 +1204,7 @@ func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 			return response.SmartError(err).Render(w, r)
 		}
 
-		if !isSuccessStatus(resp.Status) {
+		if !mcmrequest.IsSuccessStatus(resp.Status) {
 			err = tunnel.ResponseError(*resp, remoteClusterName, "delete cluster link")
 			logger.Log.Errorw("Failed to delete cluster link", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "error", err)
 			return response.SmartError(err).Render(w, r)
