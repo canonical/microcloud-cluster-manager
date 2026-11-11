@@ -1,0 +1,22 @@
+@import "rich_tooltip";
+
+.cluster-link-rich-tooltip-table {
+  max-height: 260px !important;
+  min-height: 260px !important;
+
+  .status-row {
+    td {
+      padding-left: 0.3rem;
+    }
+
+    .status-spinner {
+      margin-left: 1.25rem;
+    }
+  }
+
+  tr:not(.status-row) {
+    .rich-tooltip-row-content {
+      padding-left: calc(0.3rem + 1.25rem);
+    }
+  }
+}

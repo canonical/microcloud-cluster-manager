@@ -115,6 +115,16 @@ var RemoteClusterInternal = types.RouteGroup{
 		},
 		{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterLinkGet,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}/state",
+			Method:  http.MethodGet,
+			Handler: remoteClusterLinkStateGet,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
 			Method:  http.MethodDelete,
 			Handler: remoteClusterLinkDelete,
 		},
@@ -1283,6 +1293,23 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 	}
 }
 
+func remoteClusterLinkGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := request.RemoteClusterName(r)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterLinkName, err := request.RequiredPathParam(r, request.ClusterLinkNameParam, "cluster link name")
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName)
+		return forwardTunnelRequest(rc, w, r, http.MethodGet, path, remoteClusterName, nil, "get cluster link")
+	}
+}
+
 // remoteClusterLinkDelete removes a single edge of a cluster link, meaning the link is only removed on the
 // remote cluster given in the path. The linked cluster keeps its own cluster link entry.
 func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
@@ -1363,6 +1390,37 @@ func remoteClusterIdentitiesGet(rc types.RouteConfig) types.EndpointHandler {
 			return response.SmartError(err).Render(w, r)
 		}
 
+		writeResponse(w, *resp)
+		return nil
+	}
+}
+
+func remoteClusterLinkStateGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if clusterLinkName == "" {
+			return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
+		}
+
+		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName) + "/state"
+		resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, nil)
+		if err != nil {
+			return err
+		}
+		if !isSuccessStatus(resp.Status) {
+			err = tunnel.ResponseError(*resp, remoteClusterName, "get cluster link state")
+			logger.Log.Errorw("Failed to get cluster link state", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "error", err)
+			return response.SmartError(err).Render(w, r)
+		}
 		writeResponse(w, *resp)
 		return nil
 	}

@@ -1,10 +1,11 @@
 import { Button, Card, Col, Icon, Row } from "@canonical/react-components";
 import type { FC } from "react";
 import type { Cluster, ClusterLink } from "types/cluster";
-import { Link } from "react-router-dom";
+import ClusterLinkRichChip from "pages/clusters/ClusterLinkRichChip";
 import DeleteClusterLinkBtn from "pages/clusters/actions/DeleteClusterLinkBtn";
 import usePanelParams from "context/usePanelParams";
 import { getLinkedCluster } from "util/clusterLinks";
+import ClusterRichChip from "./ClusterRichChip";
 
 interface Props {
   cluster: Cluster;
@@ -21,7 +22,15 @@ const ClusterLinkCard: FC<Props> = ({ cluster, clusters, link }) => {
     : "";
 
   return (
-    <Card title={link.name}>
+    <Card
+      title={
+        <ClusterLinkRichChip
+          cluster={cluster.name}
+          clusterLinkName={link.name}
+          clusterLinkType={link.type}
+        />
+      }
+    >
       <Row>
         <Col size={4}>
           <p className="u-no-margin--bottom u-text--muted">Type</p>
@@ -31,7 +40,7 @@ const ClusterLinkCard: FC<Props> = ({ cluster, clusters, link }) => {
           <p className="u-no-margin--bottom u-text--muted">Target cluster</p>
           <p className="u-no-margin--bottom">
             {targetClusterURL ? (
-              <Link to={targetClusterURL}>{targetClusterName}</Link>
+              <ClusterRichChip clusterName={targetClusterName} />
             ) : (
               targetClusterName
             )}
