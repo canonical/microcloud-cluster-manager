@@ -1,0 +1,57 @@
+.resource-label {
+  // truncate resource label text
+  display: inline-block;
+  max-width: 50%;
+  vertical-align: bottom;
+
+  // Legacy vanilla icons size via background-image, while pragma DsIcon svgs
+  // (class="ds icon") size via width/height, so `background-size: contain`
+  // is needed to keep the legacy icon's rendered size consistent with its
+  // DsIcon siblings. Issue is tracked in WD-38790
+  i,
+  .ds.icon {
+    background-size: contain !important;
+    margin-right: $sph--x-small;
+  }
+}
+
+.resource-link {
+  // Legacy vanilla icons size via background-image, while pragma DsIcon svgs
+  // (class="ds icon") size via width/height, so `background-size: contain`
+  // is needed to keep the legacy icon's rendered size consistent with its
+  // DsIcon siblings. Issue is tracked in WD-38790
+  i,
+  .ds.icon {
+    background-size: contain !important;
+    margin-left: 0 !important;
+    margin-right: $sph--x-small;
+  }
+
+  &.p-chip {
+    // background-color is set to white by vanilla if p-chip is applied to a link and not button
+    background-color: $colors--theme--background-neutral-default;
+    width: fit-content;
+
+    > .ds.icon {
+      align-self: center;
+      flex: 0 0 auto;
+    }
+  }
+
+  .p-chip__value {
+    max-width: 8rem;
+  }
+
+  &.p-chip--disabled {
+    opacity: 0.5;
+    text-decoration: line-through;
+  }
+}
+
+.p-notification__content .resource-link .p-chip__value {
+  max-width: 17rem;
+}
+
+.l-main .resource-link:not(.force-truncate) .p-chip__value {
+  max-width: inherit;
+}

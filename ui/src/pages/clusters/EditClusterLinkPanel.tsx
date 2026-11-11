@@ -23,7 +23,8 @@ import {
 } from "api/clusters";
 import NotificationRow from "components/NotificationRow";
 import ResourceIcon from "components/ResourceIcon";
-import { useCluster, useClusterLinks } from "context/useClusters";
+import { useCluster } from "context/useClusters";
+import { useClusterLinks } from "context/useClusterLinks";
 import { useIdentities } from "context/useIdentities";
 import usePanelParams from "context/usePanelParams";
 import { useFormik } from "formik";
@@ -38,6 +39,7 @@ import {
 } from "util/clusterLinks";
 import { queryKeys } from "util/queryKeys";
 import PanelSection from "components/PanelSection";
+import ClusterLinkRichChip from "pages/clusters/ClusterLinkRichChip";
 
 interface EditClusterLinkFormValues {
   description: string;
@@ -125,10 +127,15 @@ const EditClusterLinkPanel: FC = () => {
           }),
         );
         sourceUpdated = true;
-        // TODO: replace by ClusterLinkRichChip
         toastNotify.success(
           <>
-            Cluster link <b>{link.name}</b> on <b>{clusterName}</b> saved.
+            Cluster link{" "}
+            <ClusterLinkRichChip
+              clusterLinkName={link.name}
+              clusterLinkType={link.type}
+              cluster={clusterName}
+            />{" "}
+            on <b>{clusterName}</b> saved.
           </>,
         );
 
