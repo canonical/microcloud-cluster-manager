@@ -1,0 +1,91 @@
+// Corresponding breakpoints exist in src/components/RichTooltipTable.tsx to adjust the content of the tooltip
+$medium-tooltip-breakpoint: 900px;
+$large-tooltip-breakpoint: 1100px;
+
+body.is-dark .rich-tooltip-table .p-icon--status-queued-small {
+  @include vf-icon-status-small($colors--light-theme--icon);
+}
+
+.rich-tooltip-table .p-icon--status-queued-small {
+  @include vf-icon-status-small($colors--dark-theme--icon);
+}
+
+// ResourceIcon's DsIcon-rendered icons (e.g. network, cluster-link) use
+// fill: currentColor, so recolor via `color` instead of the vanilla
+// background-image mixins used for the still-vanilla resource icons above.
+.rich-tooltip-table .resource-link .ds.icon {
+  color: var(--color-icon);
+}
+
+.p-tooltip__message:has(.rich-tooltip-table) {
+  padding-right: 0;
+}
+
+.rich-tooltip-table {
+  display: block;
+  margin: 0;
+  min-height: 400px;
+  overflow: hidden scroll;
+  scrollbar-gutter: stable;
+  width: 430px;
+
+  .rich-tooltip-row-content {
+    max-width: 300px;
+    width: 300px;
+
+    .resource-link.p-chip {
+      background-color: $colors--dark-theme--background-active;
+
+      &:hover {
+        filter: brightness(0.9);
+      }
+
+      > span.p-chip__value {
+        color: $colors--dark-theme--text-default;
+      }
+    }
+
+    > .truncated {
+      background: linear-gradient(
+        to right,
+        transparent 0%,
+        transparent calc(100% - 1em),
+        $colors--theme--background-default calc(100% - 0.5em)
+      );
+      background-clip: text;
+      overflow: hidden;
+      padding-right: 1em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .rich-tooltip-row-title {
+    max-width: 135px;
+  }
+
+  @media (height <= $large-tooltip-breakpoint) {
+    max-height: 400px;
+    min-height: 400px;
+  }
+
+  @media (height <= $medium-tooltip-breakpoint) {
+    max-height: 200px;
+    min-height: 200px;
+  }
+}
+
+body.is-dark
+  .rich-tooltip-table
+  .rich-tooltip-row-content
+  .resource-link.p-chip {
+  background-color: $colors--light-theme--background-active;
+
+  &:hover {
+    filter: brightness(0.95);
+  }
+
+  > span.p-chip__value {
+    color: $colors--light-theme--text-default;
+  }
+}

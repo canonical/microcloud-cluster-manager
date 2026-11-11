@@ -7,7 +7,6 @@ import {
 } from "@canonical/react-components";
 import type { FC } from "react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import useSortTableData from "context/useSortTableData";
 import ClusterLinkTypeChip from "components/ClusterLinkTypeChip";
 import DsIcon from "components/DsIcon";
@@ -16,6 +15,7 @@ import SelectableMainTable from "components/SelectableMainTable";
 import EditClusterLinkBtn from "pages/clusters/actions/EditClusterLinkBtn";
 import DeleteClusterLinkBtn from "pages/clusters/actions/DeleteClusterLinkBtn";
 import CreateClusterLinkBtn from "pages/clusters/actions/CreateClusterLinkBtn";
+import ClusterRichChip from "pages/clusters/ClusterRichChip";
 import type { Cluster, ClusterLink } from "types/cluster";
 import {
   getLinkDisplayAddresses,
@@ -90,9 +90,7 @@ const ClusterLinksTable: FC<Props> = ({ cluster, clusters, links }) => {
         },
         {
           content: targetCluster ? (
-            <Link to={`/ui/cluster/${encodeURIComponent(targetCluster.name)}`}>
-              {targetCluster.name}
-            </Link>
+            <ClusterRichChip clusterName={targetCluster.name} />
           ) : (
             "–"
           ),
