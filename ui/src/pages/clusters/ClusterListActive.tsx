@@ -94,6 +94,7 @@ const ClusterListActive: FC<Props> = ({
           content: cluster.description,
           className: "description",
           role: "cell",
+          title: cluster.description,
         },
         {
           content: (
