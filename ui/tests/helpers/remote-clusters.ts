@@ -40,3 +40,7 @@ export const setClusterConfig = async (
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText(`Updated cluster ${cluster}`)).toBeVisible();
 };
+
+// Real MicroClouds, see "MicroClouds for the e2e tests" in CONTRIBUTING.md.
+export const tunnelCluster = "mcm-e2e-01";
+export const joinCluster = "mcm-e2e-join-01";

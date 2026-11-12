@@ -33,6 +33,12 @@ MANAGEMENT_API_PID=$!
 echo "waiting for services to start..."
 sleep 10
 
+# onboard the MicroClouds that the e2e tests use
+echo "onboarding microclouds..."
+export CLI_BIN="$PWD/cmd/app-coverage"
+scripts/mcm-cluster-onboard.sh --count 2 --instance-prefix mcm-e2e --sequential
+scripts/mcm-cluster-onboard.sh --count 1 --instance-prefix mcm-e2e-join --provision-only
+
 # run golang e2e tests
 echo "running golang e2e tests..."
 go test -count=1 -v ./test/e2e

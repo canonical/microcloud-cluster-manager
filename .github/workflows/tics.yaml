@@ -16,7 +16,7 @@ jobs:
   tics-scan:
     name: TICS scan
     if: ${{ github.repository_owner == 'canonical' }}
-    runs-on: [self-hosted, linux, amd64, tiobe, jammy]
+    runs-on: ubuntu-22.04
     env:
       DEBIAN_FRONTEND: noninteractive
     steps:
@@ -43,6 +43,11 @@ jobs:
 
       - name: Install backend dependencies
         run: go mod download
+
+      - name: Setup LXD
+        uses: canonical/setup-lxd@8c6a87bfb56aa48f3fb9b830baa18562d8bfd4ee # v1
+        with:
+          channel: 6/stable
 
       - name: Run tests with coverage
         run: scripts/run-coverage.sh

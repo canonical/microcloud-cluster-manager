@@ -183,10 +183,18 @@ jobs:
         with:
           go-version: 1.27.x
 
+      - name: Setup LXD
+        uses: canonical/setup-lxd@8c6a87bfb56aa48f3fb9b830baa18562d8bfd4ee # v1
+        with:
+          channel: 6/stable
+
       - name: Run backend
         run: |
           scripts/run-backend.sh &
           curl --head --fail --retry-delay 2 --retry 100 --retry-connrefused --insecure https://localhost:30000
+
+      - name: Onboard MicroClouds
+        run: scripts/mcm-cluster-onboard.sh --count 2 --instance-prefix mcm-e2e --sequential
 
       - name: Run backend E2E tests
         run: make test-e2e
@@ -226,10 +234,20 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Setup LXD
+        uses: canonical/setup-lxd@8c6a87bfb56aa48f3fb9b830baa18562d8bfd4ee # v1
+        with:
+          channel: 6/stable
+
       - name: Run backend
         run: |
           scripts/run-backend.sh &
           curl --head --fail --retry-delay 2 --retry 100 --retry-connrefused --insecure https://localhost:30000
+
+      - name: Onboard MicroClouds
+        run: |
+          scripts/mcm-cluster-onboard.sh --count 2 --instance-prefix mcm-e2e --sequential
+          scripts/mcm-cluster-onboard.sh --count 1 --instance-prefix mcm-e2e-join --provision-only
 
       - name: Install Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
