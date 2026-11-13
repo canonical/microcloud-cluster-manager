@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/zitadel/oidc/v3/pkg/client/rp"
 )
 
 type sessionCredentialsContextKey string
@@ -15,6 +16,7 @@ const SessionCredentialsProviderKey sessionCredentialsContextKey = "session-cred
 // SessionCredentialsProvider provides authenticated token operations for the current request session credentials.
 type SessionCredentialsProvider struct {
 	verifier             *Verifier
+	relyingParty         rp.RelyingParty
 	sessionID            uuid.UUID
 	userSecret           string
 	encryptedAccessToken string
@@ -56,7 +58,7 @@ func (p *SessionCredentialsProvider) RefreshSessionTokens(ctx context.Context) (
 		return "", err
 	}
 
-	_, encryptedTokens, refreshedAccessToken, err := p.verifier.refreshTokens(ctx, refreshToken, p.userSecret)
+	_, encryptedTokens, refreshedAccessToken, err := p.verifier.refreshTokens(ctx, p.relyingParty, refreshToken, p.userSecret)
 	if err != nil {
 		return "", err
 	}
