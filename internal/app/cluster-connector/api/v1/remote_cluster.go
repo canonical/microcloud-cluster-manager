@@ -88,6 +88,11 @@ var RemoteClusterInternal = types.RouteGroup{
 	},
 	Endpoints: []types.Endpoint{
 		{
+			Path:    "{remoteClusterName}/info",
+			Method:  http.MethodGet,
+			Handler: remoteClusterInfoGet,
+		},
+		{
 			Path:    "{remoteClusterName}/auth-groups",
 			Method:  http.MethodGet,
 			Handler: remoteClusterAuthGroupsGet,
@@ -106,6 +111,16 @@ var RemoteClusterInternal = types.RouteGroup{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
 			Method:  http.MethodDelete,
 			Handler: remoteClusterLinkDelete,
+		},
+		{
+			Path:    "{remoteClusterName}/auth/identities",
+			Method:  http.MethodGet,
+			Handler: remoteClusterIdentitiesGet,
+		},
+		{
+			Path:    "{remoteClusterName}/auth/identities/tls/{identityId}",
+			Method:  http.MethodDelete,
+			Handler: remoteClusterIdentityDelete,
 		},
 	},
 }
@@ -1139,6 +1154,23 @@ func checkTunnelRequirements(rc types.RouteConfig, r *http.Request, clusterName 
 	return nil
 }
 
+func remoteClusterInfoGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.BadRequest(err).Render(w, r)
+		}
+
+		resp, err := sendTunnelRequest(rc, r, http.MethodGet, "/1.0", remoteClusterName, nil)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		writeResponse(w, *resp)
+		return nil
+	}
+}
+
 func remoteClusterAuthGroupsGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
@@ -1211,6 +1243,56 @@ func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 		if !isSuccessStatus(resp.Status) {
 			err = tunnel.ResponseError(*resp, remoteClusterName, "delete cluster link")
 			logger.Log.Errorw("Failed to delete cluster link", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "error", err)
+			return response.SmartError(err).Render(w, r)
+		}
+
+		writeResponse(w, *resp)
+		return nil
+	}
+}
+
+func remoteClusterIdentitiesGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.BadRequest(err).Render(w, r)
+		}
+
+		resp, err := sendTunnelRequest(rc, r, http.MethodGet, "/1.0/auth/identities?recursion=1", remoteClusterName, nil)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		writeResponse(w, *resp)
+		return nil
+	}
+}
+
+func remoteClusterIdentityDelete(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		identityId, err := url.PathUnescape(mux.Vars(r)["identityId"])
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if identityId == "" {
+			return response.BadRequest(errors.New("Missing identity id")).Render(w, r)
+		}
+
+		path := "/1.0/auth/identities/tls/" + url.PathEscape(identityId)
+		resp, err := sendTunnelRequest(rc, r, http.MethodDelete, path, remoteClusterName, nil)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if !isSuccessStatus(resp.Status) {
+			err = tunnel.ResponseError(*resp, remoteClusterName, "delete identity")
+			logger.Log.Errorw("Failed to delete identity", "cluster", remoteClusterName, "identity", identityId, "status", resp.Status, "error", err)
 			return response.SmartError(err).Render(w, r)
 		}
 

@@ -83,9 +83,12 @@ export const createClusterLink = async (
 export const deleteClusterLink = async (
   source: string,
   clusterLinkName: string,
+  removeReverseEdge: boolean,
 ): Promise<void> => {
+  const query = removeReverseEdge ? "?removeReverseEdge=true" : "";
+
   await fetch(
-    `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links/${encodeURIComponent(clusterLinkName)}`,
+    `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links/${encodeURIComponent(clusterLinkName)}${query}`,
     {
       method: "DELETE",
     },
