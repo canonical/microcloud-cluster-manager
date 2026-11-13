@@ -47,9 +47,9 @@ func (p *SessionCredentialsProvider) GetUserSecret() (string, error) {
 
 // RefreshSessionTokens refreshes OIDC tokens, persists them, and returns the refreshed token.
 // If another request already refreshed the session's tokens, those are returned instead of redeeming the refresh
-// token again.
+// token again. If the session has been renewed meanwhile, the renewed session is refreshed and used from then on.
 func (p *SessionCredentialsProvider) RefreshSessionTokens(ctx context.Context) (string, error) {
-	_, session, err := p.verifier.refreshSessionTokens(ctx, p.relyingParty, p.sessionID, p.userSecret, p.encryptedAccessToken)
+	_, session, sessionID, err := p.verifier.refreshSessionTokens(ctx, p.relyingParty, p.sessionID, p.userSecret, p.encryptedAccessToken)
 	if err != nil {
 		return "", err
 	}
@@ -59,7 +59,8 @@ func (p *SessionCredentialsProvider) RefreshSessionTokens(ctx context.Context) (
 		return "", err
 	}
 
-	// Update cached encrypted access token.
+	// Update cached session state.
+	p.sessionID = sessionID
 	p.encryptedAccessToken = session.EncryptedTokens.AccessToken
 
 	return refreshedAccessToken, nil

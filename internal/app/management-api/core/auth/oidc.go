@@ -79,15 +79,18 @@ type Verifier struct {
 
 	sessionHandler *SessionHandler
 
-	// refreshLocks serialises refresh token redemption per session, so a refresh token is never redeemed twice
-	// concurrently. IdPs that rotate refresh tokens reject (and may revoke on) reuse.
-	refreshLocks sessionLocks
+	// The locks and cache below are in-process only. They do not coordinate across multiple management-api
+	// instances, see the "Single management-api instance" section in ARCHITECTURE.md.
 
-	// renewLocks serialises the renewal of an expired session per session ID.
-	renewLocks sessionLocks
+	// sessionLocks serialises refresh token redemption and expired-session renewal per session ID with a single
+	// critical section. A refresh token is never redeemed twice concurrently (IdPs that rotate refresh tokens reject,
+	// and may revoke on, reuse), and a renewal cannot delete a session while a refresh on it is in progress.
+	sessionLocks sessionLocks
 
-	// renewed caches recently renewed expired sessions so concurrent requests carrying the same stale cookie
-	// reuse the renewed session rather than failing after the old session is deleted.
+	// renewed caches recently renewed expired sessions, keyed by the expired session ID. Requests that still reference
+	// the expired session, either through a stale cookie or a session ID resolved before the renewal, follow it to
+	// the renewed session rather than failing after the old session is deleted. Entries are written while holding
+	// the lock of the expired session ID.
 	renewed renewedSessions
 }
 
@@ -204,6 +207,25 @@ func (o *Verifier) authenticate(ctx context.Context, w http.ResponseWriter, r *h
 
 	session, err := o.sessionHandler.GetSessionByID(r.Context(), sessionID)
 	if api.StatusErrorCheck(err, http.StatusNotFound) {
+		// A concurrent request may have renewed and deleted this session. Follow the renewal rather than logging the
+		// user out.
+		renewed, ok, renewErr := o.lookupRenewedSession(ctx, sessionID, userSecret)
+		if renewErr != nil {
+			return nil, uuid.Nil, "", "", renewErr
+		}
+
+		if ok {
+			err = o.setCookies(w, renewed.sessionID, userSecret, renewed.expiry)
+			if err != nil {
+				return nil, uuid.Nil, "", "", err
+			}
+
+			sessionID = renewed.sessionID
+			session, err = o.sessionHandler.GetSessionByID(ctx, sessionID)
+		}
+	}
+
+	if api.StatusErrorCheck(err, http.StatusNotFound) {
 		o.deleteCookies(w)
 	}
 
@@ -220,15 +242,51 @@ func (o *Verifier) authenticate(ctx context.Context, w http.ResponseWriter, r *h
 
 	claims, err := rp.VerifyIDToken[*oidc.IDTokenClaims](ctx, idToken, relyingParty.IDTokenVerifier())
 	if err != nil {
-		claims, session, err := o.refreshSessionTokens(ctx, relyingParty, sessionID, userSecret, session.EncryptedTokens.AccessToken)
+		claims, session, refreshedSessionID, err := o.refreshSessionTokens(ctx, relyingParty, sessionID, userSecret, session.EncryptedTokens.AccessToken)
 		if err != nil {
 			return nil, uuid.Nil, "", "", err
 		}
 
-		return claims, sessionID, userSecret, session.EncryptedTokens.AccessToken, nil
+		if refreshedSessionID != sessionID {
+			err = o.setCookies(w, refreshedSessionID, userSecret, session.ExpiresAt)
+			if err != nil {
+				return nil, uuid.Nil, "", "", err
+			}
+		}
+
+		return claims, refreshedSessionID, userSecret, session.EncryptedTokens.AccessToken, nil
 	}
 
 	return claims, sessionID, userSecret, session.EncryptedTokens.AccessToken, nil
+}
+
+// lookupRenewedSession reports whether the given session has recently been renewed and returns the renewal. It waits
+// for the session lock, so a renewal in progress completes first. The renewal is only returned to a caller presenting
+// the user secret it was created with.
+func (o *Verifier) lookupRenewedSession(ctx context.Context, sessionID uuid.UUID, userSecret string) (renewedSession, bool, error) {
+	unlock, err := o.sessionLocks.lock(ctx, sessionID)
+	if err != nil {
+		return renewedSession{}, false, fmt.Errorf("Failed to acquire session lock: %w", err)
+	}
+
+	defer unlock()
+
+	return o.getRenewedSessionLocked(sessionID, userSecret)
+}
+
+// getRenewedSessionLocked returns the cached renewal of the given session, if any. The caller must hold the session
+// lock of sessionID.
+func (o *Verifier) getRenewedSessionLocked(sessionID uuid.UUID, userSecret string) (renewedSession, bool, error) {
+	renewed, ok := o.renewed.get(sessionID)
+	if !ok {
+		return renewedSession{}, false, nil
+	}
+
+	if subtle.ConstantTimeCompare([]byte(renewed.userSecret), []byte(userSecret)) != 1 {
+		return renewedSession{}, false, errors.New("User secret does not match renewed session")
+	}
+
+	return renewed, true, nil
 }
 
 // verifySessionAndGetID verifies a signed session token and returns the embedded session ID.
@@ -279,14 +337,18 @@ func (o *Verifier) handleExpiredSession(ctx context.Context, r *http.Request, w 
 		return nil, uuid.Nil, "", "", fmt.Errorf("Failed to get user secret: %w", err)
 	}
 
-	unlock, err := o.renewLocks.lock(ctx, sessionID)
+	unlock, err := o.sessionLocks.lock(ctx, sessionID)
 	if err != nil {
-		return nil, uuid.Nil, "", "", fmt.Errorf("Failed to acquire session renewal lock: %w", err)
+		return nil, uuid.Nil, "", "", fmt.Errorf("Failed to acquire session lock: %w", err)
 	}
 
 	defer unlock()
 
-	renewed, ok := o.renewed.get(sessionID)
+	renewed, ok, err := o.getRenewedSessionLocked(sessionID, userSecret)
+	if err != nil {
+		return nil, uuid.Nil, "", "", err
+	}
+
 	if !ok {
 		renewed, err = o.renewExpiredSession(ctx, r, relyingParty, sessionID, userSecret)
 		if err != nil {
@@ -294,8 +356,6 @@ func (o *Verifier) handleExpiredSession(ctx context.Context, r *http.Request, w 
 		}
 
 		o.renewed.set(sessionID, renewed)
-	} else if subtle.ConstantTimeCompare([]byte(renewed.userSecret), []byte(userSecret)) != 1 {
-		return nil, uuid.Nil, "", "", errors.New("User secret does not match renewed session")
 	} else {
 		_, err = o.sessionHandler.GetSessionByID(ctx, renewed.sessionID)
 		if err != nil {
@@ -312,7 +372,7 @@ func (o *Verifier) handleExpiredSession(ctx context.Context, r *http.Request, w 
 }
 
 // renewExpiredSession starts a new session from the tokens of an expired session and deletes the expired session.
-// The caller must hold the renewal lock for the expired session ID.
+// The caller must hold the session lock for the expired session ID.
 func (o *Verifier) renewExpiredSession(ctx context.Context, r *http.Request, relyingParty rp.RelyingParty, sessionID uuid.UUID, userSecret string) (renewedSession, error) {
 	defer func() {
 		err := o.sessionHandler.DeleteSession(ctx, sessionID)
@@ -333,7 +393,7 @@ func (o *Verifier) renewExpiredSession(ctx context.Context, r *http.Request, rel
 
 	claims, err := rp.VerifyIDToken[*oidc.IDTokenClaims](ctx, idToken, relyingParty.IDTokenVerifier())
 	if err != nil {
-		claims, session, err = o.refreshSessionTokens(ctx, relyingParty, sessionID, userSecret, session.EncryptedTokens.AccessToken)
+		claims, session, err = o.refreshSessionTokensLocked(ctx, relyingParty, sessionID, userSecret, session.EncryptedTokens.AccessToken)
 		if err != nil {
 			return renewedSession{}, fmt.Errorf("Failed to refresh tokens: %w", err)
 		}
@@ -354,17 +414,44 @@ func (o *Verifier) renewExpiredSession(ctx context.Context, r *http.Request, rel
 }
 
 // refreshSessionTokens redeems the refresh token of a stored session and persists the new tokens, while holding the
-// per-session refresh lock so the same refresh token is never redeemed concurrently. staleEncryptedAccessToken is the
-// encrypted access token the caller observed before deciding to refresh; if the stored one differs after acquiring
-// the lock, another request has already refreshed the session and its tokens are reused when the ID token verifies.
-func (o *Verifier) refreshSessionTokens(ctx context.Context, relyingParty rp.RelyingParty, sessionID uuid.UUID, userSecret string, staleEncryptedAccessToken string) (*oidc.IDTokenClaims, *store.Session, error) {
-	unlock, err := o.refreshLocks.lock(ctx, sessionID)
-	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to acquire session refresh lock: %w", err)
+// session lock so the same refresh token is never redeemed concurrently and the session cannot be renewed meanwhile.
+// If the session has been renewed by another request, the renewed session is refreshed instead. It returns the ID of
+// the session that was refreshed, which differs from sessionID when the renewal was followed.
+func (o *Verifier) refreshSessionTokens(ctx context.Context, relyingParty rp.RelyingParty, sessionID uuid.UUID, userSecret string, staleEncryptedAccessToken string) (*oidc.IDTokenClaims, *store.Session, uuid.UUID, error) {
+	for {
+		unlock, err := o.sessionLocks.lock(ctx, sessionID)
+		if err != nil {
+			return nil, nil, uuid.Nil, fmt.Errorf("Failed to acquire session lock: %w", err)
+		}
+
+		renewed, ok, err := o.getRenewedSessionLocked(sessionID, userSecret)
+		if err != nil {
+			unlock()
+			return nil, nil, uuid.Nil, err
+		}
+
+		if ok {
+			// Release before following, so session locks are never held nested.
+			unlock()
+			sessionID = renewed.sessionID
+			continue
+		}
+
+		claims, session, err := o.refreshSessionTokensLocked(ctx, relyingParty, sessionID, userSecret, staleEncryptedAccessToken)
+		unlock()
+		if err != nil {
+			return nil, nil, uuid.Nil, err
+		}
+
+		return claims, session, sessionID, nil
 	}
+}
 
-	defer unlock()
-
+// refreshSessionTokensLocked redeems the refresh token of a stored session and persists the new tokens. The caller
+// must hold the session lock of sessionID. staleEncryptedAccessToken is the encrypted access token the caller
+// observed before deciding to refresh; if the stored one differs, another request has already refreshed the session
+// and its tokens are reused when the ID token verifies.
+func (o *Verifier) refreshSessionTokensLocked(ctx context.Context, relyingParty rp.RelyingParty, sessionID uuid.UUID, userSecret string, staleEncryptedAccessToken string) (*oidc.IDTokenClaims, *store.Session, error) {
 	session, err := o.sessionHandler.GetSessionByID(ctx, sessionID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Failed to get session: %w", err)
@@ -497,8 +584,8 @@ func extractIdpGroups(claims *oidc.IDTokenClaims) []string {
 func (o *Verifier) Login(w http.ResponseWriter, r *http.Request, stateTokenStr string) {
 	relyingParty, err := o.getRelyingParty(r.Context(), r)
 	if err != nil {
-		logger.Log.Info("AUTHN invalid OIDC configuration")
-		err := response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Login failed: %w", err).Error()).Render(w, r)
+		logger.Log.Errorw("AUTHN invalid OIDC configuration", "error", err)
+		err := response.ErrorResponse(http.StatusInternalServerError, "Login failed").Render(w, r)
 		if err != nil {
 			logger.Log.Errorf("Failed rendering internal server error response due to invalid OIDC configuration: %v", err)
 		}
@@ -562,11 +649,36 @@ func (o *Verifier) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = o.sessionHandler.DeleteSession(r.Context(), sessionID)
-
+	err = o.revokeSession(r.Context(), sessionID)
 	if err != nil {
 		logger.Log.Errorw("Failed to delete session information", "error", err)
 		return
+	}
+}
+
+// revokeSession deletes the given session and every session it was recently renewed into, and drops the cached
+// renewals so requests carrying a stale cookie can no longer follow them. Each session lock is held while revoking, so
+// a renewal in progress completes first and is revoked too, and no new renewal can start meanwhile.
+func (o *Verifier) revokeSession(ctx context.Context, sessionID uuid.UUID) error {
+	for {
+		unlock, err := o.sessionLocks.lock(ctx, sessionID)
+		if err != nil {
+			return fmt.Errorf("Failed to acquire session lock: %w", err)
+		}
+
+		err = o.sessionHandler.DeleteSession(ctx, sessionID)
+		renewed, ok := o.renewed.take(sessionID)
+		unlock()
+
+		if err != nil && !api.StatusErrorCheck(err, http.StatusNotFound) {
+			return err
+		}
+
+		if !ok {
+			return nil
+		}
+
+		sessionID = renewed.sessionID
 	}
 }
 
@@ -585,8 +697,8 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 
 	relyingParty, err := o.getRelyingParty(r.Context(), r)
 	if err != nil {
-		logger.Log.Info("AUTHN invalid OIDC configuration")
-		err := response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("OIDC callback failed: %w", err).Error()).Render(w, r)
+		logger.Log.Errorw("AUTHN invalid OIDC configuration", "error", err)
+		err := response.ErrorResponse(http.StatusInternalServerError, "OIDC callback failed").Render(w, r)
 		if err != nil {
 			logger.Log.Errorf("Failed rendering internal server error response due to invalid OIDC configuration: %v", err)
 		}
@@ -596,8 +708,8 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 	handler := rp.CodeExchangeHandler(func(w http.ResponseWriter, r *http.Request, tokens *oidc.Tokens[*oidc.IDTokenClaims], state string, relyingParty rp.RelyingParty) {
 		verifiedClaims, err := rp.VerifyIDToken[*oidc.IDTokenClaims](r.Context(), tokens.IDToken, relyingParty.IDTokenVerifier())
 		if err != nil {
-			logger.Log.Info("AUTHN failed to verify OIDC ID token")
-			err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to verify ID token: %w", err).Error()).Render(w, r)
+			logger.Log.Infow("AUTHN failed to verify OIDC ID token", "error", err)
+			err = response.ErrorResponse(http.StatusInternalServerError, "Failed to verify ID token").Render(w, r)
 			if err != nil {
 				logger.Log.Errorf("Failed rendering internal server error response due to failed ID token verification: %v", err)
 			}
@@ -606,8 +718,8 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 
 		userSecret, err := config.CreateUserSecret()
 		if err != nil {
-			logger.Log.Info("AUTHN failed to generate user secret")
-			err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to generate user secret: %w", err).Error()).Render(w, r)
+			logger.Log.Errorw("AUTHN failed to generate user secret", "error", err)
+			err = response.ErrorResponse(http.StatusInternalServerError, "Failed to generate user secret").Render(w, r)
 			if err != nil {
 				logger.Log.Errorf("Failed rendering internal server error response due to failed user secret generation: %v", err)
 			}
@@ -615,8 +727,8 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 		}
 		encryptedTokens, err := EncryptTokens(tokens.IDToken, tokens.AccessToken, tokens.RefreshToken, userSecret)
 		if err != nil {
-			logger.Log.Infof("AUTHN failed to encrypt tokens %v", err)
-			err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to encrypt tokens: %w", err).Error()).Render(w, r)
+			logger.Log.Errorw("AUTHN failed to encrypt tokens", "error", err)
+			err = response.ErrorResponse(http.StatusInternalServerError, "Failed to encrypt tokens").Render(w, r)
 			if err != nil {
 				logger.Log.Errorf("Failed rendering internal server error response due to failed token encryption: %v", err)
 			}
@@ -625,8 +737,8 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 
 		sessionID, expiry, err := o.sessionHandler.StartSession(r, verifiedClaims, encryptedTokens)
 		if err != nil {
-			logger.Log.Infof("AUTHN failed to start session, %v", err)
-			err = response.ErrorResponse(http.StatusInternalServerError, fmt.Errorf("Failed to start session: %w", err).Error()).Render(w, r)
+			logger.Log.Errorw("AUTHN failed to start session", "error", err)
+			err = response.ErrorResponse(http.StatusInternalServerError, "Failed to start session").Render(w, r)
 			if err != nil {
 				logger.Log.Errorf("Failed rendering internal server error response due to failed session start: %v", err)
 			}
@@ -636,8 +748,8 @@ func (o *Verifier) Callback(w http.ResponseWriter, r *http.Request, redirectURL 
 		err = o.setCookies(w, *sessionID, userSecret, *expiry)
 
 		if err != nil {
-			logger.Log.Infof("AUTHN failed to set cookies, %v", err)
-			err = response.ErrorResponse(http.StatusInternalServerError, err.Error()).Render(w, r)
+			logger.Log.Errorw("AUTHN failed to set cookies", "error", err)
+			err = response.ErrorResponse(http.StatusInternalServerError, "Failed to set session cookies").Render(w, r)
 			if err != nil {
 				logger.Log.Errorf("Failed rendering internal server error response due to failed cookie setting: %v", err)
 			}

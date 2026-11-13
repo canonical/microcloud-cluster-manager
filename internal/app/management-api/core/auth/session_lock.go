@@ -91,6 +91,20 @@ func (c *renewedSessions) get(oldSessionID uuid.UUID) (renewedSession, bool) {
 	return entry, true
 }
 
+// take removes and returns the renewal of the given expired session. Unlike get, it also returns entries past their
+// grace period, so a revocation covers every renewal still cached.
+func (c *renewedSessions) take(oldSessionID uuid.UUID) (renewedSession, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	entry, ok := c.entries[oldSessionID]
+	if ok {
+		delete(c.entries, oldSessionID)
+	}
+
+	return entry, ok
+}
+
 func (c *renewedSessions) set(oldSessionID uuid.UUID, entry renewedSession) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
