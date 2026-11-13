@@ -75,3 +75,60 @@
     width: 5.375rem;
   }
 }
+
+.cluster-link-address-checkbox {
+  margin-left: 8px;
+}
+
+.cluster-link-endpoints {
+  align-items: end;
+  display: grid;
+
+  // 4px + 16px icon + 4px = 24px between the source and target fields
+  gap: 0 4px;
+  grid-template-columns: 1fr 16px 1fr;
+  margin-bottom: $spv--x-large;
+
+  // the margin lives on the container so the arrow lines up with the inputs
+  input,
+  select {
+    margin-bottom: 0;
+  }
+
+  &__arrow {
+    $input-height: calc(
+      #{map-get($settings-text-default, line-height)} + 2 * #{$spv-nudge}
+    );
+
+    height: 16px;
+
+    // centres the icon on an input
+    margin-bottom: calc(($input-height - 16px) / 2);
+    width: 16px;
+
+    svg {
+      display: block;
+      height: 16px;
+      width: 16px;
+    }
+  }
+}
+
+// leaves room for the focus ring of the radio inputs, which is clipped by the scroll container
+.cluster-link-types {
+  &--radio-buttons {
+    padding-left: $sph--small;
+  }
+
+  &__help {
+    margin-top: $spv--x-small;
+  }
+}
+
+.read-only-input {
+  // transparent keeps the same height as editable inputs
+  border-bottom-color: transparent;
+  color: #000;
+  opacity: 1;
+  -webkit-text-fill-color: #000;
+}

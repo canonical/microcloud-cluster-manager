@@ -706,9 +706,9 @@ func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 			return response.SmartError(err).Render(w, r)
 		}
 
-		// The link created on the source cluster is named after the target cluster unless a name is given.
+		// The link created on the source cluster is named "<target>-link" unless a name is given.
 		if linkRequest.Name == "" {
-			linkRequest.Name = linkRequest.TargetCluster
+			linkRequest.Name = linkRequest.TargetCluster + "-link"
 		}
 
 		switch linkRequest.Type {
@@ -799,7 +799,7 @@ func createBidirectionalClusterLink(rc types.RouteConfig, w http.ResponseWriter,
 	// Activate the cluster link on the target cluster using the trust token.
 	targetRequest := api.ClusterLinksPost{
 		Description: linkRequest.Description,
-		Name:        remoteClusterName,
+		Name:        remoteClusterName + "-link",
 		Type:        linkRequest.Type,
 		TrustToken:  trustToken,
 		AuthGroups:  linkRequest.AuthGroups,
@@ -820,8 +820,9 @@ func createBidirectionalClusterLink(rc types.RouteConfig, w http.ResponseWriter,
 // The target cluster does not get a link to the source.
 func createUnidirectionalClusterLink(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, remoteClusterName string, linkRequest models.RemoteClusterLinkPost) error {
 	// Issue the pending identity on the target cluster. It is named after the source cluster.
+	identityName := remoteClusterName + "-link"
 	identityRequest := api.ClusterLinksPost{
-		Name:       remoteClusterName,
+		Name:       identityName,
 		Type:       cluster_link.TypeUnidirectional,
 		AuthGroups: linkRequest.AuthGroups,
 	}
@@ -834,7 +835,7 @@ func createUnidirectionalClusterLink(rc types.RouteConfig, w http.ResponseWriter
 	activated := false
 	defer func() {
 		if !activated {
-			deletePendingIdentity(rc, r, linkRequest.TargetCluster, remoteClusterName)
+			deletePendingIdentity(rc, r, linkRequest.TargetCluster, identityName)
 		}
 	}()
 

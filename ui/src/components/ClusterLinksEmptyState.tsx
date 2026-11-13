@@ -1,6 +1,6 @@
 import { EmptyState, Icon } from "@canonical/react-components";
 import type { FC } from "react";
-import emptyIcon from "icons/empty.svg";
+import CustomIcon from "components/CustomIcon";
 import type { Cluster } from "types/cluster";
 import CreateClusterLinkBtn from "pages/clusters/actions/CreateClusterLinkBtn";
 
@@ -16,7 +16,7 @@ const ClusterLinksEmptyState: FC<Props> = ({ cluster }) => {
     <div className="cluster-links-empty-state">
       <EmptyState
         className="empty-state"
-        image={<img src={emptyIcon} alt="" className="empty-state-icon" />}
+        image={<CustomIcon name="empty" className="empty-state-icon" />}
         title="No cluster links found"
       >
         <p>There are no cluster links on this server.</p>
