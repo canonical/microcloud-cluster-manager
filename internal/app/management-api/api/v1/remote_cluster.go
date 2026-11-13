@@ -23,6 +23,7 @@ import (
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/request"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/types"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -71,8 +72,83 @@ var RemoteCluster = types.RouteGroup{
 		},
 		{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterLinkPut,
+		},
+		{
+			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
 			Method:  http.MethodDelete,
 			Handler: remoteClusterLinkDelete,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators",
+			Method:  http.MethodGet,
+			Handler: remoteClusterReplicatorsGet,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators",
+			Method:  http.MethodPost,
+			Handler: remoteClusterReplicatorsPost,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterReplicatorGet,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterReplicatorPut,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}",
+			Method:  http.MethodDelete,
+			Handler: remoteClusterReplicatorDelete,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}/state",
+			Method:  http.MethodGet,
+			Handler: remoteClusterReplicatorStateGet,
+		},
+		{
+			Path:    "{remoteClusterName}/replicators/{replicatorName}/state",
+			Method:  http.MethodPut,
+			Handler: remoteClusterReplicatorStatePut,
+		},
+		{
+			Path:    "{remoteClusterName}/projects",
+			Method:  http.MethodGet,
+			Handler: remoteClusterProjectsGet,
+		},
+		{
+			Path:    "{remoteClusterName}/projects",
+			Method:  http.MethodPost,
+			Handler: remoteClusterProjectsPost,
+		},
+		{
+			Path:    "{remoteClusterName}/projects/{projectName}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterProjectGet,
+		},
+		{
+			Path:    "{remoteClusterName}/projects/{projectName}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterProjectPut,
+		},
+		{
+			Path:    "{remoteClusterName}/projects/{projectName}/state",
+			Method:  http.MethodGet,
+			Handler: remoteClusterProjectStateGet,
+		},
+		{
+			Path:    "{remoteClusterName}/projects/{projectName}/state",
+			Method:  http.MethodPut,
+			Handler: remoteClusterProjectStatePut,
+		},
+		{
+			Path:    "{remoteClusterName}/operations/{operationID}",
+			Method:  http.MethodGet,
+			Handler: remoteClusterOperationGet,
 		},
 	},
 }
@@ -102,7 +178,7 @@ func remoteClustersGet(rc types.RouteConfig) types.EndpointHandler {
 
 func remoteClusterGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		remoteClusterName, err := request.RemoteClusterName(r)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -133,7 +209,7 @@ func remoteClusterGet(rc types.RouteConfig) types.EndpointHandler {
 
 func remoteClusterDelete(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		remoteClusterName, err := request.RemoteClusterName(r)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -152,7 +228,7 @@ func remoteClusterDelete(rc types.RouteConfig) types.EndpointHandler {
 
 func remoteClusterPatch(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		remoteClusterName, err := request.RemoteClusterName(r)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -308,13 +384,25 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 	}
 }
 
+func remoteClusterLinkPut(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		clusterLinkName, err := request.PathParam(r, request.ClusterLinkNameParam, "cluster link name")
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName)
+		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
+	}
+}
+
 // remoteClusterLinkDelete deletes a cluster link on the given remote cluster. When the removeReverseEdge query
 // parameter is true, it also removes the other edge of the link on the linked cluster: the reverse cluster link for
 // bidirectional links, or the cluster link identity for unidirectional links. The link type and the linked cluster
 // are resolved from the link on the source cluster.
 func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		clusterLinkName, err := request.PathParam(r, request.ClusterLinkNameParam, "cluster link name")
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -534,7 +622,7 @@ func requestClusterConnector(rc types.RouteConfig, r *http.Request, method strin
 }
 
 func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, clusterConnectorPath string) error {
-	remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+	remoteClusterName, err := request.RemoteClusterName(r)
 	if err != nil {
 		return response.SmartError(err).Render(w, r)
 	}
