@@ -1283,6 +1283,61 @@ func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 	}
 }
 
+// remoteClusterLinkPut updates only the link on the cluster given in the path.
+func remoteClusterLinkPut(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		if err != nil {
+			return response.BadRequest(err).Render(w, r)
+		}
+
+		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		if err != nil {
+			return response.BadRequest(err).Render(w, r)
+		}
+
+		if clusterLinkName == "" {
+			return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
+		}
+
+		body, err := readBody(r)
+		if err != nil {
+			logger.Log.Errorw("Failed to read cluster link update", "error", err)
+			return response.BadRequest(err).Render(w, r)
+		}
+
+		var payload *api.ClusterLinkPut
+		err = json.Unmarshal(body, &payload)
+		if err != nil {
+			return response.BadRequest(err).Render(w, r)
+		}
+		if payload == nil {
+			return response.BadRequest(errors.New("Cluster link update must be a JSON object")).Render(w, r)
+		}
+
+		body, err = json.Marshal(payload)
+		if err != nil {
+			return response.InternalError(err).Render(w, r)
+		}
+
+		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName)
+		resp, err := sendTunnelRequest(rc, r, http.MethodPut, path, remoteClusterName, body)
+		if err != nil {
+			logger.Log.Errorw("Failed to update cluster link", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "error", err)
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if !isSuccessStatus(resp.Status) {
+			err = tunnel.ResponseError(*resp, remoteClusterName, "update cluster link")
+			logger.Log.Errorw("Failed to update cluster link", "cluster", remoteClusterName, "cluster_link", clusterLinkName, "status", resp.Status, "error", err)
+			return response.SmartError(err).Render(w, r)
+		}
+
+		writeResponse(w, *resp)
+		return nil
+	}
+}
+
 // remoteClusterLinkDelete removes a single edge of a cluster link, meaning the link is only removed on the
 // remote cluster given in the path. The linked cluster keeps its own cluster link entry.
 func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
@@ -1299,36 +1354,6 @@ func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 
 		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName)
 		return forwardTunnelRequest(rc, w, r, http.MethodDelete, path, remoteClusterName, nil, "delete cluster link")
-	}
-}
-
-// remoteClusterLinkPut updates the description and config of a cluster link on the remote cluster given in the path.
-// The linked cluster keeps its own cluster link entry unchanged.
-func remoteClusterLinkPut(rc types.RouteConfig) types.EndpointHandler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := request.RemoteClusterName(r)
-		if err != nil {
-			return response.SmartError(err).Render(w, r)
-		}
-
-		clusterLinkName, err := request.RequiredPathParam(r, request.ClusterLinkNameParam, "cluster link name")
-		if err != nil {
-			return response.SmartError(err).Render(w, r)
-		}
-
-		var linkRequest api.ClusterLinkPut
-		err = decodeBody(r, &linkRequest)
-		if err != nil {
-			return response.SmartError(err).Render(w, r)
-		}
-
-		body, err := json.Marshal(linkRequest)
-		if err != nil {
-			return response.InternalError(fmt.Errorf("Failed to encode cluster link request: %w", err)).Render(w, r)
-		}
-
-		path := "/1.0/cluster/links/" + url.PathEscape(clusterLinkName)
-		return forwardTunnelRequest(rc, w, r, http.MethodPut, path, remoteClusterName, body, "update cluster link")
 	}
 }
 

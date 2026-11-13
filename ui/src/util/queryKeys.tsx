@@ -4,4 +4,6 @@ export const queryKeys = {
   tokens: "tokens",
   server: "server",
   configuration: "configuration",
+  cluster: "cluster",
+  identities: "identities",
 };
