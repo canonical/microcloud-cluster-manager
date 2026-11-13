@@ -1,0 +1,10 @@
+// Truncate text after overflow at specified line count
+@mixin u-line-clamp-truncate($lines) {
+  -webkit-box-orient: vertical;
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  text-overflow: ellipsis;
+  white-space: initial;
+}

@@ -1,3 +1,5 @@
+@import "./helpers";
+
 .clusterlist-table-container {
   padding: 0;
 }
@@ -30,6 +32,12 @@
   .warnings {
     text-align: right;
     width: 7rem;
+  }
+
+  .description {
+    @include u-line-clamp-truncate(2);
+
+    max-height: calc(1.5rem * 2 + 0.5rem);
   }
 
   .actions {
