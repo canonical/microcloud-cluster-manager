@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/zitadel/oidc/v3/pkg/client/rp"
 )
 
 type sessionCredentialsContextKey string
@@ -15,6 +16,7 @@ const SessionCredentialsProviderKey sessionCredentialsContextKey = "session-cred
 // SessionCredentialsProvider provides authenticated token operations for the current request session credentials.
 type SessionCredentialsProvider struct {
 	verifier             *Verifier
+	relyingParty         rp.RelyingParty
 	sessionID            uuid.UUID
 	userSecret           string
 	encryptedAccessToken string
@@ -44,30 +46,21 @@ func (p *SessionCredentialsProvider) GetUserSecret() (string, error) {
 }
 
 // RefreshSessionTokens refreshes OIDC tokens, persists them, and returns the refreshed token.
+// If another request already refreshed the session's tokens, those are returned instead of redeeming the refresh
+// token again.
 func (p *SessionCredentialsProvider) RefreshSessionTokens(ctx context.Context) (string, error) {
-	session, err := p.verifier.sessionHandler.GetSessionByID(ctx, p.sessionID)
-	if err != nil {
-		return "", fmt.Errorf("Failed to get session: %w", err)
-	}
-
-	_, _, refreshToken, err := DecryptTokens(session.EncryptedTokens, p.userSecret)
-
+	_, session, err := p.verifier.refreshSessionTokens(ctx, p.relyingParty, p.sessionID, p.userSecret, p.encryptedAccessToken)
 	if err != nil {
 		return "", err
 	}
 
-	_, encryptedTokens, refreshedAccessToken, err := p.verifier.refreshTokens(ctx, refreshToken, p.userSecret)
+	refreshedAccessToken, err := DecryptToken(session.EncryptedTokens.AccessToken, p.userSecret)
 	if err != nil {
 		return "", err
-	}
-
-	_, err = p.verifier.sessionHandler.UpdateSessionTokens(ctx, session, encryptedTokens)
-	if err != nil {
-		return "", fmt.Errorf("Failed to update session tokens: %w", err)
 	}
 
 	// Update cached encrypted access token.
-	p.encryptedAccessToken = encryptedTokens.AccessToken
+	p.encryptedAccessToken = session.EncryptedTokens.AccessToken
 
 	return refreshedAccessToken, nil
 }
