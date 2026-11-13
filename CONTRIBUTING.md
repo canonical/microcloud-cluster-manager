@@ -307,3 +307,25 @@ You can then run the UI e2e tests with:
 ```
 make test-ui-e2e
 ```
+
+### MicroClouds for the e2e tests
+
+The tunnel tests use real MicroClouds, so enroll them before you run the backend or UI e2e tests:
+
+```bash
+./scripts/mcm-cluster-onboard.sh --count 2 --instance-prefix mcm-e2e
+```
+
+The UI join test enrolls a MicroCloud with a join token that it creates in the UI. Set up a MicroCloud for it without enrolling it:
+
+```bash
+./scripts/mcm-cluster-onboard.sh --count 1 --instance-prefix mcm-e2e-join --provision-only
+```
+
+Joining uses up the token, so the join test runs once for each enrollment. To run it again, remove the `mcm-e2e-join-01` cluster in the UI and remove the enrollment from the MicroCloud:
+
+```bash
+lxc --project microcloud-mcm exec mcm-e2e-join-01 -- microcloud cluster-manager delete --force
+```
+
+CI sets up LXD, starts the backend, onboards these MicroClouds and then runs the tests.

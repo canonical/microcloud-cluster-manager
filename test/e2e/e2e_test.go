@@ -11,6 +11,7 @@ var tests = []types.Test{
 	testRemoteClusterSuccess,
 	testRemoteClusterSuccessWithMetrics,
 	testRemoteClusterLinkPrecheck,
+	testRemoteClusterTunnel,
 	testRemoteClusterJoinInvalid,
 	testRemoteClusterJoinExpiredToken,
 	testRemoteClusterStatusNoCert,
