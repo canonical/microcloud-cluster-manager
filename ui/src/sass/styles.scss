@@ -26,7 +26,9 @@
 @import "breadcrumbs";
 @import "cluster_detail";
 @import "cluster_graphs";
+@import "cluster_link_rich_tooltip";
 @import "cluster_list";
+@import "cluster_rich_tooltip";
 @import "cluster_token_list";
 @import "empty_state";
 @import "forms";
@@ -35,6 +37,8 @@
 @import "page_header";
 @import "pattern_navigation";
 @import "not_authorized";
+@import "resources";
+@import "rich_tooltip";
 @import "selectable_main_table";
 @import "status_bar";
 
@@ -98,6 +102,7 @@
 body {
   // needed for notification list expanding animation
   overflow: hidden;
+  scrollbar-color: $color-mid-dark transparent;
 }
 
 .p-heading--4 {
@@ -152,4 +157,15 @@ body {
 
 .u-loader {
   margin: $spv--x-large $sph--x-large $spv--x-large $sph--x-large;
+}
+
+.cluster-link-rich-tooltip-table,
+.cluster-rich-tooltip-table {
+  .u-row:hover {
+    background-color: $colors--theme--background-hover;
+  }
+
+  .u-row--disabled:hover {
+    background-color: $colors--theme--background-default;
+  }
 }

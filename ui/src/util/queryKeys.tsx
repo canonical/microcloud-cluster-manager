@@ -4,4 +4,6 @@ export const queryKeys = {
   tokens: "tokens",
   server: "server",
   configuration: "configuration",
+  state: "state",
+  identities: "identities",
 };
