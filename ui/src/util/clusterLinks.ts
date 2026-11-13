@@ -1,6 +1,6 @@
 import type { Cluster, ClusterLink } from "types/cluster";
 
-const getLinkAddresses = (link: ClusterLink): string[] => {
+export const getLinkAddresses = (link: ClusterLink): string[] => {
   return link.config?.["volatile.addresses"]?.split(",") ?? [];
 };
 

@@ -59,6 +59,13 @@
   margin-bottom: $spv--large;
 }
 
+.cluster-links-create {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  margin-bottom: $spv--large;
+}
+
 .cluster-links-empty-state {
   align-items: center;
   display: flex;
@@ -125,10 +132,96 @@
   }
 }
 
+.cluster-link-type-chip {
+  align-items: center;
+  display: inline-flex;
+
+  &__icon {
+    margin-right: $sph--small;
+  }
+}
+
 .read-only-input {
   // transparent keeps the same height as editable inputs
   border-bottom-color: transparent;
   color: #000;
   opacity: 1;
   -webkit-text-fill-color: #000;
+}
+
+$action-padding: 0.6875rem;
+
+.cluster-links-table {
+  tbody td,
+  tbody th {
+    vertical-align: middle;
+  }
+
+  th.select,
+  td.select {
+    width: 2rem;
+  }
+
+  .name {
+    width: 12rem;
+  }
+
+  .type {
+    width: 8rem;
+
+    .p-icon--switcher {
+      transform: rotate(90deg);
+    }
+  }
+
+  .target {
+    width: 8rem;
+  }
+
+  .description {
+    width: 20%;
+  }
+
+  .used-by {
+    width: 5rem;
+  }
+
+  .addresses {
+    width: 9rem;
+  }
+
+  .actions {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+    width: 6rem;
+
+    // Vanilla offsets icons with negative margins that assume a label next to
+    // them; icon-only buttons need symmetric padding for centered icons.
+    button {
+      margin-right: 0;
+      padding-left: $action-padding;
+      padding-right: $action-padding;
+
+      [class*="p-icon"]:is(:first-child, :last-child),
+      .ds.icon:is(:first-child, :last-child) {
+        margin-left: 0;
+        margin-right: 0;
+      }
+    }
+  }
+
+  &__settings-icon {
+    display: block;
+    height: 18px;
+    margin: 0 $action-padding 0 auto;
+    width: 18px;
+  }
+
+  &__divider {
+    border-left: 1px solid $colors--light-theme--border-default;
+    display: inline-block;
+    height: 1rem;
+    vertical-align: middle;
+  }
 }

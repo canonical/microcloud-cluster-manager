@@ -16,9 +16,15 @@ interface Props {
   cluster: Cluster;
   link: ClusterLink;
   targetCluster?: Cluster;
+  iconOnly?: boolean;
 }
 
-const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
+const DeleteClusterLinkBtn: FC<Props> = ({
+  cluster,
+  link,
+  targetCluster,
+  iconOnly = false,
+}) => {
   const queryClient = useQueryClient();
   const toastNotification = useToastNotification();
   const [isLoading, setLoading] = useState(false);
@@ -64,6 +70,7 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
 
   return (
     <ConfirmationButton
+      appearance={iconOnly ? "base" : undefined}
       className="u-no-margin--bottom has-icon"
       loading={isLoading}
       confirmationModalProps={{
@@ -105,7 +112,11 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
       shiftClickEnabled
     >
       <DsIcon icon="delete" />
-      <span>Delete</span>
+      {iconOnly ? (
+        <span className="u-off-screen">Delete {link.name}</span>
+      ) : (
+        <span>Delete</span>
+      )}
     </ConfirmationButton>
   );
 };
