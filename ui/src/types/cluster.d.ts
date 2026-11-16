@@ -63,7 +63,8 @@ export interface ClusterLink {
 export interface ClusterLinkPost {
   target_cluster: string;
   name: string;
-  auth_groups: string[];
+  source_auth_groups: string[];
+  target_auth_groups?: string[];
   description: string;
   type: ClusterLink["type"];
   remote_address?: string;
