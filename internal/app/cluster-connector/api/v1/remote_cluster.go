@@ -769,6 +769,10 @@ func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 			return response.BadRequest(errors.New("Source cluster and target cluster must differ")).Render(w, r)
 		}
 
+		if linkRequest.Type != cluster_link.TypeBidirectional && len(linkRequest.TargetAuthGroups) > 0 {
+			return response.BadRequest(errors.New("Target auth groups can only be set for bidirectional cluster links")).Render(w, r)
+		}
+
 		if linkRequest.Type == cluster_link.TypePublic && len(linkRequest.AuthGroups) > 0 {
 			return response.BadRequest(errors.New("Auth groups cannot be set for public cluster links")).Render(w, r)
 		}
@@ -846,7 +850,6 @@ func extractCertificateFingerprint(body []byte) (string, error) {
 // using the trust token returned by the source cluster.
 func createBidirectionalClusterLink(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, remoteClusterName string, linkRequest models.RemoteClusterLinkPost) error {
 	sourceLinkName := linkRequest.Name
-
 	// Create the pending cluster link on the source cluster, which returns a trust token.
 	sourceRequest := api.ClusterLinksPost{
 		Description: linkRequest.Description,
@@ -878,7 +881,7 @@ func createBidirectionalClusterLink(rc types.RouteConfig, w http.ResponseWriter,
 		Name:        remoteClusterName + "-link",
 		Type:        linkRequest.Type,
 		TrustToken:  trustToken,
-		AuthGroups:  linkRequest.AuthGroups,
+		AuthGroups:  linkRequest.TargetAuthGroups,
 	}
 
 	targetLinkResponse, err := sendClusterLinkRequest(rc, r, linkRequest.TargetCluster, targetRequest)

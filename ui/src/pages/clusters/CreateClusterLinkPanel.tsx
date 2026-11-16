@@ -55,7 +55,7 @@ const CreateClusterLinkPanel: FC = () => {
     const payload: ClusterLinkPost = {
       target_cluster: values.targetCluster,
       name: values.name.trim(),
-      auth_groups: [],
+      source_auth_groups: [],
       description: values.description,
       type: values.type,
     };
