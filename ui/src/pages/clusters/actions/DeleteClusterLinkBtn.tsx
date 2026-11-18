@@ -10,29 +10,34 @@ import { useState } from "react";
 import { queryKeys } from "util/queryKeys";
 import type { Cluster, ClusterLink } from "types/cluster";
 import DsIcon from "components/DsIcon";
-import { isBidirectional, isUnidirectional } from "util/clusterLinks";
+import {
+  canRemoveTargetEnd,
+  hasTargetEnd,
+  isBidirectional,
+} from "util/clusterLinks";
 
 interface Props {
   cluster: Cluster;
   link: ClusterLink;
   targetCluster?: Cluster;
+  iconOnly?: boolean;
 }
 
-const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
+const DeleteClusterLinkBtn: FC<Props> = ({
+  cluster,
+  link,
+  targetCluster,
+  iconOnly = false,
+}) => {
   const queryClient = useQueryClient();
   const toastNotification = useToastNotification();
   const [isLoading, setLoading] = useState(false);
   const [deleteBothEnds, setDeleteBothEnds] = useState(true);
-  const isBidirectionalLink = isBidirectional(link);
-  const isUnidirectionalLink = isUnidirectional(link);
-  const canCleanTarget = !!targetCluster?.tunnel_registered;
+  const canCleanTarget = canRemoveTargetEnd(link, targetCluster);
 
   const handleDelete = async () => {
     setLoading(true);
-    const removeReverseEdge =
-      (isBidirectionalLink || isUnidirectionalLink) &&
-      deleteBothEnds &&
-      canCleanTarget;
+    const removeReverseEdge = deleteBothEnds && canCleanTarget;
     try {
       await deleteClusterLink(cluster.name, link.name, removeReverseEdge);
 
@@ -64,6 +69,7 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
 
   return (
     <ConfirmationButton
+      appearance={iconOnly ? "base" : undefined}
       className="u-no-margin--bottom has-icon"
       loading={isLoading}
       confirmationModalProps={{
@@ -74,12 +80,12 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
               This will permanently delete cluster link{" "}
               <strong>{link.name}</strong>. This action cannot be undone.
             </p>
-            {(isBidirectionalLink || isUnidirectionalLink) &&
+            {hasTargetEnd(link) &&
               (canCleanTarget ? (
                 <CheckboxInput
                   id="delete-both-ends"
                   label={
-                    isBidirectionalLink
+                    isBidirectional(link)
                       ? "Delete links on both source and target cluster"
                       : "Also delete identity on the target cluster"
                   }
@@ -105,7 +111,11 @@ const DeleteClusterLinkBtn: FC<Props> = ({ cluster, link, targetCluster }) => {
       shiftClickEnabled
     >
       <DsIcon icon="delete" />
-      <span>Delete</span>
+      {iconOnly ? (
+        <span className="u-off-screen">Delete {link.name}</span>
+      ) : (
+        <span>Delete</span>
+      )}
     </ConfirmationButton>
   );
 };

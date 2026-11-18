@@ -12,7 +12,6 @@
 @include vf-p-icon-export;
 @include vf-p-icon-profile;
 @include vf-p-icon-submit-bug;
-@include vf-p-icon-switcher-environments;
 @include vf-p-icon-status-waiting-small;
 @include vf-p-icon-status-succeeded-small;
 @include vf-p-icon-status-failed-small;
@@ -153,4 +152,51 @@ body {
 
 .u-loader {
   margin: $spv--x-large $sph--x-large $spv--x-large $sph--x-large;
+}
+
+.actions-list {
+  display: inline-block;
+  min-width: 5.5rem;
+
+  .p-inline-list__item {
+    margin-right: 0;
+  }
+
+  & > * {
+    border-right: 1px solid $colors--light-theme--border-default;
+    margin: 0;
+    padding-left: 0;
+    padding-right: 0;
+
+    button {
+      align-items: center;
+      display: inline-flex;
+      height: 2.5rem;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+      vertical-align: middle;
+      width: 44px;
+
+      // Legacy and ds icons carry different vertical-align/margins; centre both
+      [class*="p-icon"],
+      svg {
+        margin: 0;
+        vertical-align: middle !important;
+      }
+    }
+  }
+
+  & > *:last-child {
+    border-right: none;
+  }
+}
+
+.p-chip.cluster-link-type-chip {
+  align-items: center;
+  background: #f2f2f2;
+  border: 1px solid #636363;
+  border-color: var(--color-icon-muted-root, #636363);
+  border-radius: var(--dimension-radius-full, 9999px);
+  display: inline-flex;
 }

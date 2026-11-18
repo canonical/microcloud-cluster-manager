@@ -28,7 +28,7 @@ import { useCluster, useClusterLinks } from "context/useClusters";
 import { useIdentities } from "context/useIdentities";
 import usePanelParams from "context/usePanelParams";
 import { useFormik } from "formik";
-import { getLinkIconType, LINK_TYPES } from "pages/clusters/clusterLinkTypes";
+import { getLinkIconType, LINK_TYPES } from "util/clusterLinkTypes";
 import type { ClusterLink } from "types/cluster";
 import {
   getLinkedCluster,
@@ -69,6 +69,7 @@ const EditClusterLinkPanel: FC = () => {
   const { data: identities = [] } = useIdentities(clusterName);
 
   const link = clusterLinks.find((item) => item.name === linkName);
+  // The cluster the link points at, if it is known to the cluster manager.
   const targetCluster = link ? getLinkedCluster(link, clusters) : undefined;
   const linkType = LINK_TYPES.find((type) => type.value === link?.type);
   const identity = getLinkIdentity(identities, panelParams.clusterLink);
