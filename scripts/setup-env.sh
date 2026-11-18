@@ -10,6 +10,14 @@ make add-hosts
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 KEY_DIR="$SCRIPT_DIR/../test/keys"
 if [ ! -d "$KEY_DIR" ]; then
+  # The connector advertises an IPv4 address resolved from the machine hostname.
+  # Include every candidate so certificate validity does not depend on resolver order.
+  CERT_SANS="DNS:ma.lxd-cm.local,DNS:cc.lxd-cm.local,IP:127.0.0.1,IP:127.0.1.1"
+  MEMBER_IPS=$(getent ahostsv4 "$(hostname)" | awk '{print $1}' | sort -u)
+  for MEMBER_IP in $MEMBER_IPS; do
+    CERT_SANS+=",IP:$MEMBER_IP"
+  done
+
   mkdir -p $KEY_DIR
   openssl req -nodes -x509 -newkey ec \
     -pkeyopt ec_paramgen_curve:secp384r1 \
@@ -18,7 +26,7 @@ if [ ! -d "$KEY_DIR" ]; then
     -out $KEY_DIR/tls.crt \
     -subj "/C=GB/ST=London/L=London/O=Microcloud Cluster Manager/OU=dev/CN=ma.lxd-cm.local" \
     -days 3000 \
-    -addext "subjectAltName=DNS:ma.lxd-cm.local,DNS:cc.lxd-cm.local,IP:127.0.0.1,IP:127.0.1.1"
+    -addext "subjectAltName=$CERT_SANS"
 
   cp $KEY_DIR/tls.crt $KEY_DIR/ca.crt
 fi

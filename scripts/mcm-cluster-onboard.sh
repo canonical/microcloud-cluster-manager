@@ -12,14 +12,15 @@
 #   6. enables the cluster manager reverse tunnel.
 #
 # The Cluster Manager development environment must be running (`make dev`) and the
-# Cluster Manager binary must be built (`make build`). The environment that `make dev`
-# sets up is loaded from `scripts/setup-env.sh`, because the Cluster Manager CLI reads
-# the same configuration as the services.
+# Cluster Manager binary must be built (`make build`), or CLI_BIN must be the path of
+# another build. The environment that `make dev` sets up is loaded from
+# `scripts/setup-env.sh`, because the Cluster Manager CLI reads the same configuration
+# as the services.
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-CLI_BIN="$(cd -- "${SCRIPT_DIR}/.." && pwd)/cmd/app"
+CLI_BIN="${CLI_BIN:-$(cd -- "${SCRIPT_DIR}/.." && pwd)/cmd/app}"
 
 # The join token advertises the Cluster Connector address that the Cluster Manager runs
 # behind. The Cluster Manager CLI reads it from the environment, so the script uses the
@@ -48,6 +49,7 @@ VERBOSE=0
 NUKE=0
 REREGISTER=0
 SEQUENTIAL=0
+PROVISION_ONLY=0
 
 WORK_DIR=""
 
@@ -79,6 +81,8 @@ Options:
       --re-register            Remove existing Cluster Manager enrollments with
                                'microcloud cluster-manager delete --force' and enroll the
                                clusters again.
+      --provision-only         Set up the clusters but do not enroll them. Enroll them
+                               yourself with 'microcloud cluster-manager join'.
       --microcloud-channel CHANNEL
                                Channel of the MicroCloud snap. (default: ${MICROCLOUD_CHANNEL})
       --sequential             Set up one container at a time instead of in parallel. Use this
@@ -131,6 +135,10 @@ parse_args() {
         ;;
       --re-register)
         REREGISTER=1
+        shift
+        ;;
+      --provision-only)
+        PROVISION_ONLY=1
         shift
         ;;
       --sequential)
@@ -891,6 +899,11 @@ main() {
   run_parallel "configure the LXD API addresses and cluster certificates" configure_instance_cluster_certificate "${instances[@]}"
   run_parallel "configure the OIDC settings in the LXD of the clusters" configure_instance_oidc "${instances[@]}"
   run_parallel "map the identity provider group to the LXD admin group" configure_instance_admin_group "${instances[@]}"
+
+  if [ "${PROVISION_ONLY}" -eq 1 ]; then
+    log "${#instances[@]} cluster(s) set up and not enrolled"
+    return 0
+  fi
 
   log "Enrolling the clusters with the Cluster Manager"
 
