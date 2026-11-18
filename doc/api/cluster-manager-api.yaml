@@ -18,6 +18,8 @@ tags:
     description: Manage remote cluster join tokens.
   - name: Auth groups
     description: Auth groups of a remote cluster.
+  - name: Auth identities
+    description: Auth identities of a remote cluster.
   - name: Cluster links
     description: Manage the cluster links of a remote cluster.
   - name: Replicators
@@ -368,6 +370,8 @@ paths:
       security:
         - bearerAuth: []
       responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "200":
           $ref: "#/components/responses/LXDSync"
         "403":
@@ -376,6 +380,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
   /1.0/remote-cluster/{remoteClusterName}/cluster-links:
     parameters:
       - $ref: "#/components/parameters/RemoteClusterName"
@@ -386,6 +392,8 @@ paths:
       security:
         - bearerAuth: []
       responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "200":
           description: Cluster links of the remote cluster
           content:
@@ -405,6 +413,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
     post:
       summary: Create a cluster link on a remote cluster
       tags:
@@ -431,6 +441,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
   /1.0/remote-cluster/{remoteClusterName}/cluster-links/{clusterLinkName}:
     parameters:
       - $ref: "#/components/parameters/RemoteClusterName"
@@ -458,6 +470,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
     delete:
       summary: Delete a cluster link
       tags:
@@ -478,6 +492,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
   /1.0/remote-cluster/{remoteClusterName}/replicators:
     parameters:
       - $ref: "#/components/parameters/RemoteClusterName"
@@ -490,6 +506,8 @@ paths:
       security:
         - bearerAuth: []
       responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "200":
           description: Replicators of the remote cluster
           content:
@@ -509,6 +527,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
     post:
       summary: Create a replicator on a remote cluster
       parameters:
@@ -534,6 +554,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
   /1.0/remote-cluster/{remoteClusterName}/replicators/{replicatorName}:
     parameters:
       - $ref: "#/components/parameters/RemoteClusterName"
@@ -546,6 +568,8 @@ paths:
       security:
         - bearerAuth: []
       responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "200":
           description: Replicator
           content:
@@ -563,6 +587,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
     put:
       summary: Update a replicator
       tags:
@@ -586,6 +612,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
     delete:
       summary: Delete a replicator
       tags:
@@ -593,6 +621,8 @@ paths:
       security:
         - bearerAuth: []
       responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "200":
           $ref: "#/components/responses/LXDSync"
         "403":
@@ -601,6 +631,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
   /1.0/remote-cluster/{remoteClusterName}/replicators/{replicatorName}/state:
     parameters:
       - $ref: "#/components/parameters/RemoteClusterName"
@@ -613,6 +645,8 @@ paths:
       security:
         - bearerAuth: []
       responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "200":
           description: Replicator state
           content:
@@ -630,6 +664,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
     put:
       summary: Change the state of a replicator
       tags:
@@ -655,10 +691,11 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
   /1.0/remote-cluster/{remoteClusterName}/projects:
     parameters:
       - $ref: "#/components/parameters/RemoteClusterName"
-      - $ref: "#/components/parameters/Force"
     get:
       summary: List the projects of a remote cluster
       tags:
@@ -666,6 +703,8 @@ paths:
       security:
         - bearerAuth: []
       responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "200":
           description: Projects of the remote cluster
           content:
@@ -685,6 +724,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
     post:
       summary: Create a project on a remote cluster
       tags:
@@ -708,6 +749,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
   /1.0/remote-cluster/{remoteClusterName}/projects/{projectName}:
     parameters:
       - $ref: "#/components/parameters/RemoteClusterName"
@@ -719,6 +762,8 @@ paths:
       security:
         - bearerAuth: []
       responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "200":
           description: Project
           content:
@@ -736,6 +781,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
     put:
       summary: Update a project
       tags:
@@ -759,6 +806,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
   /1.0/remote-cluster/{remoteClusterName}/projects/{projectName}/state:
     parameters:
       - $ref: "#/components/parameters/RemoteClusterName"
@@ -770,6 +819,8 @@ paths:
       security:
         - bearerAuth: []
       responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "200":
           description: Project state
           content:
@@ -787,6 +838,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
     put:
       summary: Change the state of a project
       parameters:
@@ -814,6 +867,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
   /1.0/remote-cluster/{remoteClusterName}/operations/{operationID}:
     parameters:
       - $ref: "#/components/parameters/RemoteClusterName"
@@ -825,6 +880,8 @@ paths:
       security:
         - bearerAuth: []
       responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "200":
           description: Operation
           content:
@@ -842,6 +899,30 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/auth/identities:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+    get:
+      summary: List the auth identities of a remote cluster
+      tags:
+        - Auth identities
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
 components:
   securitySchemes:
     bearerAuth:
@@ -921,7 +1002,7 @@ components:
           schema:
             $ref: "#/components/schemas/Response"
     BadRequest:
-      description: Invalid request
+      description: Invalid request, or the remote cluster does not have an active tunnel
       content:
         application/json:
           schema:
@@ -953,6 +1034,15 @@ components:
           examples:
             error:
               $ref: "#/components/examples/ResponseErrorInternal"
+    BadGateway:
+      description: The remote cluster is unreachable through its tunnel, or returned an invalid response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          examples:
+            error:
+              $ref: "#/components/examples/ResponseErrorBadGateway"
   schemas:
     ClusterLink:
       type: object
@@ -1173,6 +1263,30 @@ components:
           type: boolean
         err:
           type: string
+        err_code:
+          type: integer
+          description: Error code of the operation.
+        child_count:
+          type: integer
+          description: Number of child operations.
+        location:
+          type: string
+          description: Cluster member the operation was found on.
+        requestor:
+          $ref: "#/components/schemas/OperationRequestor"
+    OperationRequestor:
+      type: object
+      description: Original requestor of an operation.
+      properties:
+        username:
+          type: string
+          description: Identifier of the identity, or the username when using the unix socket.
+        protocol:
+          type: string
+          description: Method used to authenticate the requestor.
+        address:
+          type: string
+          description: Origin address of the request.
     Response:
       type: object
       properties:
@@ -1738,6 +1852,13 @@ components:
         status: Error
         status_code: 409
         error: RemoteCluster conflict
+        metadata: null
+    ResponseErrorBadGateway:
+      value:
+        type: error
+        status: Error
+        status_code: 502
+        error: 'Request to cluster "cluster-1" failed: tunnel closed'
         metadata: null
     ResponseErrorInternal:
       value:

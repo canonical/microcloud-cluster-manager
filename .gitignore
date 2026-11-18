@@ -16,6 +16,7 @@ test-results
 
 # backend
 test/e2e/data
+test/openapi/cluster-manager-api.yaml
 tmp
 
 # rockcraft
