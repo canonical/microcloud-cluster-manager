@@ -1,5 +1,5 @@
-import type { ClusterLink } from "types/cluster";
 import type { ResourceIconType } from "components/ResourceIcon";
+import type { ClusterLink } from "types/cluster";
 
 export const LINK_TYPES: {
   value: ClusterLink["type"];

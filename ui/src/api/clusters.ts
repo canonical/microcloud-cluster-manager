@@ -80,6 +80,23 @@ export const createClusterLink = async (
   ).then(handleResponse);
 };
 
+export const updateClusterLink = async (
+  source: string,
+  clusterLinkName: string,
+  body: string,
+): Promise<void> => {
+  await fetch(
+    `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links/${encodeURIComponent(clusterLinkName)}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body,
+    },
+  ).then(handleResponse);
+};
+
 export const deleteClusterLink = async (
   source: string,
   clusterLinkName: string,
