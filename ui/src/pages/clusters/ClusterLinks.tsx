@@ -51,7 +51,7 @@ const ClusterLinks: FC<Props> = ({ cluster }) => {
             <h2 className="p-heading--4 u-no-margin--bottom u-no-padding--top">
               Cluster links
             </h2>
-            <CreateClusterLinkBtn cluster={cluster} />
+            <CreateClusterLinkBtn cluster={cluster.name} />
           </div>
           {clusterLinks.map((link) => (
             <ClusterLinkCard
@@ -67,7 +67,7 @@ const ClusterLinks: FC<Props> = ({ cluster }) => {
         !error &&
         clusterLinks &&
         clusterLinks.length === 0 && (
-          <ClusterLinksEmptyState cluster={cluster} />
+          <ClusterLinksEmptyState cluster={cluster.name} />
         )}
     </>
   );

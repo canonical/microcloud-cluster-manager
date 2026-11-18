@@ -62,6 +62,10 @@ type RemoteCluster struct {
 	JoinedAt           time.Time            `json:"joined_at"`
 	CreatedAt          time.Time            `json:"created_at"`
 	LastStatusUpdateAt time.Time            `json:"last_status_update_at"`
+
+	// ClusterLinks and ClusterLinksError are only set when listing with with-links=1.
+	ClusterLinks      []api.ClusterLink `json:"cluster_links,omitempty"`
+	ClusterLinksError string            `json:"cluster_links_error,omitempty"`
 }
 
 // RemoteClusterPatch represents the payload for the PATCH /1.0/remote-clusters/{remoteClusterName} endpoint.
