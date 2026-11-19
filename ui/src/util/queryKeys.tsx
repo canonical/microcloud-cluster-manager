@@ -7,4 +7,5 @@ export const queryKeys = {
   cluster: "cluster",
   identities: "identities",
   state: "state",
+  authGroups: "authGroups",
 };

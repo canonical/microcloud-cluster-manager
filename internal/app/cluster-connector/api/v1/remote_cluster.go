@@ -135,6 +135,11 @@ var RemoteClusterInternal = types.RouteGroup{
 		},
 		{
 			Path:    "{remoteClusterName}/auth/identities/tls/{identityId}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterIdentityPut,
+		},
+		{
+			Path:    "{remoteClusterName}/auth/identities/tls/{identityId}",
 			Method:  http.MethodDelete,
 			Handler: remoteClusterIdentityDelete,
 		},
@@ -779,12 +784,12 @@ func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 			return response.BadRequest(errors.New("Source cluster and target cluster must differ")).Render(w, r)
 		}
 
-		if linkRequest.Type != cluster_link.TypeBidirectional && len(linkRequest.TargetAuthGroups) > 0 {
-			return response.BadRequest(errors.New("Target auth groups can only be set for bidirectional cluster links")).Render(w, r)
+		if linkRequest.Type == cluster_link.TypePublic && (len(linkRequest.SourceAuthGroups) > 0 || len(linkRequest.TargetAuthGroups) > 0) {
+			return response.BadRequest(errors.New("Auth groups cannot be set for public cluster links")).Render(w, r)
 		}
 
-		if linkRequest.Type == cluster_link.TypePublic && len(linkRequest.AuthGroups) > 0 {
-			return response.BadRequest(errors.New("Auth groups cannot be set for public cluster links")).Render(w, r)
+		if linkRequest.Type != cluster_link.TypeBidirectional && len(linkRequest.SourceAuthGroups) > 0 {
+			return response.BadRequest(errors.New("Source auth groups can only be set for bidirectional cluster links")).Render(w, r)
 		}
 
 		if linkRequest.Type != cluster_link.TypePublic && linkRequest.RemoteAddress != "" {
@@ -865,7 +870,7 @@ func createBidirectionalClusterLink(rc types.RouteConfig, w http.ResponseWriter,
 		Description: linkRequest.Description,
 		Name:        sourceLinkName,
 		Type:        linkRequest.Type,
-		AuthGroups:  linkRequest.AuthGroups,
+		AuthGroups:  linkRequest.SourceAuthGroups,
 	}
 	pendingLinkResponse, err := sendClusterLinkRequest(rc, r, remoteClusterName, sourceRequest)
 	if err != nil {
@@ -913,7 +918,7 @@ func createUnidirectionalClusterLink(rc types.RouteConfig, w http.ResponseWriter
 	identityRequest := api.ClusterLinksPost{
 		Name:       identityName,
 		Type:       cluster_link.TypeUnidirectional,
-		AuthGroups: linkRequest.AuthGroups,
+		AuthGroups: linkRequest.TargetAuthGroups,
 	}
 
 	identityResponse, err := sendClusterLinkRequest(rc, r, linkRequest.TargetCluster, identityRequest)
@@ -1451,6 +1456,64 @@ func remoteClusterIdentitiesGet(rc types.RouteConfig) types.EndpointHandler {
 
 		writeResponse(w, *resp)
 		return nil
+	}
+}
+
+func remoteClusterIdentityPut(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		remoteClusterName, err := request.RemoteClusterName(r)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		identityID, err := request.RequiredPathParam(r, request.IdentityIDParam, "identity ID")
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		var payload *api.IdentityPut
+		err = decodeBody(r, &payload)
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if payload == nil {
+			return response.BadRequest(errors.New("Identity update must be a JSON object")).Render(w, r)
+		}
+
+		body, err := json.Marshal(payload)
+		if err != nil {
+			return response.InternalError(fmt.Errorf("Failed to encode identity update: %w", err)).Render(w, r)
+		}
+
+		path := "/1.0/auth/identities/tls/" + url.PathEscape(identityID)
+		resp, err := sendTunnelRequest(rc, r, http.MethodGet, path, remoteClusterName, nil)
+		if err != nil {
+			logger.Log.Errorw("Failed to fetch identity before update", "cluster", remoteClusterName, "identity", identityID, "error", err)
+			return response.SmartError(err).Render(w, r)
+		}
+
+		if !isSuccessStatus(resp.Status) {
+			err = tunnel.ResponseError(*resp, remoteClusterName, "fetch identity before update")
+			logger.Log.Errorw("Failed to fetch identity before update", "cluster", remoteClusterName, "identity", identityID, "status", resp.Status, "error", err)
+			return response.SmartError(err).Render(w, r)
+		}
+
+		var identityResponse struct {
+			Metadata *api.Identity `json:"metadata"`
+		}
+
+		err = json.Unmarshal(resp.Body, &identityResponse)
+		if err != nil || identityResponse.Metadata == nil || identityResponse.Metadata.Type == "" {
+			logger.Log.Errorw("Invalid identity response before update", "cluster", remoteClusterName, "identity", identityID, "error", err)
+			return response.SmartError(api.StatusErrorf(http.StatusBadGateway, "Invalid identity response from cluster %q", remoteClusterName)).Render(w, r)
+		}
+
+		if identityResponse.Metadata.Type != api.IdentityTypeCertificateClusterLink {
+			return response.Forbidden(errors.New("Only cluster link identities can be updated")).Render(w, r)
+		}
+
+		return forwardTunnelRequest(rc, w, r, http.MethodPut, path, remoteClusterName, body, "update identity")
 	}
 }
 

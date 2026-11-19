@@ -11,6 +11,11 @@ export default mergeConfig(
       environment: "jsdom",
       globals: true,
       include: ["./src/**/*.spec.{ts,tsx}"],
+      server: {
+        deps: {
+          inline: ["@canonical/react-ds-global"],
+        },
+      },
       coverage: {
         provider: "istanbul",
         reportsDirectory: "coverage/unit",

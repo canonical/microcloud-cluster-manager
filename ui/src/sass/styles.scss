@@ -33,6 +33,7 @@
 @import "page_header";
 @import "panel_section";
 @import "pattern_navigation";
+@import "permission_group_selection";
 @import "not_authorized";
 @import "actions_list";
 @import "resources";
@@ -168,6 +169,10 @@ body {
   margin: $spv--x-large $sph--x-large $spv--x-large $sph--x-large;
 }
 
+.clickable-cell {
+  cursor: pointer;
+}
+
 .p-chip.cluster-link-type-chip {
   align-items: center;
   background: #f2f2f2;
@@ -179,6 +184,16 @@ body {
 
 .cluster-link-rich-tooltip-table,
 .cluster-rich-tooltip-table {
+  .u-row:hover {
+    background-color: $colors--theme--background-hover;
+  }
+
+  .u-row--disabled:hover {
+    background-color: $colors--theme--background-default;
+  }
+}
+
+.group-selection-table {
   .u-row:hover {
     background-color: $colors--theme--background-hover;
   }

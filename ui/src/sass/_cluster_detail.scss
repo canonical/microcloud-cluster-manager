@@ -120,6 +120,10 @@
 .cluster-link-types {
   &--radio-buttons {
     padding-left: $sph--small;
+
+    > .p-radio-wrapper:last-child .p-form-help-text {
+      margin-bottom: 0;
+    }
   }
 
   &__help {
@@ -156,6 +160,10 @@
     dd {
       margin-left: 0;
     }
+  }
+
+  .select {
+    max-width: 50px;
   }
 }
 
