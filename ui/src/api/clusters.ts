@@ -16,6 +16,23 @@ export const fetchCluster = async (
     .then((data) => (data as LxdApiResponse<Cluster>).metadata);
 };
 
+export const fetchClusterCertificateFingerprint = async (
+  remoteClusterName: string,
+): Promise<string> => {
+  const data = (await fetch(
+    `/1.0/remote-cluster/${encodeURIComponent(remoteClusterName)}/info`,
+  ).then(handleResponse)) as LxdApiResponse<{
+    environment: { certificate_fingerprint: string };
+  }>;
+  const fingerprint = data.metadata?.environment?.certificate_fingerprint;
+  if (!fingerprint) {
+    throw new Error(
+      `Cluster "${remoteClusterName}" did not report its network certificate fingerprint.`,
+    );
+  }
+  return fingerprint;
+};
+
 export const deleteCluster = async (
   remoteClusterName: string,
 ): Promise<void> => {

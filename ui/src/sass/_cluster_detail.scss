@@ -134,6 +134,10 @@
 .cluster-link-types {
   &--radio-buttons {
     padding-left: $sph--small;
+
+    > .p-radio-wrapper:last-child .p-form-help-text {
+      margin-bottom: 0;
+    }
   }
 
   &__help {
@@ -246,5 +250,12 @@
 
   &::before {
     display: none;
+  }
+}
+
+.create-cluster-link-panel,
+.edit-cluster-link-panel {
+  .select {
+    max-width: 50px;
   }
 }

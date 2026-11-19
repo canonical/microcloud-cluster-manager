@@ -106,11 +106,13 @@ type RemoteClusterStatusPostResponse struct {
 // RemoteClusterLinkPost represents the payload for the POST /1.0/remote-clusters/{remoteClusterName}/cluster-links endpoint.
 type RemoteClusterLinkPost struct {
 	api.ClusterLinksPost `json:",inline"`
-	AuthGroups           []string `json:"source_auth_groups,omitempty"`
+
+	// SourceAuthGroups grant the source permissions on the target cluster.
+	SourceAuthGroups []string `json:"source_auth_groups,omitempty"`
 
 	// TargetCluster is the name of the remote cluster to link with.
 	TargetCluster string `json:"target_cluster,omitempty"`
 
-	// TargetAuthGroups are the auth groups for the link created on the target cluster.
+	// TargetAuthGroups grant the target permissions on the source cluster (bidirectional links only).
 	TargetAuthGroups []string `json:"target_auth_groups,omitempty"`
 }

@@ -34,6 +34,7 @@
 @import "page_header";
 @import "panel_section";
 @import "pattern_navigation";
+@import "permission_group_selection";
 @import "not_authorized";
 @import "selectable_main_table";
 @import "status_bar";
@@ -192,6 +193,10 @@ body {
   }
 }
 
+.clickable-cell {
+  cursor: pointer;
+}
+
 .p-chip.cluster-link-type-chip {
   align-items: center;
   background: #f2f2f2;
@@ -199,4 +204,14 @@ body {
   border-color: var(--color-icon-muted-root, #636363);
   border-radius: var(--dimension-radius-full, 9999px);
   display: inline-flex;
+}
+
+.group-selection-table {
+  .u-row:hover {
+    background-color: $colors--theme--background-hover;
+  }
+
+  .u-row--disabled:hover {
+    background-color: $colors--theme--background-default;
+  }
 }
