@@ -1,8 +1,25 @@
 import type { Cluster, ClusterLink } from "types/cluster";
 import type { LxdIdentity } from "types/permissions";
 
-const getLinkAddresses = (link: ClusterLink): string[] => {
-  return link.config?.["volatile.addresses"]?.split(",") ?? [];
+export const getLinkAddresses = (link: ClusterLink): string[] => {
+  return (
+    link.config?.["volatile.addresses"]
+      ?.split(",")
+      .map((address) => address.trim())
+      .filter(Boolean) ?? []
+  );
+};
+
+// Addresses to show for a link. Falls back to the pending address while the
+// link has no resolved addresses yet.
+export const getLinkDisplayAddresses = (link: ClusterLink): string[] => {
+  const addresses = getLinkAddresses(link);
+  if (addresses.length) {
+    return addresses;
+  }
+
+  const pendingAddress = link.config?.["volatile.pending_address"];
+  return pendingAddress ? [pendingAddress] : [];
 };
 
 // Resolves the cluster a link points at by UUID, falling back to matching its
@@ -51,6 +68,30 @@ export const isUnidirectional = (link: ClusterLink): boolean =>
 
 export const isPublic = (link: ClusterLink): boolean =>
   link.type.toLowerCase() === "public";
+
+// used_by holds LXD API paths, e.g. /1.0/replicators/<name>
+export const getLinkUsage = (
+  link: ClusterLink,
+): { replicators: number; imageRegistries: number } => {
+  const usedBy = link.used_by ?? [];
+  const countPrefix = (prefix: string) =>
+    usedBy.filter((path) => path.startsWith(prefix)).length;
+
+  return {
+    replicators: countPrefix("/1.0/replicators/"),
+    imageRegistries: countPrefix("/1.0/image-registries/"),
+  };
+};
+
+// Bidirectional and unidirectional links have an end on the target cluster.
+export const hasTargetEnd = (link: ClusterLink): boolean =>
+  isBidirectional(link) || isUnidirectional(link);
+
+// The target end can only be cleaned up when the target has a registered tunnel.
+export const canRemoveTargetEnd = (
+  link: ClusterLink,
+  targetCluster?: Cluster,
+): boolean => hasTargetEnd(link) && !!targetCluster?.tunnel_registered;
 
 export const getLinkIdentity = (
   identities: LxdIdentity[],
