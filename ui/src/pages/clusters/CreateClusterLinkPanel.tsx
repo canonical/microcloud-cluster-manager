@@ -22,7 +22,6 @@ import type { ClusterLink, ClusterLinkPost } from "types/cluster";
 import * as Yup from "yup";
 import ClusterSelector from "pages/clusters/ClusterSelector";
 import { getLinkIconType, LINK_TYPES } from "util/clusterLinkTypes";
-import ReadOnlyInput from "components/forms/ReadOnlyInput";
 import ResourceIcon from "components/ResourceIcon";
 import { isPublic } from "util/clusterLinks";
 import PanelSection from "components/PanelSection";
@@ -175,7 +174,12 @@ const CreateClusterLinkPanel: FC = () => {
                 </PanelSection>
                 <PanelSection header="Details">
                   <div className="cluster-link-endpoints">
-                    <ReadOnlyInput label="Source" value={cluster.name} />
+                    <Input
+                      type="text"
+                      label="Source"
+                      value={cluster.name}
+                      readOnly
+                    />
                     <span
                       className="cluster-link-endpoints__arrow"
                       aria-hidden="true"
@@ -245,10 +249,12 @@ const CreateClusterLinkPanel: FC = () => {
                       />
                     </>
                   )}
-                  <ReadOnlyInput
+                  <Input
+                    type="text"
                     label="Link name"
                     value={formik.values.name}
                     placeholder="target-link"
+                    readOnly
                   />
                   <Input
                     id="description"

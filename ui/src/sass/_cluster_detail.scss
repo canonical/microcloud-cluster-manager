@@ -141,12 +141,6 @@
   }
 }
 
-.read-only-label {
-  > img {
-    margin-left: $sph--small;
-  }
-}
-
 .cluster-link-type-chip__icon {
   margin-right: $sph--x-small;
 }
@@ -155,14 +149,6 @@
   max-width: 16.5rem;
   white-space: normal;
   width: 16.5rem;
-}
-
-.read-only-input {
-  // transparent keeps the same height as editable inputs
-  border-bottom-color: transparent;
-  color: var(--vf-color-text-default);
-  opacity: 1;
-  -webkit-text-fill-color: var(--vf-color-text-default);
 }
 
 .edit-cluster-link-panel {
