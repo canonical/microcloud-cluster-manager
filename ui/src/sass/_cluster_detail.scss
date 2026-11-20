@@ -54,20 +54,6 @@
   }
 }
 
-.cluster-links-header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: $spv--large;
-
-  // Reserve the delete button's height so the table doesn't shift when it appears.
-  min-height: 2.5rem;
-}
-
-.cluster-links-selected {
-  margin-top: $spv--medium;
-}
-
 .cluster-links-create {
   display: flex;
   grid-column: 1 / -1;
@@ -179,11 +165,6 @@
     vertical-align: top;
   }
 
-  th.select,
-  td.select {
-    width: 2rem;
-  }
-
   .name {
     width: 12rem;
   }
@@ -200,27 +181,8 @@
     width: 20%;
   }
 
-  .description-text {
-    @include u-line-clamp-truncate(2);
-
-    // Fits exactly two lines so a third is never partially visible
-    max-height: 3rem;
-  }
-
   .used-by {
     width: 5rem;
-
-    .used-by-header {
-      align-items: center;
-      display: inline-flex;
-    }
-
-    .used-by-help-icon {
-      background-size: contain;
-      height: 14px;
-      margin-left: 0.25rem;
-      width: 14px;
-    }
   }
 
   .addresses {
@@ -242,25 +204,5 @@
         margin-right: 0;
       }
     }
-  }
-}
-
-.used-by-help-tooltip .p-tooltip__message {
-  white-space: normal;
-  width: 15rem;
-}
-
-.cell-details-tooltip .p-tooltip__message {
-  background: #fff;
-  box-shadow: 0 1px 5px 1px rgb(0 0 0 / 20%);
-  color: #000;
-
-  // Without the arrow the default 13px offset leaves the overlay looking
-  // detached from the "+N" trigger. The ::after hover bridge still spans it.
-  transform: translateY(4px);
-  white-space: nowrap;
-
-  &::before {
-    display: none;
   }
 }

@@ -509,7 +509,7 @@ For detailed authorization patterns, see [internal/app/management-api/core/auth/
 - **Custom Hooks**: Wrap queries in `ui/src/context/use*.tsx` hooks (e.g., `useClusters`, `useRemoteClusters`)
 - **Queries**: Use `useQuery` or `useQueries` for fetch operations with caching
 - **Mutations**: Use `useMutation` for create/update/delete
-- **Cache Invalidation**: Invalidate related query keys on mutation success to trigger refetching
+- **Cache Invalidation**: Invalidate related query keys after a successful mutation or a failure that may have changed server state
 - **Error Handling**: Provide user-friendly error messages; handle API errors in catch blocks
 - **Loading States**: Use `isLoading`, `isPending` flags from query/mutation results
 

@@ -108,6 +108,9 @@ func testClusterLinkEdges_LinkPointsAt() (testName string, testFunc func(t *test
 		}{
 			{"target-uuid", "", true},
 			{"", "https://10.0.0.1:8443", true},
+			{"", "https://10.0.0.1", true},
+			{"", "https://10.0.0.1:443", false},
+			{"", "https://110.0.0.1:8443", false},
 			{"other-uuid", "https://10.0.0.2:8443", false},
 			{"", "", false},
 		}

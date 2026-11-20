@@ -2,11 +2,29 @@
 package cluster_link
 
 import (
+	"net"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/canonical/lxd/shared"
 	"github.com/canonical/lxd/shared/api"
 )
+
+// lxdURLAddress returns the host and port of a registered LXD URL.
+func lxdURLAddress(lxdURL string) string {
+	parsedURL, err := url.Parse(strings.TrimSpace(lxdURL))
+	if err != nil || parsedURL.Hostname() == "" {
+		return ""
+	}
+
+	port := parsedURL.Port()
+	if port == "" {
+		port = strconv.Itoa(shared.HTTPSDefaultPort)
+	}
+
+	return strings.ToLower(net.JoinHostPort(parsedURL.Hostname(), port))
+}
 
 // LinkPointsAt reports whether the link points at the cluster with the given UUID, falling back to matching the
 // link addresses against the LXD URL of that cluster.
@@ -15,12 +33,13 @@ func LinkPointsAt(link api.ClusterLink, clusterUUID string, lxdURL string) bool 
 		return true
 	}
 
-	if lxdURL == "" || link.Config["volatile.addresses"] == "" {
+	targetAddress := lxdURLAddress(lxdURL)
+	if targetAddress == "" {
 		return false
 	}
 
 	for _, address := range strings.Split(link.Config["volatile.addresses"], ",") {
-		if address != "" && strings.HasSuffix(lxdURL, address) {
+		if strings.EqualFold(strings.TrimSpace(address), targetAddress) {
 			return true
 		}
 	}
