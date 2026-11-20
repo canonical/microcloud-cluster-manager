@@ -21,7 +21,6 @@ import {
   fetchClusters,
   updateClusterLink,
 } from "api/clusters";
-import ReadOnlyInput from "components/forms/ReadOnlyInput";
 import NotificationRow from "components/NotificationRow";
 import ResourceIcon from "components/ResourceIcon";
 import { useCluster, useClusterLinks } from "context/useClusters";
@@ -275,19 +274,26 @@ const EditClusterLinkPanel: FC = () => {
             </PanelSection>
             <PanelSection header="Details">
               <div className="cluster-link-endpoints">
-                <ReadOnlyInput label="Source" value={cluster.name} />
+                <Input
+                  type="text"
+                  label="Source"
+                  value={cluster.name}
+                  readOnly
+                />
                 <span
                   className="cluster-link-endpoints__arrow"
                   aria-hidden="true"
                 >
                   <ResourceIcon type={getLinkIconType(link.type)} />
                 </span>
-                <ReadOnlyInput
+                <Input
+                  type="text"
                   label="Target"
                   value={targetCluster?.name ?? ""}
+                  readOnly
                 />
               </div>
-              <ReadOnlyInput label="Link name" value={link.name} />
+              <Input type="text" label="Link name" value={link.name} readOnly />
               <Input
                 id="description"
                 type="text"
