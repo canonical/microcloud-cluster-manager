@@ -111,3 +111,14 @@ export const deleteClusterLink = async (
     },
   ).then(handleResponse);
 };
+
+export const deleteClusterLinks = async (
+  source: string,
+  links: { name: string; removeReverseEdge: boolean }[],
+): Promise<void> => {
+  return Promise.allSettled(
+    links.map(async ({ name, removeReverseEdge }) =>
+      deleteClusterLink(source, name, removeReverseEdge),
+    ),
+  ).then(handleSettledResult);
+};

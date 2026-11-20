@@ -1,29 +1,102 @@
-import type { Cluster, ClusterLink } from "types/cluster";
 import type { LxdIdentity } from "types/permissions";
+import type { Cluster, ClusterLink } from "types/cluster";
 
 export const getLinkAddresses = (link: ClusterLink): string[] => {
-  return (
+  const addresses =
     link.config?.["volatile.addresses"]
       ?.split(",")
       .map((address) => address.trim())
-      .filter(Boolean) ?? []
+      .filter(Boolean) ?? [];
+  const pendingAddress = link.config?.["volatile.pending_address"]?.trim();
+
+  return addresses.length || !pendingAddress ? addresses : [pendingAddress];
+};
+
+// A connection over a cluster link: the link itself, the source cluster it is
+// defined on, and the target cluster it points to, if the target is known to
+// the cluster manager.
+export interface ClusterConnection {
+  id: string;
+  source: Cluster;
+  link: ClusterLink;
+  target?: Cluster;
+}
+
+export interface ClusterLinkFilter {
+  queries: string[];
+  types: string[];
+}
+
+export const filterClusterLinks = (
+  entries: ClusterConnection[],
+  filters: ClusterLinkFilter,
+): ClusterConnection[] => {
+  const queries = filters.queries.map((query) => query.toLowerCase());
+  return entries.filter(
+    ({ source, link, target }) =>
+      (!queries.length ||
+        queries.some((query) =>
+          [
+            source.name,
+            link.name,
+            link.description ?? "",
+            target?.name ?? "",
+            ...getLinkAddresses(link),
+          ].some((value) => value.toLowerCase().includes(query)),
+        )) &&
+      (!filters.types.length ||
+        filters.types.includes(link.type.toLowerCase())),
   );
 };
 
-// Addresses to show for a link. Falls back to the pending address while the
-// link has no resolved addresses yet.
-export const getLinkDisplayAddresses = (link: ClusterLink): string[] => {
-  const addresses = getLinkAddresses(link);
-  if (addresses.length) {
-    return addresses;
-  }
+export const getClusterLinkId = (
+  sourceName: string,
+  linkName: string,
+): string => `${sourceName}/${linkName}`;
 
-  const pendingAddress = link.config?.["volatile.pending_address"];
-  return pendingAddress ? [pendingAddress] : [];
+export const getSourceClusterConnections = (
+  source: Cluster,
+  links: ClusterLink[],
+  clusters: Cluster[],
+): ClusterConnection[] =>
+  links.map((link) => ({
+    id: getClusterLinkId(source.name, link.name),
+    source,
+    link,
+    target: getLinkedCluster(link, clusters),
+  }));
+
+export const getClusterLinkSortData = (entry: ClusterConnection) => ({
+  name: entry.link.name.toLowerCase(),
+  type: entry.link.type.toLowerCase(),
+  target: (entry.target?.name ?? "").toLowerCase(),
+  description: (entry.link.description ?? "").toLowerCase(),
+  usedBy: entry.link.used_by?.length ?? 0,
+  addresses: getLinkAddresses(entry.link).join(",").toLowerCase(),
+});
+
+// Returns the host and port of the lxd URL of a cluster, in the format of the
+// addresses of a cluster link.
+const getClusterAddress = (cluster: Cluster): string | undefined => {
+  try {
+    return new URL(cluster.lxd_url).host.toLowerCase();
+  } catch {
+    return undefined;
+  }
+};
+
+const hasLinkAddress = (cluster: Cluster, link: ClusterLink): boolean => {
+  const clusterAddress = getClusterAddress(cluster);
+  return (
+    !!clusterAddress &&
+    getLinkAddresses(link).some(
+      (address) => address.toLowerCase() === clusterAddress,
+    )
+  );
 };
 
 // Resolves the cluster a link points at by UUID, falling back to matching its
-// addresses against the lxd URLs of clusters known to the cluster manager.
+// confirmed or pending addresses against the lxd URLs of known clusters.
 export const getLinkedCluster = (
   link: ClusterLink,
   clusters: Cluster[],
@@ -37,25 +110,24 @@ export const getLinkedCluster = (
   }
 
   // fallback to address matching if no UUID match is found.
-  const addresses = getLinkAddresses(link);
-  return clusters.find((cluster) =>
-    addresses.some((address) => cluster.lxd_url.endsWith(address)),
-  );
+  return clusters.find((cluster) => hasLinkAddress(cluster, link));
 };
 
-// Finds the link on the other end of a cluster link, meaning the link on the
-// linked cluster that points back at the given cluster.
+// Finds the bidirectional link on the other end of a cluster link, meaning the
+// link on the linked cluster that points back at the given cluster. Other link
+// types have no counterpart on the linked cluster.
 export const getReverseLink = (
   links: ClusterLink[],
   cluster: Cluster,
 ): ClusterLink | undefined => {
   return links.find((link) => {
-    if (link.config?.["volatile.uuid"] === cluster.cluster_uuid) {
-      return true;
+    if (link.type.toLowerCase() !== "bidirectional") {
+      return false;
     }
 
-    return getLinkAddresses(link).some((address) =>
-      cluster.lxd_url.endsWith(address),
+    return (
+      link.config?.["volatile.uuid"] === cluster.cluster_uuid ||
+      hasLinkAddress(cluster, link)
     );
   });
 };
@@ -68,20 +140,6 @@ export const isUnidirectional = (link: ClusterLink): boolean =>
 
 export const isPublic = (link: ClusterLink): boolean =>
   link.type.toLowerCase() === "public";
-
-// used_by holds LXD API paths, e.g. /1.0/replicators/<name>
-export const getLinkUsage = (
-  link: ClusterLink,
-): { replicators: number; imageRegistries: number } => {
-  const usedBy = link.used_by ?? [];
-  const countPrefix = (prefix: string) =>
-    usedBy.filter((path) => path.startsWith(prefix)).length;
-
-  return {
-    replicators: countPrefix("/1.0/replicators/"),
-    imageRegistries: countPrefix("/1.0/image-registries/"),
-  };
-};
 
 // Bidirectional and unidirectional links have an end on the target cluster.
 export const hasTargetEnd = (link: ClusterLink): boolean =>

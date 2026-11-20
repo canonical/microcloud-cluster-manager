@@ -13,10 +13,10 @@ import ClusterMetricsButton from "pages/clusters/actions/ClusterMetricsButton";
 import RemoveClusterButton from "pages/clusters/actions/RemoveClusterButton";
 import ConfigureClusterButton from "pages/clusters/actions/ConfigureClusterButton";
 import ClusterOverview from "pages/clusters/ClusterOverview";
-import ClusterLinks from "pages/clusters/ClusterLinks";
+import ClusterLinksTab from "pages/clusters/ClusterLinksTab";
 import TabLinks from "components/TabLinks";
-import CreateClusterLinkPanel from "pages/clusters/CreateClusterLinkPanel";
-import EditClusterLinkPanel from "pages/clusters/EditClusterLinkPanel";
+import CreateClusterLinkPanel from "components/cluster-links/CreateClusterLinkPanel";
+import EditClusterLinkPanel from "components/cluster-links/EditClusterLinkPanel";
 
 const ClusterDetail: FC = () => {
   const panelParams = usePanelParams();
@@ -100,7 +100,7 @@ const ClusterDetail: FC = () => {
               tabUrl={`/ui/cluster/${cluster.name}`}
             />
             {activeTab === "cluster-links" ? (
-              <ClusterLinks cluster={cluster} />
+              <ClusterLinksTab cluster={cluster} />
             ) : (
               <ClusterOverview cluster={cluster} />
             )}
