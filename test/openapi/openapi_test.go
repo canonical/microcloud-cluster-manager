@@ -22,6 +22,8 @@ var tests = []types.APISchemaTest{
 	testPatchRemoteClusterBadRequest,
 	testDeleteRemoteClusterSuccess,
 	testDeleteRemoteClusterNotFound,
+	testForwardedRemoteClusterEndpointsNotFound,
+	testForwardedRemoteClusterEndpointsNoTunnel,
 	testListRemoteClusterJoinTokensSuccess,
 	testCreateRemoteClusterJoinTokenSuccess,
 	testCreateRemoteClusterJoinTokenBadRequest,

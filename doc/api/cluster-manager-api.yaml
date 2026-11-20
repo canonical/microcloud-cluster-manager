@@ -9,10 +9,31 @@ info:
   contact:
     name: MicroCloud Cluster Manager
     url: https://github.com/canonical/microcloud-cluster-manager
+tags:
+  - name: General
+    description: API root, status and configuration.
+  - name: Remote clusters
+    description: Manage registered remote clusters.
+  - name: Join tokens
+    description: Manage remote cluster join tokens.
+  - name: Auth groups
+    description: Auth groups of a remote cluster.
+  - name: Auth identities
+    description: Auth identities of a remote cluster.
+  - name: Cluster links
+    description: Manage the cluster links of a remote cluster.
+  - name: Replicators
+    description: Manage the replicators of a remote cluster.
+  - name: Projects
+    description: Manage the projects of a remote cluster.
+  - name: Operations
+    description: Background operations of a remote cluster.
 paths:
   /1.0:
     get:
       summary: Reports user information from the request
+      tags:
+        - General
       security:
         - bearerAuth: []
       responses:
@@ -37,6 +58,8 @@ paths:
   /1.0/status:
     get:
       summary: Readiness and liveness status
+      tags:
+        - General
       responses:
         "200":
           description: Service is healthy
@@ -59,6 +82,8 @@ paths:
   /1.0/configuration:
     get:
       summary: Get management API configuration
+      tags:
+        - General
       security:
         - bearerAuth: []
       responses:
@@ -74,6 +99,8 @@ paths:
   /1.0/remote-cluster:
     get:
       summary: List remote clusters
+      tags:
+        - Remote clusters
       security:
         - bearerAuth: []
       responses:
@@ -100,6 +127,8 @@ paths:
       - $ref: "#/components/parameters/RemoteClusterName"
     get:
       summary: Get a remote cluster by name
+      tags:
+        - Remote clusters
       security:
         - bearerAuth: []
       responses:
@@ -132,6 +161,8 @@ paths:
                   $ref: "#/components/examples/ResponseErrorInternal"
     delete:
       summary: Delete a remote cluster
+      tags:
+        - Remote clusters
       security:
         - bearerAuth: []
       responses:
@@ -164,6 +195,8 @@ paths:
                   $ref: "#/components/examples/ResponseErrorInternal"
     patch:
       summary: Update a remote cluster
+      tags:
+        - Remote clusters
       security:
         - bearerAuth: []
       requestBody:
@@ -215,6 +248,8 @@ paths:
   /1.0/remote-cluster-join-token:
     get:
       summary: List remote cluster join tokens
+      tags:
+        - Join tokens
       security:
         - bearerAuth: []
       responses:
@@ -238,6 +273,8 @@ paths:
                   $ref: "#/components/examples/ResponseErrorInternal"
     post:
       summary: Create a remote cluster join token
+      tags:
+        - Join tokens
       security:
         - bearerAuth: []
       requestBody:
@@ -291,6 +328,8 @@ paths:
       - $ref: "#/components/parameters/RemoteClusterName"
     delete:
       summary: Delete a remote cluster join token
+      tags:
+        - Join tokens
       security:
         - bearerAuth: []
       responses:
@@ -321,6 +360,569 @@ paths:
               examples:
                 error:
                   $ref: "#/components/examples/ResponseErrorInternal"
+  /1.0/remote-cluster/{remoteClusterName}/auth-groups:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+    get:
+      summary: List the auth groups of a remote cluster
+      tags:
+        - Auth groups
+      security:
+        - bearerAuth: []
+      responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/cluster-links:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+    get:
+      summary: List the cluster links of a remote cluster
+      tags:
+        - Cluster links
+      security:
+        - bearerAuth: []
+      responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "200":
+          description: Cluster links of the remote cluster
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Response"
+                  - type: object
+                    properties:
+                      metadata:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ClusterLink"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    post:
+      summary: Create a cluster link on a remote cluster
+      tags:
+        - Cluster links
+      description: Creates the link on the source cluster and, for bidirectional and unidirectional links, on the target cluster.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoteClusterLinkPost"
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "202":
+          $ref: "#/components/responses/LXDAsync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/cluster-links/{clusterLinkName}:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+      - $ref: "#/components/parameters/ClusterLinkName"
+    put:
+      summary: Update a cluster link
+      tags:
+        - Cluster links
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClusterLinkPut"
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    delete:
+      summary: Delete a cluster link
+      tags:
+        - Cluster links
+      description: With removeReverseEdge=true the other edge of the link is removed first, and the source link is only deleted once that succeeds. Only bidirectional and unidirectional links pointing at a registered cluster are supported in that case.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RemoveReverseEdge"
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/replicators:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+    get:
+      summary: List the replicators of a remote cluster
+      parameters:
+        - $ref: "#/components/parameters/ReplicatorProject"
+      tags:
+        - Replicators
+      security:
+        - bearerAuth: []
+      responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "200":
+          description: Replicators of the remote cluster
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Response"
+                  - type: object
+                    properties:
+                      metadata:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Replicator"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    post:
+      summary: Create a replicator on a remote cluster
+      parameters:
+        - $ref: "#/components/parameters/ReplicatorProjectRequired"
+      tags:
+        - Replicators
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplicatorsPost"
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/replicators/{replicatorName}:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+      - $ref: "#/components/parameters/ReplicatorName"
+      - $ref: "#/components/parameters/ReplicatorProjectRequired"
+    get:
+      summary: Get a replicator
+      tags:
+        - Replicators
+      security:
+        - bearerAuth: []
+      responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "200":
+          description: Replicator
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Response"
+                  - type: object
+                    properties:
+                      metadata:
+                        $ref: "#/components/schemas/Replicator"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    put:
+      summary: Update a replicator
+      tags:
+        - Replicators
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplicatorPut"
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    delete:
+      summary: Delete a replicator
+      tags:
+        - Replicators
+      security:
+        - bearerAuth: []
+      responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/replicators/{replicatorName}/state:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+      - $ref: "#/components/parameters/ReplicatorName"
+      - $ref: "#/components/parameters/ReplicatorProjectRequired"
+    get:
+      summary: Get the state of a replicator
+      tags:
+        - Replicators
+      security:
+        - bearerAuth: []
+      responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "200":
+          description: Replicator state
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Response"
+                  - type: object
+                    properties:
+                      metadata:
+                        $ref: "#/components/schemas/ReplicatorState"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    put:
+      summary: Change the state of a replicator
+      tags:
+        - Replicators
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplicatorStatePut"
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "202":
+          $ref: "#/components/responses/LXDAsync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/projects:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+    get:
+      summary: List the projects of a remote cluster
+      tags:
+        - Projects
+      security:
+        - bearerAuth: []
+      responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "200":
+          description: Projects of the remote cluster
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Response"
+                  - type: object
+                    properties:
+                      metadata:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Project"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    post:
+      summary: Create a project on a remote cluster
+      tags:
+        - Projects
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectsPost"
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/projects/{projectName}:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+      - $ref: "#/components/parameters/ProjectName"
+    get:
+      summary: Get a project
+      tags:
+        - Projects
+      security:
+        - bearerAuth: []
+      responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Response"
+                  - type: object
+                    properties:
+                      metadata:
+                        $ref: "#/components/schemas/Project"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    put:
+      summary: Update a project
+      tags:
+        - Projects
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectPut"
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/projects/{projectName}/state:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+      - $ref: "#/components/parameters/ProjectName"
+    get:
+      summary: Get the state of a project
+      tags:
+        - Projects
+      security:
+        - bearerAuth: []
+      responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "200":
+          description: Project state
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Response"
+                  - type: object
+                    properties:
+                      metadata:
+                        $ref: "#/components/schemas/ProjectState"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    put:
+      summary: Change the state of a project
+      parameters:
+        - $ref: "#/components/parameters/Force"
+      tags:
+        - Projects
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectStatePut"
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "202":
+          $ref: "#/components/responses/LXDAsync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/operations/{operationID}:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+      - $ref: "#/components/parameters/OperationID"
+    get:
+      summary: Get a background operation of a remote cluster
+      tags:
+        - Operations
+      security:
+        - bearerAuth: []
+      responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "200":
+          description: Operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Response"
+                  - type: object
+                    properties:
+                      metadata:
+                        $ref: "#/components/schemas/Operation"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/auth/identities:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+    get:
+      summary: List the auth identities of a remote cluster
+      tags:
+        - Auth identities
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
 components:
   securitySchemes:
     bearerAuth:
@@ -334,7 +936,357 @@ components:
       required: true
       schema:
         type: string
+    ClusterLinkName:
+      name: clusterLinkName
+      in: path
+      required: true
+      schema:
+        type: string
+    ReplicatorName:
+      name: replicatorName
+      in: path
+      required: true
+      schema:
+        type: string
+    ProjectName:
+      name: projectName
+      in: path
+      required: true
+      schema:
+        type: string
+    OperationID:
+      name: operationID
+      in: path
+      required: true
+      schema:
+        type: string
+    RemoveReverseEdge:
+      name: removeReverseEdge
+      in: query
+      required: false
+      description: Also remove the other edge of the link on the linked cluster (the reverse cluster link for bidirectional links, the identity for unidirectional links).
+      schema:
+        type: boolean
+    ReplicatorProject:
+      name: project
+      in: query
+      required: false
+      description: Project the replicator belongs to.
+      schema:
+        type: string
+    ReplicatorProjectRequired:
+      name: project
+      in: query
+      required: true
+      description: Project the replicator belongs to.
+      schema:
+        type: string
+    Force:
+      name: force
+      in: query
+      required: false
+      description: Force the operation.
+      schema:
+        type: boolean
+  responses:
+    LXDSync:
+      description: Response of the LXD API of the remote cluster, returned as is.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+    LXDAsync:
+      description: Background operation started on the remote cluster. The operation can be polled using the operations endpoint.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+    BadRequest:
+      description: Invalid request, or the remote cluster does not have an active tunnel
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          examples:
+            error:
+              $ref: "#/components/examples/ResponseErrorBadRequest"
+    NotFound:
+      description: Remote cluster or resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          examples:
+            error:
+              $ref: "#/components/examples/ResponseErrorNotFound"
+    Forbidden:
+      description: The remote cluster rejected the request because of insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+    InternalError:
+      description: Failed to process the request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          examples:
+            error:
+              $ref: "#/components/examples/ResponseErrorInternal"
+    BadGateway:
+      description: The remote cluster is unreachable through its tunnel, or returned an invalid response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          examples:
+            error:
+              $ref: "#/components/examples/ResponseErrorBadGateway"
   schemas:
+    ClusterLink:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [bidirectional, unidirectional, public]
+        config:
+          type: object
+          additionalProperties:
+            type: string
+        used_by:
+          type: array
+          items:
+            type: string
+    ClusterLinkPut:
+      type: object
+      properties:
+        description:
+          type: string
+        config:
+          type: object
+          additionalProperties:
+            type: string
+    RemoteClusterLinkPost:
+      type: object
+      description: LXD cluster link creation payload extended with the cluster manager fields.
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [bidirectional, unidirectional, public]
+        config:
+          type: object
+          additionalProperties:
+            type: string
+        trust_token:
+          type: string
+        cluster_certificate:
+          type: string
+        fingerprint:
+          type: string
+        remote_address:
+          type: string
+          description: Only valid for public cluster links.
+        source_auth_groups:
+          type: array
+          items:
+            type: string
+          description: Auth groups of the link on the source cluster. Not allowed for public links.
+        target_cluster:
+          type: string
+          description: Name of the registered remote cluster to link with. Must differ from the source cluster.
+        target_auth_groups:
+          type: array
+          items:
+            type: string
+          description: Auth groups of the link on the target cluster. Only allowed for bidirectional links.
+      required:
+        - type
+        - target_cluster
+    Replicator:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        project:
+          type: string
+        config:
+          type: object
+          additionalProperties:
+            type: string
+        last_run_at:
+          type: string
+          format: date-time
+        last_run_status:
+          type: string
+        last_success_at:
+          type: string
+          format: date-time
+        last_success_oldest_snapshot_at:
+          type: string
+          format: date-time
+    ReplicatorPut:
+      type: object
+      properties:
+        description:
+          type: string
+        config:
+          type: object
+          additionalProperties:
+            type: string
+    ReplicatorsPost:
+      allOf:
+        - $ref: "#/components/schemas/ReplicatorPut"
+        - type: object
+          properties:
+            name:
+              type: string
+          required:
+            - name
+    ReplicatorState:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [Pending, Running, Completed, Failed]
+    ReplicatorStatePut:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [start, restore]
+      required:
+        - action
+    Project:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        config:
+          type: object
+          additionalProperties:
+            type: string
+        used_by:
+          type: array
+          items:
+            type: string
+        replica_mode:
+          type: string
+          enum: [leader, standby]
+    ProjectPut:
+      type: object
+      properties:
+        description:
+          type: string
+        config:
+          type: object
+          additionalProperties:
+            type: string
+    ProjectsPost:
+      allOf:
+        - $ref: "#/components/schemas/ProjectPut"
+        - type: object
+          properties:
+            name:
+              type: string
+            storage:
+              type: string
+            network:
+              type: string
+          required:
+            - name
+    ProjectState:
+      type: object
+      properties:
+        resources:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              Limit:
+                type: integer
+                format: int64
+              Usage:
+                type: integer
+                format: int64
+    ProjectStatePut:
+      type: object
+      properties:
+        replica_mode:
+          type: string
+          description: Replica mode of the project. An empty string clears the replica mode.
+          enum: ["", leader, standby]
+      required:
+        - replica_mode
+    Operation:
+      type: object
+      properties:
+        id:
+          type: string
+        class:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+        status_code:
+          type: integer
+        resources:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        may_cancel:
+          type: boolean
+        err:
+          type: string
+        err_code:
+          type: integer
+          description: Error code of the operation.
+        child_count:
+          type: integer
+          description: Number of child operations.
+        location:
+          type: string
+          description: Cluster member the operation was found on.
+        requestor:
+          $ref: "#/components/schemas/OperationRequestor"
+    OperationRequestor:
+      type: object
+      description: Original requestor of an operation.
+      properties:
+        username:
+          type: string
+          description: Identifier of the identity, or the username when using the unix socket.
+        protocol:
+          type: string
+          description: Method used to authenticate the requestor.
+        address:
+          type: string
+          description: Origin address of the request.
     Response:
       type: object
       properties:
@@ -529,6 +1481,8 @@ components:
       properties:
         name:
           type: string
+        cluster_uuid:
+          type: string
         description:
           type: string
         cluster_certificate:
@@ -541,6 +1495,8 @@ components:
           format: int64
         status:
           type: string
+        tunnel_registered:
+          type: boolean
         ceph_count:
           type: integer
           format: int64
@@ -594,6 +1550,8 @@ components:
           format: date-time
       required:
         - name
+        - cluster_uuid
+        - tunnel_registered
         - description
         - cluster_certificate
         - disk_threshold
@@ -627,12 +1585,19 @@ components:
           $ref: "#/components/schemas/RemoteClusterStatus"
         description:
           type: string
+          description: Omit to leave the description unchanged.
         disk_threshold:
           type: integer
           format: int64
+          minimum: 0
+          maximum: 100
+          description: Percentage between 0 and 100. 0 leaves the value unchanged.
         memory_threshold:
           type: integer
           format: int64
+          minimum: 0
+          maximum: 100
+          description: Percentage between 0 and 100. 0 leaves the value unchanged.
     RemoteClusterTokenPost:
       type: object
       properties:
@@ -769,6 +1734,8 @@ components:
         status_code: 200
         metadata:
           - name: cluster-a
+            cluster_uuid: 7f3c2a1e-5b8d-4e6f-9a21-3c4d5e6f7a8b
+            tunnel_registered: true
             description: Primary cluster
             cluster_certificate: "-----BEGIN CERTIFICATE-----..."
             disk_threshold: 80
@@ -808,6 +1775,8 @@ components:
         status_code: 200
         metadata:
           name: cluster-a
+          cluster_uuid: 7f3c2a1e-5b8d-4e6f-9a21-3c4d5e6f7a8b
+          tunnel_registered: true
           description: Primary cluster
           cluster_certificate: "-----BEGIN CERTIFICATE-----..."
           disk_threshold: 80
@@ -883,6 +1852,13 @@ components:
         status: Error
         status_code: 409
         error: RemoteCluster conflict
+        metadata: null
+    ResponseErrorBadGateway:
+      value:
+        type: error
+        status: Error
+        status_code: 502
+        error: 'Request to cluster "cluster-1" failed: tunnel closed'
         metadata: null
     ResponseErrorInternal:
       value:
