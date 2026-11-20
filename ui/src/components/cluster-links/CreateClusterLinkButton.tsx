@@ -3,7 +3,7 @@ import type { FC } from "react";
 import usePanelParams from "context/usePanelParams";
 
 interface Props {
-  cluster: string;
+  cluster?: string;
 }
 
 const CreateClusterLinkButton: FC<Props> = ({ cluster }) => {

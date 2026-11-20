@@ -21,6 +21,10 @@
     width: 100%;
   }
 
+  .cluster {
+    width: 9rem;
+  }
+
   .type {
     width: 9.5rem;
   }
@@ -40,6 +44,27 @@
     .addresses {
       display: none;
     }
+
+    .cluster {
+      width: 7rem;
+    }
+  }
+
+  .cluster-link-toggle {
+    text-align: center;
+    width: 2.5rem;
+
+    button {
+      background-color: transparent;
+      display: inline-block;
+      width: auto;
+
+      &:hover,
+      &:active,
+      &:focus {
+        background-color: transparent;
+      }
+    }
   }
 
   .actions {
@@ -49,6 +74,22 @@
     .actions-list button {
       padding-bottom: 0;
       padding-top: 0;
+    }
+  }
+
+  .cluster-link-group-row td {
+    background-color: $colors--theme--background-default;
+    font-weight: $font-weight-bold;
+    padding-bottom: $spv--x-small;
+    padding-top: $spv--x-small;
+  }
+
+  .cluster-link-group-name {
+    overflow: visible;
+    white-space: nowrap;
+
+    a {
+      vertical-align: middle;
     }
   }
 }
@@ -119,7 +160,8 @@
 
 .cluster-link-addresses-more,
 .cluster-link-used-by-count,
-.cluster-link-name-link {
+.cluster-link-name-link,
+.cluster-link-source-link {
   &:hover,
   &:active {
     background-color: transparent;

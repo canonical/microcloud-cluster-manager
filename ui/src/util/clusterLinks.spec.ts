@@ -5,7 +5,10 @@ import {
   findCluster,
   getClusterLinkId,
   getClusterLinkSortData,
+  getGlobalClusterLinkSortData,
   getLinkAddresses,
+  groupGlobalClusterLinks,
+  sortGlobalClusterLinkRows,
 } from "./clusterLinks";
 
 const makeCluster = (name: string, tunnel_registered = true): Cluster =>
@@ -116,6 +119,70 @@ describe("getClusterLinkSortData", () => {
       usedBy: 2,
       addresses: "z.example.com:8443",
     });
+  });
+});
+
+describe("groupGlobalClusterLinks", () => {
+  it("groups by source cluster in input order and omits empty groups", () => {
+    const links = [
+      makeResolvedLink(makeLink("b-link"), "one"),
+      makeResolvedLink(makeLink("c-link"), "two"),
+      makeResolvedLink(makeLink("a-link"), "one"),
+    ];
+
+    const groups = groupGlobalClusterLinks(links);
+
+    expect(groups.map((group) => group.sourceCluster)).toStrictEqual([
+      "one",
+      "two",
+    ]);
+    expect(groups[0].links.map(({ link }) => link.name)).toStrictEqual([
+      "b-link",
+      "a-link",
+    ]);
+  });
+});
+
+describe("getGlobalClusterLinkSortData", () => {
+  it("extracts the displayed column values for sorting", () => {
+    const resolvedLink = makeResolvedLink(
+      makeLink("Zulu", {
+        type: "unidirectional",
+        description: "Some description",
+        used_by: ["/a", "/b"],
+        config: { "volatile.addresses": "Z.example.com:8443" },
+      }),
+      "source",
+      "Target",
+    );
+
+    expect(getGlobalClusterLinkSortData(resolvedLink, 2)).toStrictEqual({
+      groupIndex: 2,
+      groupKey: "source",
+      isGroupHeader: false,
+      id: "source/Zulu",
+      values: getClusterLinkSortData(resolvedLink),
+    });
+  });
+});
+
+describe("sortGlobalClusterLinkRows", () => {
+  it("keeps rows inside their group when sorting by a link column", () => {
+    const links = [
+      makeResolvedLink(makeLink("z"), "one"),
+      makeResolvedLink(makeLink("a"), "two"),
+    ];
+    const [first, second] = links.map((resolvedLink, index) => ({
+      columns: [],
+      sortData: getGlobalClusterLinkSortData(resolvedLink, index),
+    }));
+
+    expect(sortGlobalClusterLinkRows(first, second, "ascending", "name")).toBe(
+      -1,
+    );
+    expect(
+      sortGlobalClusterLinkRows(first, second, "descending", "cluster"),
+    ).toBe(1);
   });
 });
 

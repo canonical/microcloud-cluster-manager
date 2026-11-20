@@ -81,6 +81,12 @@ export const fetchClusterLinks = async (
     );
 };
 
+export const fetchAllClusterLinks = async (): Promise<ClusterLinkList> => {
+  return fetch("/1.0/cluster-links?all-clusters=true")
+    .then(handleResponse)
+    .then((data) => (data as LxdApiResponse<ClusterLinkList>).metadata);
+};
+
 export const createClusterLink = async (
   source: string,
   payload: string,
