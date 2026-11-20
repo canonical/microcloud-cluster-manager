@@ -2,6 +2,19 @@
 
 See [Architecture of the MicroCloud Cluster Manager](https://canonical.com/microcloud/docs/latest/reference/cluster-manager-architecture/) for an architecture diagram and further details.
 
+## Deployment constraints
+
+### Single management-api instance
+
+The management API must run as a single instance. Do not scale the charm beyond one unit, for example with `juju scale-application`.
+
+Synchronization of OIDC session state is done in process memory (see `internal/app/management-api/core/auth/session_lock.go`):
+
+- Refresh token redemption is serialized per session, so a refresh token is never redeemed twice concurrently. Identity providers that rotate refresh tokens may reject reuse and revoke the whole token family, logging the user out.
+- Renewal of an expired session is serialized per session, and the result is cached briefly so concurrent requests carrying the same stale session cookie reuse the renewed session.
+
+Neither guarantee holds across multiple management-api instances. With more than one instance serving traffic, concurrent requests of the same user can redeem the same refresh token twice, or renew the same expired session twice and invalidate each other's new session.
+
 ## Workflows
 
 ### PR checks with CI pipeline
