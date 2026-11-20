@@ -1,30 +1,22 @@
 import { Notification } from "@canonical/react-components";
-import { useQuery } from "@tanstack/react-query";
-import { fetchClusters } from "api/clusters";
 import type { FC } from "react";
 import { useClusterLinks } from "context/useClusters";
-import { queryKeys } from "util/queryKeys";
 import type { Cluster } from "types/cluster";
 import ClusterLinksTable from "pages/clusters/ClusterLinksTable";
-import ClusterLinksEmptyState from "components/ClusterLinksEmptyState";
+import ClusterLinksEmptyState from "pages/clusters/ClusterLinksEmptyState";
 
 interface Props {
   cluster: Cluster;
 }
 
-const ClusterLinks: FC<Props> = ({ cluster }) => {
+const ClusterLinksTab: FC<Props> = ({ cluster }) => {
   const {
     data: clusterLinks,
     error,
     isLoading,
   } = useClusterLinks(cluster.name, cluster.tunnel_registered);
 
-  const { data: clusters = [], isLoading: isClustersLoading } = useQuery({
-    queryKey: [queryKeys.clusters],
-    queryFn: fetchClusters,
-  });
-
-  if (isLoading || isClustersLoading) {
+  if (isLoading) {
     return <></>;
   }
 
@@ -48,18 +40,17 @@ const ClusterLinks: FC<Props> = ({ cluster }) => {
         <ClusterLinksTable
           key={cluster.name}
           cluster={cluster}
-          clusters={clusters}
-          links={clusterLinks}
+          clusterLinks={clusterLinks}
         />
       )}
       {cluster.tunnel_registered &&
         !error &&
         clusterLinks &&
         clusterLinks.length === 0 && (
-          <ClusterLinksEmptyState cluster={cluster} />
+          <ClusterLinksEmptyState cluster={cluster.name} />
         )}
     </>
   );
 };
 
-export default ClusterLinks;
+export default ClusterLinksTab;

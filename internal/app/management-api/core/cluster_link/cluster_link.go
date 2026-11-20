@@ -2,6 +2,7 @@
 package cluster_link
 
 import (
+	"net/url"
 	"strings"
 
 	"github.com/canonical/lxd/shared"
@@ -84,4 +85,9 @@ func FindIdentity(identities []api.Identity, fingerprint string) *api.Identity {
 	}
 
 	return nil
+}
+
+// LinkPath returns the cluster connector path of the named cluster link.
+func LinkPath(linkName string) string {
+	return "/cluster-links/" + url.PathEscape(linkName)
 }

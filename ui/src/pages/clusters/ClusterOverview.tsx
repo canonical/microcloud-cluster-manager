@@ -6,7 +6,7 @@ import ClusterDetailMemberGraph from "./metrics/ClusterDetailMemberGraph";
 import ClusterTimer from "./metrics/ClusterTimer";
 import ClusterDetailMetrics from "./metrics/ClusterDetailMetrics";
 import { ClusterWarningList } from "pages/clusters/metrics/ClusterWarningList";
-import ClusterEditDescriptionBtn from "pages/clusters/actions/ClusterEditDescriptionBtn";
+import ClusterEditDescriptionButton from "pages/clusters/actions/ClusterEditDescriptionButton";
 
 interface Props {
   cluster: Cluster;
@@ -39,7 +39,7 @@ const ClusterOverview: FC<Props> = ({ cluster }) => {
           <h2 className="p-heading--4">Description</h2>
           <p>
             {cluster.description}{" "}
-            <ClusterEditDescriptionBtn
+            <ClusterEditDescriptionButton
               appearance="base"
               clusterName={cluster.name}
             />
@@ -47,7 +47,7 @@ const ClusterOverview: FC<Props> = ({ cluster }) => {
         </>
       ) : (
         <div>
-          <ClusterEditDescriptionBtn
+          <ClusterEditDescriptionButton
             appearance=""
             label="Add description"
             clusterName={cluster.name}

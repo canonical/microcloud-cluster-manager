@@ -103,7 +103,7 @@ type RemoteClusterStatusPostResponse struct {
 	ClusterManagerAddress string `json:"cluster_manager_address"`
 }
 
-// RemoteClusterLinkPost represents the payload for the POST /1.0/remote-clusters/{remoteClusterName}/cluster-links endpoint.
+// RemoteClusterLinkPost represents the payload for the POST /1.0/cluster-links?cluster={name} endpoint.
 type RemoteClusterLinkPost struct {
 	api.ClusterLinksPost `json:",inline"`
 	AuthGroups           []string `json:"source_auth_groups,omitempty"`

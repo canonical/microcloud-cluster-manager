@@ -1,64 +1,105 @@
-import type { Cluster, ClusterLink } from "types/cluster";
+import { compareGroupedRows } from "util/groupedTableSort";
+import type { GroupedRowSortData } from "util/groupedTableSort";
 import type { LxdIdentity } from "types/permissions";
+import type { SortDirection } from "@canonical/react-components";
+import type {
+  MainTableHeader,
+  MainTableRow,
+} from "@canonical/react-components/dist/components/MainTable/MainTable";
+import type { Cluster, ClusterLink, ResolvedClusterLink } from "types/cluster";
 
 export const getLinkAddresses = (link: ClusterLink): string[] => {
-  return (
+  const addresses =
     link.config?.["volatile.addresses"]
       ?.split(",")
       .map((address) => address.trim())
-      .filter(Boolean) ?? []
+      .filter(Boolean) ?? [];
+  const pendingAddress = link.config?.["volatile.pending_address"]?.trim();
+
+  return addresses.length || !pendingAddress ? addresses : [pendingAddress];
+};
+
+export interface ClusterLinkFilter {
+  queries: string[];
+  types: string[];
+}
+
+export const filterClusterLinks = (
+  links: ResolvedClusterLink[],
+  filters: ClusterLinkFilter,
+): ResolvedClusterLink[] => {
+  const queries = filters.queries.map((query) => query.toLowerCase());
+  return links.filter(
+    ({ source_cluster, link, target_cluster }) =>
+      (!queries.length ||
+        queries.some((query) =>
+          [
+            source_cluster,
+            link.name,
+            link.description ?? "",
+            target_cluster ?? "",
+            ...getLinkAddresses(link),
+          ].some((value) => value.toLowerCase().includes(query)),
+        )) &&
+      (!filters.types.length ||
+        filters.types.includes(link.type.toLowerCase())),
   );
 };
 
-// Addresses to show for a link. Falls back to the pending address while the
-// link has no resolved addresses yet.
-export const getLinkDisplayAddresses = (link: ClusterLink): string[] => {
-  const addresses = getLinkAddresses(link);
-  if (addresses.length) {
-    return addresses;
-  }
+export const getClusterLinkId = ({
+  source_cluster,
+  link,
+}: ResolvedClusterLink): string => `${source_cluster}/${link.name}`;
 
-  const pendingAddress = link.config?.["volatile.pending_address"];
-  return pendingAddress ? [pendingAddress] : [];
-};
+export interface GlobalClusterLinkSourceGroup {
+  sourceCluster: string;
+  links: ResolvedClusterLink[];
+}
 
-// Resolves the cluster a link points at by UUID, falling back to matching its
-// addresses against the lxd URLs of clusters known to the cluster manager.
-export const getLinkedCluster = (
-  link: ClusterLink,
-  clusters: Cluster[],
-): Cluster | undefined => {
-  const linkedCluster = clusters.find(
-    (cluster) => cluster.cluster_uuid === link.config?.["volatile.uuid"],
-  );
-
-  if (linkedCluster) {
-    return linkedCluster;
-  }
-
-  // fallback to address matching if no UUID match is found.
-  const addresses = getLinkAddresses(link);
-  return clusters.find((cluster) =>
-    addresses.some((address) => cluster.lxd_url.endsWith(address)),
-  );
-};
-
-// Finds the link on the other end of a cluster link, meaning the link on the
-// linked cluster that points back at the given cluster.
-export const getReverseLink = (
-  links: ClusterLink[],
-  cluster: Cluster,
-): ClusterLink | undefined => {
-  return links.find((link) => {
-    if (link.config?.["volatile.uuid"] === cluster.cluster_uuid) {
-      return true;
+// Groups links by their source cluster, keeping the cluster order of the
+// flattened input. Groups without links are omitted.
+export const groupGlobalClusterLinks = (
+  links: ResolvedClusterLink[],
+): GlobalClusterLinkSourceGroup[] => {
+  const groupsByCluster = new Map<string, GlobalClusterLinkSourceGroup>();
+  for (const resolvedLink of links) {
+    const group = groupsByCluster.get(resolvedLink.source_cluster);
+    if (group) {
+      group.links.push(resolvedLink);
+    } else {
+      groupsByCluster.set(resolvedLink.source_cluster, {
+        sourceCluster: resolvedLink.source_cluster,
+        links: [resolvedLink],
+      });
     }
-
-    return getLinkAddresses(link).some((address) =>
-      cluster.lxd_url.endsWith(address),
-    );
-  });
+  }
+  return [...groupsByCluster.values()];
 };
+
+export const CLUSTER_LINK_GROUP_SORT_COLUMN = "cluster";
+
+export const getGlobalClusterLinkGroupSortData = (
+  groupKey: string,
+  groupIndex: number,
+): GroupedRowSortData => ({
+  groupIndex,
+  groupKey,
+  isGroupHeader: true,
+  id: `group-${groupKey}`,
+  values: {},
+});
+
+export const getClusterLinkSortData = ({
+  link,
+  target_cluster,
+}: ResolvedClusterLink) => ({
+  name: link.name.toLowerCase(),
+  type: link.type.toLowerCase(),
+  target: (target_cluster ?? "").toLowerCase(),
+  description: (link.description ?? "").toLowerCase(),
+  usedBy: link.used_by?.length ?? 0,
+  addresses: getLinkAddresses(link).join(",").toLowerCase(),
+});
 
 export const isBidirectional = (link: ClusterLink): boolean =>
   link.type.toLowerCase() === "bidirectional";
@@ -69,29 +110,47 @@ export const isUnidirectional = (link: ClusterLink): boolean =>
 export const isPublic = (link: ClusterLink): boolean =>
   link.type.toLowerCase() === "public";
 
-// used_by holds LXD API paths, e.g. /1.0/replicators/<name>
-export const getLinkUsage = (
-  link: ClusterLink,
-): { replicators: number; imageRegistries: number } => {
-  const usedBy = link.used_by ?? [];
-  const countPrefix = (prefix: string) =>
-    usedBy.filter((path) => path.startsWith(prefix)).length;
+export const getGlobalClusterLinkSortData = (
+  resolvedLink: ResolvedClusterLink,
+  groupIndex: number,
+): GroupedRowSortData => ({
+  groupIndex,
+  groupKey: resolvedLink.source_cluster,
+  isGroupHeader: false,
+  id: getClusterLinkId(resolvedLink),
+  values: getClusterLinkSortData(resolvedLink),
+});
 
-  return {
-    replicators: countPrefix("/1.0/replicators/"),
-    imageRegistries: countPrefix("/1.0/image-registries/"),
-  };
-};
+export const sortGlobalClusterLinkRows = (
+  a: MainTableRow,
+  b: MainTableRow,
+  direction: SortDirection,
+  key: MainTableHeader["sortKey"],
+): -1 | 0 | 1 =>
+  compareGroupedRows(
+    a.sortData as GroupedRowSortData,
+    b.sortData as GroupedRowSortData,
+    String(key),
+    direction === "descending" ? "descending" : "ascending",
+    CLUSTER_LINK_GROUP_SORT_COLUMN,
+  );
 
-// Bidirectional and unidirectional links have an end on the target cluster.
-export const hasTargetEnd = (link: ClusterLink): boolean =>
+// Deleting a bidirectional link also deletes its reverse link on the target
+// cluster; deleting a unidirectional link also deletes its link identity there.
+export const hasTargetCleanup = (link: ClusterLink): boolean =>
   isBidirectional(link) || isUnidirectional(link);
 
-// The target end can only be cleaned up when the target has a registered tunnel.
-export const canRemoveTargetEnd = (
+// The target cluster can only be cleaned up through its registered tunnel.
+export const canCleanUpTarget = (
   link: ClusterLink,
   targetCluster?: Cluster,
-): boolean => hasTargetEnd(link) && !!targetCluster?.tunnel_registered;
+): boolean => hasTargetCleanup(link) && !!targetCluster?.tunnel_registered;
+
+export const findCluster = (
+  clusters: Cluster[],
+  name: string | null,
+): Cluster | undefined =>
+  name ? clusters.find((cluster) => cluster.name === name) : undefined;
 
 export const getLinkIdentity = (
   identities: LxdIdentity[],
