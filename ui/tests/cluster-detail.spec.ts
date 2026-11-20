@@ -174,6 +174,56 @@ test.describe("Cluster links tab", () => {
     });
   };
 
+  // Adds a managed cluster with a registered tunnel to the cluster list, so
+  // that links pointing at it can be cleaned up on the target cluster.
+  const mockTargetCluster = async (page: Page, name: string): Promise<void> => {
+    await page.route(
+      (url) => url.pathname === "/1.0/remote-cluster",
+      async (route) => {
+        const response = await route.fetch();
+        const body = (await response.json()) as {
+          metadata: Record<string, unknown>[];
+        };
+        body.metadata = [
+          ...body.metadata,
+          { ...body.metadata[0], name, tunnel_registered: true },
+        ];
+        await route.fulfill({ response, json: body });
+      },
+    );
+  };
+
+  const isClusterLinksListUrl = (url: URL, cluster: string) =>
+    url.pathname === "/1.0/cluster-links" &&
+    url.searchParams.get("cluster") === cluster;
+
+  const mockClusterLinks = async (
+    page: Page,
+    cluster: string,
+    links: { name: string; type: string }[],
+    targetCluster: string | null = null,
+  ) => {
+    await page.route(
+      (url) => isClusterLinksListUrl(url, cluster),
+      async (route) =>
+        route.fulfill({
+          json: {
+            type: "sync",
+            status: "Success",
+            status_code: 200,
+            metadata: {
+              cluster_links: links.map((link) => ({
+                link,
+                source_cluster: cluster,
+                target_cluster: targetCluster,
+              })),
+              errors: [],
+            },
+          },
+        }),
+    );
+  };
+
   test("should navigate to the Cluster links tab and back", async ({
     page,
   }) => {
@@ -224,22 +274,11 @@ test.describe("Cluster links tab", () => {
     const cluster = randomSeedClusterName();
     await ensureClusterExists(page, cluster);
     await mockTunnel(page, cluster, true);
-    await page.route(
-      `**/1.0/remote-cluster/${cluster}/cluster-links`,
-      async (route) =>
-        route.fulfill({
-          json: {
-            type: "sync",
-            status: "Success",
-            status_code: 200,
-            metadata: [],
-          },
-        }),
-    );
+    await mockClusterLinks(page, cluster, []);
     await page.goto(`/ui/cluster/${cluster}/cluster-links`);
     await expect(page.getByText("No cluster links found")).toBeVisible();
     await expect(
-      page.getByText("There are no cluster links on this server."),
+      page.getByText("There are no cluster links on this cluster."),
     ).toBeVisible();
   });
 
@@ -250,7 +289,7 @@ test.describe("Cluster links tab", () => {
     await ensureClusterExists(page, cluster);
     await mockTunnel(page, cluster, true);
     await page.route(
-      `**/1.0/remote-cluster/${cluster}/cluster-links`,
+      (url) => isClusterLinksListUrl(url, cluster),
       async (route) =>
         route.fulfill({
           status: 500,
@@ -260,6 +299,120 @@ test.describe("Cluster links tab", () => {
     await page.goto(`/ui/cluster/${cluster}/cluster-links`);
     await expect(page.getByText("Loading cluster links failed")).toBeVisible();
     await expect(page.getByText("No cluster links found")).toHaveCount(0);
+  });
+
+  test("should delete both ends of a cluster link through the source cluster", async ({
+    page,
+  }) => {
+    const cluster = randomSeedClusterName();
+    await ensureClusterExists(page, cluster);
+    await mockTunnel(page, cluster, true);
+    await mockTargetCluster(page, "peer");
+    await mockClusterLinks(
+      page,
+      cluster,
+      [{ name: "to-peer", type: "bidirectional" }],
+      "peer",
+    );
+    let deleteUrl: URL | undefined;
+    await page.route(
+      (url) => url.pathname === "/1.0/cluster-links/to-peer",
+      async (route) => {
+        if (route.request().method() !== "DELETE") {
+          return route.fallback();
+        }
+        deleteUrl = new URL(route.request().url());
+        return route.fulfill({
+          json: { type: "sync", status: "Success", status_code: 200 },
+        });
+      },
+    );
+
+    await page.goto(`/ui/cluster/${cluster}/cluster-links`);
+    await page
+      .getByRole("button", { name: "Delete cluster link to-peer" })
+      .click();
+    await expect(
+      page.getByLabel("Delete links on both source and target cluster"),
+    ).toBeChecked();
+    await page.getByRole("button", { name: "Delete", exact: true }).click();
+
+    await expect(page.getByText("Deleted cluster link between")).toBeVisible();
+    expect(deleteUrl?.searchParams.get("cluster")).toBe(cluster);
+    expect(deleteUrl?.searchParams.get("removeReverseEdge")).toBe("true");
+  });
+
+  test("should delete selected cluster links in bulk", async ({ page }) => {
+    const cluster = randomSeedClusterName();
+    await ensureClusterExists(page, cluster);
+    await mockTunnel(page, cluster, true);
+    await mockTargetCluster(page, "peer");
+    let clusterLinks = [
+      {
+        link: { name: "to-peer", type: "bidirectional" },
+        target_cluster: "peer",
+      },
+      { link: { name: "images-public", type: "public" }, target_cluster: null },
+      { link: { name: "keep-public", type: "public" }, target_cluster: null },
+    ];
+    await page.route(
+      (url) => isClusterLinksListUrl(url, cluster),
+      async (route) =>
+        route.fulfill({
+          json: {
+            type: "sync",
+            status: "Success",
+            status_code: 200,
+            metadata: {
+              cluster_links: clusterLinks.map((resolvedLink) => ({
+                ...resolvedLink,
+                source_cluster: cluster,
+              })),
+              errors: [],
+            },
+          },
+        }),
+    );
+    const deleted: string[] = [];
+    await page.route(
+      (url) => url.pathname.startsWith("/1.0/cluster-links/"),
+      async (route) => {
+        if (route.request().method() !== "DELETE") {
+          return route.fallback();
+        }
+        const url = new URL(route.request().url());
+        const name = decodeURIComponent(url.pathname.split("/").pop() ?? "");
+        expect(url.searchParams.get("cluster")).toBe(cluster);
+        deleted.push(
+          `${name}:${url.searchParams.get("removeReverseEdge") ?? "false"}`,
+        );
+        clusterLinks = clusterLinks.filter(
+          (resolvedLink) => resolvedLink.link.name !== name,
+        );
+        return route.fulfill({
+          json: { type: "sync", status: "Success", status_code: 200 },
+        });
+      },
+    );
+
+    await page.goto(`/ui/cluster/${cluster}/cluster-links`);
+    await expect(page.getByPlaceholder("Search and filter")).toBeVisible();
+    await page.getByText("Select to-peer").click();
+    await page.getByText("Select images-public").click();
+    await expect(page.getByPlaceholder("Search and filter")).toBeVisible();
+    await page.getByRole("button", { name: "Delete cluster links" }).click();
+    const dialog = page.getByRole("dialog", { name: "Delete cluster links" });
+    await expect(dialog).toContainText("2 cluster links");
+    await expect(
+      dialog.getByLabel("Delete links on both source and target cluster"),
+    ).toBeChecked();
+    await dialog.getByRole("button", { name: "Delete", exact: true }).click();
+
+    await expect(page.getByText("Deleted 2 cluster links.")).toBeVisible();
+    expect(deleted.sort()).toEqual(["images-public:false", "to-peer:true"]);
+    await expect(page.getByRole("link", { name: "keep-public" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "to-peer" })).toHaveCount(0);
+    await expect(page.getByPlaceholder("Search and filter")).toBeVisible();
   });
 });
 

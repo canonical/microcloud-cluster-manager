@@ -1,0 +1,36 @@
+import { Button, Icon } from "@canonical/react-components";
+import type { FC } from "react";
+import usePanelParams from "context/usePanelParams";
+import type { ClusterLink } from "types/cluster";
+
+interface Props {
+  cluster: string;
+  link: ClusterLink;
+  hasLabel?: boolean;
+}
+
+const EditClusterLinkButton: FC<Props> = ({
+  cluster,
+  link,
+  hasLabel = true,
+}) => {
+  const panelParams = usePanelParams();
+
+  return (
+    <Button
+      appearance={hasLabel ? "default" : "base"}
+      className="u-no-margin--bottom"
+      hasIcon
+      title={hasLabel ? undefined : "Edit"}
+      aria-label={hasLabel ? undefined : `Edit cluster link ${link.name}`}
+      onClick={() => {
+        panelParams.openEditClusterLink(cluster, link.name);
+      }}
+    >
+      <Icon name="edit" />
+      {hasLabel && <span>Edit</span>}
+    </Button>
+  );
+};
+
+export default EditClusterLinkButton;

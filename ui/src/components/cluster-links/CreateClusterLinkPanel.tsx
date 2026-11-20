@@ -13,14 +13,14 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import type { FC } from "react";
 import { useFormik } from "formik";
-import { queryKeys } from "util/queryKeys";
+import { invalidateClusterLinks } from "util/clusterLinkQueries";
 import NotificationRow from "components/NotificationRow";
 import usePanelParams from "context/usePanelParams";
 import { useCluster } from "context/useClusters";
 import { createClusterLink } from "api/clusters";
 import type { ClusterLink, ClusterLinkPost } from "types/cluster";
 import * as Yup from "yup";
-import ClusterSelector from "pages/clusters/ClusterSelector";
+import ClusterSelector from "components/ClusterSelector";
 import { getLinkIconType, LINK_TYPES } from "util/clusterLinkTypes";
 import ResourceIcon from "components/ResourceIcon";
 import { isPublic } from "util/clusterLinks";
@@ -42,6 +42,7 @@ const CreateClusterLinkPanel: FC = () => {
   };
 
   interface CreateClusterLinkFormValues {
+    sourceCluster: string;
     targetCluster: string;
     type: ClusterLink["type"];
     useDifferentTargetAddress: boolean;
@@ -64,7 +65,7 @@ const CreateClusterLinkPanel: FC = () => {
       payload.remote_address = values.targetAddress;
     }
 
-    return createClusterLink(clusterName, JSON.stringify(payload))
+    return createClusterLink(values.sourceCluster, JSON.stringify(payload))
       .then(() => {
         toastNotification.success(
           <>
@@ -77,13 +78,12 @@ const CreateClusterLinkPanel: FC = () => {
         notify.failure("Failure creating cluster link.", error);
       })
       .finally(() => {
-        void queryClient.invalidateQueries({
-          queryKey: [queryKeys.clusters],
-        });
+        void invalidateClusterLinks(queryClient);
       });
   };
 
   const ConfigurationSchema = Yup.object().shape({
+    sourceCluster: Yup.string().required("Source cluster is required"),
     targetCluster: Yup.string().required("Target cluster is required"),
     useDifferentTargetAddress: Yup.boolean(),
     targetAddress: Yup.string().when("useDifferentTargetAddress", {
@@ -102,6 +102,7 @@ const CreateClusterLinkPanel: FC = () => {
 
   const formik = useFormik<CreateClusterLinkFormValues>({
     initialValues: {
+      sourceCluster: clusterName,
       targetCluster: "",
       type: "bidirectional",
       useDifferentTargetAddress: false,
@@ -110,6 +111,7 @@ const CreateClusterLinkPanel: FC = () => {
       description: "",
     },
     validationSchema: ConfigurationSchema,
+    enableReinitialize: true,
     onSubmit: handleSubmit,
   });
 
@@ -125,6 +127,7 @@ const CreateClusterLinkPanel: FC = () => {
     (!formik.values.targetAddress || !!formik.errors.targetAddress);
   const isSubmitDisabled =
     formik.isSubmitting ||
+    !formik.values.sourceCluster ||
     !formik.values.targetCluster ||
     !formik.values.name ||
     isAlternateTargetAddressInvalid;
@@ -162,7 +165,7 @@ const CreateClusterLinkPanel: FC = () => {
                         key={type.value}
                         name="type"
                         label={type.label}
-                        help={type.help}
+                        help={type.description}
                         checked={formik.values.type === type.value}
                         onChange={() => {
                           void formik.setFieldValue("type", type.value);
@@ -177,7 +180,7 @@ const CreateClusterLinkPanel: FC = () => {
                     <Input
                       type="text"
                       label="Source"
-                      value={cluster.name}
+                      value={cluster?.name ?? clusterName}
                       readOnly
                     />
                     <span
@@ -201,7 +204,7 @@ const CreateClusterLinkPanel: FC = () => {
                             name: value ? `${value}-link` : "",
                           });
                         }}
-                        ignoreOptions={[cluster.name]}
+                        ignoreOptions={[formik.values.sourceCluster]}
                         selectProps={{
                           id: "target-cluster",
                           name: "target",

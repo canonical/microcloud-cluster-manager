@@ -57,15 +57,29 @@
 .cluster-links-header {
   align-items: center;
   display: flex;
-  justify-content: space-between;
+  gap: 2rem;
   margin-bottom: $spv--large;
 
   // Reserve the delete button's height so the table doesn't shift when it appears.
   min-height: 2.5rem;
-}
 
-.cluster-links-selected {
-  margin-top: $spv--medium;
+  h2 {
+    flex-shrink: 0;
+  }
+
+  .cluster-links-search {
+    max-width: 35vw;
+    width: 100%;
+  }
+
+  .p-search-and-filter__panel {
+    min-width: 100%;
+  }
+
+  .cluster-links-bulk-actions {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
 }
 
 .cluster-links-create {
@@ -184,27 +198,8 @@
     width: 20%;
   }
 
-  .description-text {
-    @include u-line-clamp-truncate(2);
-
-    // Fits exactly two lines so a third is never partially visible
-    max-height: 3rem;
-  }
-
   .used-by {
     width: 5rem;
-
-    .used-by-header {
-      align-items: center;
-      display: inline-flex;
-    }
-
-    .used-by-help-icon {
-      background-size: contain;
-      height: 14px;
-      margin-left: 0.25rem;
-      width: 14px;
-    }
   }
 
   .addresses {
@@ -226,25 +221,5 @@
         margin-right: 0;
       }
     }
-  }
-}
-
-.used-by-help-tooltip .p-tooltip__message {
-  white-space: normal;
-  width: 15rem;
-}
-
-.cell-details-tooltip .p-tooltip__message {
-  background: #fff;
-  box-shadow: 0 1px 5px 1px rgb(0 0 0 / 20%);
-  color: #000;
-
-  // Without the arrow the default 13px offset leaves the overlay looking
-  // detached from the "+N" trigger. The ::after hover bridge still spans it.
-  transform: translateY(4px);
-  white-space: nowrap;
-
-  &::before {
-    display: none;
   }
 }

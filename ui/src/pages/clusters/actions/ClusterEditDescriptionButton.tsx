@@ -9,7 +9,7 @@ interface Props {
   label?: string;
 }
 
-const ClusterEditDescriptionBtn: FC<Props> = ({
+const ClusterEditDescriptionButton: FC<Props> = ({
   clusterName,
   appearance,
   label,
@@ -30,4 +30,4 @@ const ClusterEditDescriptionBtn: FC<Props> = ({
   );
 };
 
-export default ClusterEditDescriptionBtn;
+export default ClusterEditDescriptionButton;
