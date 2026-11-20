@@ -1,7 +1,9 @@
-import { DoughnutChart, Icon } from "@canonical/react-components";
+import { DoughnutChart } from "@canonical/react-components";
+import StatusIcon from "components/StatusIcon";
 import type { FC, ReactNode } from "react";
 import type { Cluster } from "types/cluster";
 import { pluralize, statusCount } from "util/helpers";
+import { statusColors } from "util/statusColors";
 
 interface Props {
   cluster: Cluster;
@@ -25,28 +27,28 @@ const ClusterDetailInstanceGraph: FC<Props> = ({ cluster }: Props) => {
   const segments = [{ color: "#D3E4ED", tooltip: "", value: 0 }];
   if (running > 0) {
     segments.push({
-      color: "#0E8420",
+      color: statusColors.positive,
       tooltip: "Running",
       value: running,
     });
   }
   if (stopped > 0) {
     segments.push({
-      color: "#000000",
+      color: statusColors.neutral,
       tooltip: "Stopped",
       value: stopped,
     });
   }
   if (frozen > 0) {
     segments.push({
-      color: "#24598f",
+      color: statusColors.information,
       tooltip: "Frozen",
       value: frozen,
     });
   }
   if (error > 0) {
     segments.push({
-      color: "#C7162B",
+      color: statusColors.negative,
       tooltip: "Error",
       value: error,
     });
@@ -66,21 +68,21 @@ const ClusterDetailInstanceGraph: FC<Props> = ({ cluster }: Props) => {
           {total} {pluralize("instance", total)}
         </li>
         <li>
-          <Icon name="status-succeeded-small" />
+          <StatusIcon tone="positive" />
           {getPercentage(running)} Running
         </li>
         <li>
-          <Icon name="status-queued-small" />
+          <StatusIcon tone="neutral" />
           {getPercentage(stopped)}
           Stopped
         </li>
         <li>
-          <Icon name="status-in-progress-small" />
+          <StatusIcon tone="information" />
           {getPercentage(frozen)}
           Frozen
         </li>
         <li>
-          <Icon name="status-failed-small" />
+          <StatusIcon tone="negative" />
           {getPercentage(error)}
           Error
         </li>

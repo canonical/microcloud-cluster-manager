@@ -1,7 +1,9 @@
-import { DoughnutChart, Icon } from "@canonical/react-components";
+import { DoughnutChart } from "@canonical/react-components";
+import StatusIcon from "components/StatusIcon";
 import type { FC, ReactNode } from "react";
 import type { Cluster } from "types/cluster";
 import { pluralize, statusCount } from "util/helpers";
+import { statusColors } from "util/statusColors";
 
 interface Props {
   cluster: Cluster;
@@ -25,28 +27,28 @@ const ClusterDetailMemberGraph: FC<Props> = ({ cluster }: Props) => {
   const segments = [{ color: "#D3E4ED", tooltip: "", value: 0 }];
   if (online > 0) {
     segments.push({
-      color: "#0E8420",
+      color: statusColors.positive,
       tooltip: "Online",
       value: online,
     });
   }
   if (offline > 0) {
     segments.push({
-      color: "#CC7900",
+      color: statusColors.caution,
       tooltip: "Offline",
       value: offline,
     });
   }
   if (blocked > 0) {
     segments.push({
-      color: "#C7162B",
+      color: statusColors.negative,
       tooltip: "Blocked",
       value: blocked,
     });
   }
   if (evacuated > 0) {
     segments.push({
-      color: "#24598f",
+      color: statusColors.neutral,
       tooltip: "Evacuated",
       value: evacuated,
     });
@@ -66,21 +68,21 @@ const ClusterDetailMemberGraph: FC<Props> = ({ cluster }: Props) => {
           {total} {pluralize("member", total)}
         </li>
         <li>
-          <Icon name="status-succeeded-small" />
+          <StatusIcon tone="positive" />
           {getPercentage(online)} Online
         </li>
         <li>
-          <Icon name="status-waiting-small" />
+          <StatusIcon tone="caution" />
           {getPercentage(offline)}
           Offline
         </li>
         <li>
-          <Icon name="status-in-progress-small" />
+          <StatusIcon tone="neutral" />
           {getPercentage(evacuated)}
           Evacuated
         </li>
         <li>
-          <Icon name="status-failed-small" />
+          <StatusIcon tone="negative" />
           {getPercentage(blocked)}
           Blocked
         </li>

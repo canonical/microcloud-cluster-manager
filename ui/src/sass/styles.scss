@@ -12,11 +12,7 @@
 @include vf-p-icon-export;
 @include vf-p-icon-profile;
 @include vf-p-icon-submit-bug;
-@include vf-p-icon-status-waiting-small;
-@include vf-p-icon-status-succeeded-small;
-@include vf-p-icon-status-failed-small;
-@include vf-p-icon-status-queued-small;
-@include vf-p-icon-status-in-progress-small;
+@include vf-p-icon-switcher-environments;
 @include vf-p-icon-settings;
 @include vf-p-icon-success-grey;
 @include vf-p-icon-task-outstanding;
@@ -52,9 +48,20 @@
 // vanilla's own $default-icon-size is always a fixed, root-relative 1rem
 // regardless of the surrounding font-size or the icon's actual rendered
 // size. Using the CSS var here would make icons drift lower again inside
-// larger text (e.g. card titles). Issue is tracked in WD-38790
+// larger text (e.g. card titles). Issue is tracked in LXD-5623
 .ds.icon {
   vertical-align: calc(0.5px + 0.5 * #{$cap-height} - 0.5 * 1rem) !important;
+}
+
+// Match Vanilla's neutral status icon in dark and legacy inverse contexts.
+// Issue is tracked in LXD-5623
+.status-icon--neutral {
+  [class*="--dark"] &,
+  body.is-dark &,
+  &.is-light,
+  &.is-dark {
+    --status-color-neutral: #{$colors--dark-theme--icon};
+  }
 }
 
 // Vanilla's %vf-button-has-icon spacing rule only targets legacy
@@ -66,7 +73,7 @@
 // previous version of this rule did) made the button's height track the
 // icon's own box height instead of the button's normal line-height, which
 // could grow/shrink the button and push the icon out of alignment with
-// its label. Issue is tracked in WD-38790
+// its label. Issue is tracked in LXD-5623
 [class*="p-button"].has-icon {
   .ds.icon {
     margin-left: $sph--small;

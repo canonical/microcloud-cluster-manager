@@ -1,6 +1,7 @@
 import type { FC } from "react";
 import type { Cluster } from "types/cluster";
-import { Icon, Tooltip } from "@canonical/react-components";
+import { Tooltip } from "@canonical/react-components";
+import StatusIcon from "components/StatusIcon";
 
 interface Props {
   cluster: Cluster;
@@ -25,19 +26,19 @@ export const ClusterInstances: FC<Props> = ({ cluster }: Props) => {
       message={
         <div>
           <div>
-            <Icon name="status-succeeded-small" />
+            <StatusIcon tone="positive" />
             {`Running (${runningInstances.count})`}
           </div>
           <div>
-            <Icon name="status-in-progress-small" />
+            <StatusIcon tone="information" />
             {`Frozen (${frozenInstances.count})`}
           </div>
           <div>
-            <Icon name="status-failed-small" />
+            <StatusIcon tone="negative" />
             {`Error (${errorInstances.count})`}
           </div>
           <div>
-            <Icon name="status-queued-small" />
+            <StatusIcon tone="neutral" />
             {`Stopped (${stoppedInstances.count})`}
           </div>
         </div>

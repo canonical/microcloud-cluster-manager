@@ -1,4 +1,5 @@
-import { Icon, Tooltip } from "@canonical/react-components";
+import { Tooltip } from "@canonical/react-components";
+import StatusIcon from "components/StatusIcon";
 import type { FC } from "react";
 import type { Cluster } from "types/cluster";
 
@@ -31,19 +32,19 @@ export const ClusterMembers: FC<Props> = ({ cluster }: Props) => {
       message={
         <div>
           <div>
-            <Icon name="status-succeeded-small" />
+            <StatusIcon tone="positive" />
             {`Online (${onlineMembers.count})`}
           </div>
           <div>
-            <Icon name="status-waiting-small" />
+            <StatusIcon tone="caution" />
             {`Blocked (${blockedMembers.count})`}
           </div>
           <div>
-            <Icon name="status-failed-small" />
+            <StatusIcon tone="negative" />
             {`Offline (${offlineMembers.count})`}
           </div>
           <div>
-            <Icon name="status-queued-small" />
+            <StatusIcon tone="neutral" />
             {`Evacuated (${evacuatedMembers.count})`}
           </div>
         </div>
