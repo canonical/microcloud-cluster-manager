@@ -1,12 +1,16 @@
 import { QueryClient } from "@tanstack/react-query";
-import { queryKeys } from "util/queryKeys";
+import { allClusterLinksQueryKey, queryKeys } from "util/queryKeys";
 import type { Cluster, ClusterLink, ResolvedClusterLink } from "types/cluster";
 import {
   canCleanUpTarget,
   findCluster,
   getClusterLinkId,
+  getClusterLinkSortData,
+  getGlobalClusterLinkSortData,
   getLinkAddresses,
   getLinkDisplayAddresses,
+  groupGlobalClusterLinks,
+  sortGlobalClusterLinkRows,
   invalidateClusterLinkLists,
   invalidateClusterLinksAndIdentities,
 } from "./clusterLinks";
@@ -40,6 +44,7 @@ describe("cluster link query invalidation", () => {
 
     await invalidateClusterLinkLists(queryClient, ["source", "target"]);
     expect(invalidate.mock.calls).toEqual([
+      [{ queryKey: allClusterLinksQueryKey }],
       [{ queryKey: [queryKeys.clusters, "source", queryKeys.links] }],
       [{ queryKey: [queryKeys.clusters, "target", queryKeys.links] }],
     ]);
@@ -57,6 +62,7 @@ describe("cluster link query invalidation", () => {
     );
 
     expect(invalidate.mock.calls).toEqual([
+      [{ queryKey: allClusterLinksQueryKey }],
       [{ queryKey: [queryKeys.clusters, "source", queryKeys.links] }],
       [{ queryKey: [queryKeys.clusters, "reverse", queryKeys.links] }],
       [{ queryKey: [queryKeys.clusters, "source", queryKeys.identities] }],
@@ -138,5 +144,69 @@ describe("findCluster", () => {
     expect(findCluster(clusters, "two")).toBe(clusters[1]);
     expect(findCluster(clusters, "three")).toBeUndefined();
     expect(findCluster(clusters, null)).toBeUndefined();
+  });
+});
+
+describe("groupGlobalClusterLinks", () => {
+  it("groups by source cluster in input order and omits empty groups", () => {
+    const links = [
+      makeResolvedLink(makeLink("b-link"), "one"),
+      makeResolvedLink(makeLink("c-link"), "two"),
+      makeResolvedLink(makeLink("a-link"), "one"),
+    ];
+
+    const groups = groupGlobalClusterLinks(links);
+
+    expect(groups.map((group) => group.sourceCluster)).toStrictEqual([
+      "one",
+      "two",
+    ]);
+    expect(groups[0].links.map(({ link }) => link.name)).toStrictEqual([
+      "b-link",
+      "a-link",
+    ]);
+  });
+});
+
+describe("getGlobalClusterLinkSortData", () => {
+  it("extracts the displayed column values for sorting", () => {
+    const resolvedLink = makeResolvedLink(
+      makeLink("Zulu", {
+        type: "unidirectional",
+        description: "Some description",
+        used_by: ["/a", "/b"],
+        config: { "volatile.addresses": "Z.example.com:8443" },
+      }),
+      "source",
+      "Target",
+    );
+
+    expect(getGlobalClusterLinkSortData(resolvedLink, 2)).toStrictEqual({
+      groupIndex: 2,
+      groupKey: "source",
+      isGroupHeader: false,
+      id: "source/Zulu",
+      values: getClusterLinkSortData(resolvedLink),
+    });
+  });
+});
+
+describe("sortGlobalClusterLinkRows", () => {
+  it("keeps rows inside their group when sorting by a link column", () => {
+    const links = [
+      makeResolvedLink(makeLink("z"), "one"),
+      makeResolvedLink(makeLink("a"), "two"),
+    ];
+    const [first, second] = links.map((resolvedLink, index) => ({
+      columns: [],
+      sortData: getGlobalClusterLinkSortData(resolvedLink, index),
+    }));
+
+    expect(sortGlobalClusterLinkRows(first, second, "ascending", "name")).toBe(
+      -1,
+    );
+    expect(
+      sortGlobalClusterLinkRows(first, second, "descending", "cluster"),
+    ).toBe(1);
   });
 });

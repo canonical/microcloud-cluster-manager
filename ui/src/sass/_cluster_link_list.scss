@@ -1,3 +1,77 @@
+.scrollable-table .cluster-link-table {
+  .cluster {
+    width: 9rem;
+  }
+
+  .type {
+    width: 9.5rem;
+  }
+
+  .used-by {
+    width: 6.5rem;
+  }
+
+  @media screen and (width <= 1500px) {
+    .description {
+      display: none;
+    }
+  }
+
+  @media screen and (min-width: $breakpoint-small) and (max-width: $breakpoint-large) {
+    .used-by,
+    .addresses {
+      display: none;
+    }
+
+    .cluster {
+      width: 7rem;
+    }
+  }
+
+  .cluster-link-toggle {
+    text-align: center;
+    width: 2.5rem;
+
+    button {
+      background-color: transparent;
+      display: inline-block;
+      width: auto;
+
+      &:hover,
+      &:active,
+      &:focus {
+        background-color: transparent;
+      }
+    }
+  }
+
+  .actions {
+    text-align: right;
+    width: 6.5rem;
+
+    .actions-list button {
+      padding-bottom: 0;
+      padding-top: 0;
+    }
+  }
+
+  .cluster-link-group-row td {
+    background-color: $colors--theme--background-default;
+    font-weight: $font-weight-bold;
+    padding-bottom: $spv--x-small;
+    padding-top: $spv--x-small;
+  }
+
+  .cluster-link-group-name {
+    overflow: visible;
+    white-space: nowrap;
+
+    a {
+      vertical-align: middle;
+    }
+  }
+}
+
 .cluster-link-row {
   .name {
     white-space: nowrap;

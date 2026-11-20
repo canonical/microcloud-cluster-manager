@@ -1,8 +1,16 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
-import { fetchClusterLinks, fetchClusterLinkState } from "api/clusters";
-import type { ClusterLinkState, ResolvedClusterLink } from "types/cluster";
-import { queryKeys } from "util/queryKeys";
+import {
+  fetchAllClusterLinks,
+  fetchClusterLinks,
+  fetchClusterLinkState,
+} from "api/clusters";
+import type {
+  ClusterLinkList,
+  ClusterLinkState,
+  ResolvedClusterLink,
+} from "types/cluster";
+import { allClusterLinksQueryKey, queryKeys } from "util/queryKeys";
 
 export const useClusterLinks = (
   clusterName: string,
@@ -28,5 +36,12 @@ export const useClusterLinkState = (
       queryKeys.state,
     ],
     queryFn: async () => fetchClusterLinkState(clusterName, link),
+  });
+};
+
+export const useAllClusterLinks = (): UseQueryResult<ClusterLinkList> => {
+  return useQuery({
+    queryKey: allClusterLinksQueryKey,
+    queryFn: fetchAllClusterLinks,
   });
 };

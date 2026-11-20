@@ -3,15 +3,23 @@ import type { MainTableRow } from "@canonical/react-components/dist/components/M
 
 type SortDirection = "ascending" | "descending";
 
-interface Props {
-  rows: MainTableRow[];
+interface SortOptions {
   defaultSort?: string;
   defaultSortDirection?: SortDirection;
 }
 
+interface TableSort {
+  sort: { key?: string | null; direction: SortDirection };
+  updateSort: (sortKey?: string | null) => void;
+}
+
+interface TableRowsProps extends SortOptions {
+  rows: MainTableRow[];
+}
+
 interface SortTableData {
   rows: MainTableRow[];
-  updateSort: (sortKey?: string | null) => void;
+  updateSort: TableSort["updateSort"];
 }
 
 // Same comparison as the MainTable default, so that MainTable keeps the order when it sorts the rows again.
@@ -44,15 +52,11 @@ export const sortTableRows = (
   });
 };
 
-// MainTable only sorts the rows it is given. Inside TablePagination those are the rows of the current page, so the
-// sort order would only apply within a page. This hook sorts all rows before they are paginated. Pass the returned
-// rows to TablePagination, and updateSort to MainTable as onUpdateSort. updateSort follows the same cycle as the
-// MainTable headers: unsorted -> ascending -> descending -> unsorted.
-const useSortTableData = ({
-  rows,
+// Match MainTable's cycle: unsorted -> ascending -> descending -> unsorted.
+export const useTableSort = ({
   defaultSort,
   defaultSortDirection = "descending",
-}: Props): SortTableData => {
+}: SortOptions = {}): TableSort => {
   const [sort, setSort] = useState<{
     key?: string | null;
     direction: SortDirection;
@@ -66,6 +70,16 @@ const useSortTableData = ({
     }));
   };
 
+  return { sort, updateSort };
+};
+
+// Sort the full set of rows before TablePagination passes the current page
+// to MainTable. Connect updateSort to MainTable's onUpdateSort.
+const useSortTableData = ({
+  rows,
+  ...options
+}: TableRowsProps): SortTableData => {
+  const { sort, updateSort } = useTableSort(options);
   return {
     rows: sortTableRows(rows, sort.key, sort.direction),
     updateSort,

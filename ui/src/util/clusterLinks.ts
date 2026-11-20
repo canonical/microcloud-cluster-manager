@@ -1,4 +1,9 @@
 import type { QueryClient } from "@tanstack/react-query";
+import type { SortDirection } from "@canonical/react-components";
+import type {
+  MainTableHeader,
+  MainTableRow,
+} from "@canonical/react-components/dist/components/MainTable/MainTable";
 import type {
   Cluster,
   ClusterLink,
@@ -7,8 +12,10 @@ import type {
   ResolvedClusterLink,
   StatusCaption,
 } from "types/cluster";
-import { queryKeys } from "util/queryKeys";
 import type { LxdIdentity } from "types/permissions";
+import { allClusterLinksQueryKey, queryKeys } from "util/queryKeys";
+import { compareGroupedRows } from "util/groupedTableSort";
+import type { GroupedRowSortData } from "util/groupedTableSort";
 
 export const getLinkAddresses = (link: ClusterLink): string[] => {
   return (
@@ -27,10 +34,75 @@ export const getLinkDisplayAddresses = (link: ClusterLink): string[] => {
   return addresses.length || !pendingAddress ? addresses : [pendingAddress];
 };
 
+export interface ClusterLinkFilter {
+  queries: string[];
+  types: string[];
+}
+
+export const filterClusterLinks = (
+  links: ResolvedClusterLink[],
+  filters: ClusterLinkFilter,
+): ResolvedClusterLink[] => {
+  const queries = filters.queries.map((query) => query.toLowerCase());
+  return links.filter(
+    ({ source_cluster, link, target_cluster }) =>
+      (!queries.length ||
+        queries.some((query) =>
+          [
+            source_cluster,
+            link.name,
+            link.description ?? "",
+            target_cluster ?? "",
+            ...getLinkDisplayAddresses(link),
+          ].some((value) => value.toLowerCase().includes(query)),
+        )) &&
+      (!filters.types.length ||
+        filters.types.includes(link.type.toLowerCase())),
+  );
+};
+
 export const getClusterLinkId = ({
   source_cluster,
   link,
 }: ResolvedClusterLink): string => `${source_cluster}/${link.name}`;
+
+export interface GlobalClusterLinkSourceGroup {
+  sourceCluster: string;
+  links: ResolvedClusterLink[];
+}
+
+// Groups links by their source cluster, keeping the cluster order of the
+// flattened input. Groups without links are omitted.
+export const groupGlobalClusterLinks = (
+  links: ResolvedClusterLink[],
+): GlobalClusterLinkSourceGroup[] => {
+  const groupsByCluster = new Map<string, GlobalClusterLinkSourceGroup>();
+  for (const resolvedLink of links) {
+    const group = groupsByCluster.get(resolvedLink.source_cluster);
+    if (group) {
+      group.links.push(resolvedLink);
+    } else {
+      groupsByCluster.set(resolvedLink.source_cluster, {
+        sourceCluster: resolvedLink.source_cluster,
+        links: [resolvedLink],
+      });
+    }
+  }
+  return [...groupsByCluster.values()];
+};
+
+export const CLUSTER_LINK_GROUP_SORT_COLUMN = "cluster";
+
+export const getGlobalClusterLinkGroupSortData = (
+  groupKey: string,
+  groupIndex: number,
+): GroupedRowSortData => ({
+  groupIndex,
+  groupKey,
+  isGroupHeader: true,
+  id: `group-${groupKey}`,
+  values: {},
+});
 
 export const getClusterLinkSortData = ({
   link,
@@ -53,6 +125,31 @@ export const isUnidirectional = (link: ClusterLink): boolean =>
 export const isPublic = (link: ClusterLink): boolean =>
   link.type.toLowerCase() === "public";
 
+export const getGlobalClusterLinkSortData = (
+  resolvedLink: ResolvedClusterLink,
+  groupIndex: number,
+): GroupedRowSortData => ({
+  groupIndex,
+  groupKey: resolvedLink.source_cluster,
+  isGroupHeader: false,
+  id: getClusterLinkId(resolvedLink),
+  values: getClusterLinkSortData(resolvedLink),
+});
+
+export const sortGlobalClusterLinkRows = (
+  a: MainTableRow,
+  b: MainTableRow,
+  direction: SortDirection,
+  key: MainTableHeader["sortKey"],
+): -1 | 0 | 1 =>
+  compareGroupedRows(
+    a.sortData as GroupedRowSortData,
+    b.sortData as GroupedRowSortData,
+    String(key),
+    direction === "descending" ? "descending" : "ascending",
+    CLUSTER_LINK_GROUP_SORT_COLUMN,
+  );
+
 // Deleting a bidirectional link also deletes its reverse link on the target
 // cluster; deleting a unidirectional link also deletes its link identity there.
 export const hasTargetCleanup = (link: ClusterLink): boolean =>
@@ -62,13 +159,19 @@ export const invalidateClusterLinkLists = async (
   queryClient: QueryClient,
   clusters: Iterable<string>,
 ): Promise<void> => {
-  await Promise.all(
-    Array.from(new Set(clusters), async (cluster) =>
+  const affectedClusters = new Set(clusters);
+  if (affectedClusters.size === 0) {
+    return;
+  }
+
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: allClusterLinksQueryKey }),
+    ...Array.from(affectedClusters, async (cluster) =>
       queryClient.invalidateQueries({
         queryKey: [queryKeys.clusters, cluster, queryKeys.links],
       }),
     ),
-  );
+  ]);
 };
 
 export const invalidateClusterLinksAndIdentities = async (
