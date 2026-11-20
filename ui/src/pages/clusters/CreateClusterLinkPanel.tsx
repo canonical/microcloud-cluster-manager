@@ -25,6 +25,7 @@ import { getLinkIconType, LINK_TYPES } from "util/clusterLinkTypes";
 import ResourceIcon from "components/ResourceIcon";
 import { isPublic } from "util/clusterLinks";
 import PanelSection from "components/PanelSection";
+import ClusterLinkRichChip from "pages/clusters/ClusterLinkRichChip";
 
 const CreateClusterLinkPanel: FC = () => {
   const panelParams = usePanelParams();
@@ -68,7 +69,13 @@ const CreateClusterLinkPanel: FC = () => {
       .then(() => {
         toastNotification.success(
           <>
-            Created cluster link <b>{payload.name}</b>.
+            Created cluster link{" "}
+            <ClusterLinkRichChip
+              clusterLinkName={payload.name}
+              clusterLinkType={payload.type}
+              cluster={clusterName}
+            />
+            .
           </>,
         );
         closePanel();
