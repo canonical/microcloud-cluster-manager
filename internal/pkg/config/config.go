@@ -59,6 +59,11 @@ func getEnvOrDefault(key, defaultValue string) string {
 	return defaultValue
 }
 
+// APIVersion returns the API version used to prefix non-root routes, read from API_VERSION with a default of "1.0".
+func APIVersion() string {
+	return getEnvOrDefault("API_VERSION", "1.0")
+}
+
 // getEnvAsInt retrieves an environment variable as an integer or returns the default value.
 func getEnvAsInt(key string, defaultValue int) (int, error) {
 	value := os.Getenv(key)
@@ -193,7 +198,7 @@ func LoadConfig() (*Config, error) {
 
 	return &Config{
 		Version:                getEnvOrDefault("VERSION", "development"),
-		APIVersion:             getEnvOrDefault("API_VERSION", "1.0"),
+		APIVersion:             APIVersion(),
 		ServerHost:             getEnvOrDefault("SERVER_HOST", "0.0.0.0"),
 		ServerPort:             getEnvOrDefault("SERVER_PORT", "9000"),
 		StatusPort:             getEnvOrDefault("STATUS_PORT", "10000"),
