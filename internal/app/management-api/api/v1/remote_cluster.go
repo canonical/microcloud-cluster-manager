@@ -12,14 +12,12 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/canonical/lxd/lxd/response"
 	"github.com/canonical/lxd/shared"
 	"github.com/canonical/lxd/shared/api"
 	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/auth"
-	"github.com/canonical/microcloud-cluster-manager/internal/app/management-api/core/cluster_link"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/database/store"
 	"github.com/canonical/microcloud-cluster-manager/internal/pkg/logger"
@@ -61,21 +59,6 @@ var RemoteCluster = types.RouteGroup{
 			Handler: remoteClusterAuthGroupsGet,
 		},
 		{
-			Path:    "{remoteClusterName}/cluster-links",
-			Method:  http.MethodGet,
-			Handler: remoteClusterLinksGet,
-		},
-		{
-			Path:    "{remoteClusterName}/cluster-links",
-			Method:  http.MethodPost,
-			Handler: remoteClusterLinksPost,
-		},
-		{
-			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
-			Method:  http.MethodPut,
-			Handler: remoteClusterLinkPut,
-		},
-		{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
 			Method:  http.MethodGet,
 			Handler: remoteClusterLinkGet,
@@ -84,11 +67,6 @@ var RemoteCluster = types.RouteGroup{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}/state",
 			Method:  http.MethodGet,
 			Handler: remoteClusterLinkStateGet,
-		},
-		{
-			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
-			Method:  http.MethodDelete,
-			Handler: remoteClusterLinkDelete,
 		},
 		{
 			Path:    "{remoteClusterName}/replicators",
@@ -391,20 +369,6 @@ func remoteClusterIdentitiesGet(rc types.RouteConfig) types.EndpointHandler {
 	}
 }
 
-func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		clusterConnectorPath := "/cluster-links"
-		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
-	}
-}
-
-func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		clusterConnectorPath := "/cluster-links"
-		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
-	}
-}
-
 func remoteClusterLinkGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		clusterLinkName, err := request.PathParam(r, request.ClusterLinkNameParam, "cluster link name")
@@ -429,196 +393,12 @@ func remoteClusterLinkStateGet(rc types.RouteConfig) types.EndpointHandler {
 	}
 }
 
-func remoteClusterLinkPut(rc types.RouteConfig) types.EndpointHandler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		clusterLinkName, err := request.PathParam(r, request.ClusterLinkNameParam, "cluster link name")
-		if err != nil {
-			return response.SmartError(err).Render(w, r)
-		}
-
-		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName)
-		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
-	}
-}
-
-// remoteClusterLinkDelete deletes a cluster link on the given remote cluster. When the removeReverseEdge query
-// parameter is true, it also removes the other edge of the link on the linked cluster: the reverse cluster link for
-// bidirectional links, or the cluster link identity for unidirectional links. The link type and the linked cluster
-// are resolved from the link on the source cluster.
-func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		clusterLinkName, err := request.PathParam(r, request.ClusterLinkNameParam, "cluster link name")
-		if err != nil {
-			return response.SmartError(err).Render(w, r)
-		}
-
-		clusterConnectorPath := "/cluster-links/" + url.PathEscape(clusterLinkName)
-
-		removeReverseEdge := shared.IsTrue(r.URL.Query().Get("removeReverseEdge"))
-		if !removeReverseEdge {
-			return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
-		}
-
-		sourceClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
-		if err != nil {
-			return response.SmartError(err).Render(w, r)
-		}
-
-		var sourceLinks []api.ClusterLink
-		err = requestClusterConnector(rc, r, http.MethodGet, sourceClusterName, "/cluster-links", &sourceLinks)
-		if err != nil {
-			return response.SmartError(err).Render(w, r)
-		}
-
-		sourceLink := cluster_link.FindLinkByName(sourceLinks, clusterLinkName)
-		if sourceLink == nil {
-			return response.NotFound(fmt.Errorf("cluster link %q not found on cluster %q", clusterLinkName, sourceClusterName)).Render(w, r)
-		}
-
-		linkType := strings.ToLower(sourceLink.Type)
-		if linkType != api.ClusterLinkTypeBidirectional && linkType != api.ClusterLinkTypeUnidirectional {
-			return response.BadRequest(fmt.Errorf("removing the reverse edge is only supported for %s and %s cluster links", api.ClusterLinkTypeBidirectional, api.ClusterLinkTypeUnidirectional)).Render(w, r)
-		}
-
-		var clusters []store.RemoteClusterWithDetail
-		err = rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
-			var err error
-			clusters, err = store.GetRemoteClustersWithDetails(ctx, tx)
-			return err
-		})
-		if err != nil {
-			return response.SmartError(err).Render(w, r)
-		}
-
-		var sourceCluster *store.RemoteClusterWithDetail
-		for i := range clusters {
-			if clusters[i].Name == sourceClusterName {
-				sourceCluster = &clusters[i]
-				break
-			}
-		}
-
-		if sourceCluster == nil {
-			return response.NotFound(fmt.Errorf("remote cluster %q not found", sourceClusterName)).Render(w, r)
-		}
-
-		targetCluster := findLinkedCluster(*sourceLink, clusters, sourceClusterName)
-		if targetCluster == nil {
-			return response.BadRequest(fmt.Errorf("cluster link %q on cluster %q does not point at a registered cluster", clusterLinkName, sourceClusterName)).Render(w, r)
-		}
-
-		targetClusterName := targetCluster.Name
-
-		// Remove the target edge before the source link. A failure on the target then leaves the source link in
-		// place, so the deletion can be retried. Target cleanup treats an already missing edge as done, so a retry
-		// after the target edge was removed but the source link deletion failed also succeeds.
-		if linkType == api.ClusterLinkTypeBidirectional {
-			err = deleteReverseClusterLink(rc, r, sourceCluster, targetClusterName)
-		} else {
-			err = deleteClusterLinkIdentity(rc, r, sourceClusterName, targetClusterName)
-		}
-
-		if err != nil {
-			logger.Log.Errorw("Failed to delete the target edge of a cluster link", "source_cluster", sourceClusterName, "target_cluster", targetClusterName, "cluster_link", clusterLinkName, "type", linkType, "error", err)
-			return response.SmartError(fmt.Errorf("failed to delete the link edge on cluster %q, cluster link %q on cluster %q was not deleted: %w", targetClusterName, clusterLinkName, sourceClusterName, err)).Render(w, r)
-		}
-
-		err = requestClusterConnector(rc, r, http.MethodDelete, sourceClusterName, clusterConnectorPath, nil)
-		if err != nil {
-			return response.SmartError(err).Render(w, r)
-		}
-
-		return response.EmptySyncResponse.Render(w, r)
-	}
-}
-
-// findLinkedCluster resolves the registered cluster the link points at, other than the source cluster. A match by
-// cluster UUID is preferred over a match by address.
-func findLinkedCluster(link api.ClusterLink, clusters []store.RemoteClusterWithDetail, sourceClusterName string) *store.RemoteClusterWithDetail {
-	for i := range clusters {
-		if clusters[i].Name != sourceClusterName && cluster_link.LinkPointsAt(link, clusters[i].ClusterUUID, "") {
-			return &clusters[i]
-		}
-	}
-
-	for i := range clusters {
-		if clusters[i].Name != sourceClusterName && cluster_link.LinkPointsAt(link, "", clusters[i].LXDURL) {
-			return &clusters[i]
-		}
-	}
-
-	return nil
-}
-
-// deleteReverseClusterLink deletes the bidirectional cluster link on the target cluster that points back at the
-// source cluster. A missing reverse link is treated as already deleted.
-func deleteReverseClusterLink(rc types.RouteConfig, r *http.Request, sourceCluster *store.RemoteClusterWithDetail, targetClusterName string) error {
-	var targetLinks []api.ClusterLink
-	err := requestClusterConnector(rc, r, http.MethodGet, targetClusterName, "/cluster-links", &targetLinks)
-	if err != nil {
-		return err
-	}
-
-	reverseLink := cluster_link.FindReverseLink(targetLinks, sourceCluster.ClusterUUID, sourceCluster.LXDURL)
-	if reverseLink == nil {
-		logger.Log.Infow("No reverse cluster link found on target cluster, assuming it was already deleted", "source_cluster", sourceCluster.Name, "target_cluster", targetClusterName)
-		return nil
-	}
-
-	err = requestClusterConnector(rc, r, http.MethodDelete, targetClusterName, "/cluster-links/"+url.PathEscape(reverseLink.Name), nil)
-	if api.StatusErrorCheck(err, http.StatusNotFound) {
-		return nil
-	}
-
-	return err
-}
-
-// deleteClusterLinkIdentity deletes the cluster link identity on the target cluster that holds the certificate of
-// the source cluster. A missing identity is treated as already deleted.
-func deleteClusterLinkIdentity(rc types.RouteConfig, r *http.Request, sourceClusterName string, targetClusterName string) error {
-	var sourceServer api.Server
-	err := requestClusterConnector(rc, r, http.MethodGet, sourceClusterName, "/info", &sourceServer)
-	if err != nil {
-		return err
-	}
-
-	fingerprint := sourceServer.Environment.CertificateFingerprint
-	if fingerprint == "" && sourceServer.Environment.Certificate != "" {
-		fingerprint, err = shared.CertFingerprintStr(sourceServer.Environment.Certificate)
-		if err != nil {
-			return api.StatusErrorf(http.StatusBadGateway, "cluster %q reported an invalid certificate: %v", sourceClusterName, err)
-		}
-	}
-
-	if fingerprint == "" {
-		return api.StatusErrorf(http.StatusBadGateway, "cluster %q did not report a certificate", sourceClusterName)
-	}
-
-	var identities []api.Identity
-	err = requestClusterConnector(rc, r, http.MethodGet, targetClusterName, "/auth/identities", &identities)
-	if err != nil {
-		return err
-	}
-
-	identity := cluster_link.FindIdentity(identities, fingerprint)
-	if identity == nil {
-		logger.Log.Infow("No cluster link identity found on target cluster, assuming it was already deleted", "source_cluster", sourceClusterName, "target_cluster", targetClusterName)
-		return nil
-	}
-
-	err = requestClusterConnector(rc, r, http.MethodDelete, targetClusterName, "/auth/identities/tls/"+url.PathEscape(identity.Identifier), nil)
-	if api.StatusErrorCheck(err, http.StatusNotFound) {
-		return nil
-	}
-
-	return err
-}
-
-// requestClusterConnector sends a request without a body for the given remote cluster to the cluster connector and
-// decodes the metadata of the response into target, unless target is nil. A non-2xx response is returned as an error
+// requestClusterMember sends a request without a body for the given remote cluster to the cluster connector member
+// holding its tunnel and decodes the metadata of the response into target, unless target is nil. A response larger
+// than maxResponseBytes is rejected, unless maxResponseBytes is zero. A non-2xx response is returned as an error
 // carrying the upstream status code.
-func requestClusterConnector(rc types.RouteConfig, r *http.Request, method string, remoteClusterName string, clusterConnectorPath string, target any) error {
-	resp, err := sendToClusterConnector(rc, r, method, remoteClusterName, clusterConnectorPath, nil)
+func requestClusterMember(rc types.RouteConfig, r *http.Request, method string, cluster store.RemoteClusterWithDetail, clusterConnectorPath string, target any, maxResponseBytes int64) error {
+	resp, err := sendToClusterMember(rc, r, method, cluster.Name, cluster.TunnelManagerMemberURL, clusterConnectorPath, nil)
 	if err != nil {
 		return err
 	}
@@ -630,9 +410,19 @@ func requestClusterConnector(rc types.RouteConfig, r *http.Request, method strin
 		}
 	}()
 
-	body, err := io.ReadAll(resp.Body)
+	var reader io.Reader = resp.Body
+	if maxResponseBytes > 0 {
+		// Read one byte more than allowed to tell a response that is exactly at the limit from a larger one.
+		reader = io.LimitReader(resp.Body, maxResponseBytes+1)
+	}
+
+	body, err := io.ReadAll(reader)
 	if err != nil {
-		return fmt.Errorf("failed to read response for cluster %q: %w", remoteClusterName, err)
+		return fmt.Errorf("failed to read response for cluster %q: %w", cluster.Name, err)
+	}
+
+	if maxResponseBytes > 0 && int64(len(body)) > maxResponseBytes {
+		return api.StatusErrorf(http.StatusBadGateway, "response for cluster %q is larger than %d bytes", cluster.Name, maxResponseBytes)
 	}
 
 	var lxdResponse struct {
@@ -642,9 +432,9 @@ func requestClusterConnector(rc types.RouteConfig, r *http.Request, method strin
 
 	decodeErr := json.Unmarshal(body, &lxdResponse)
 
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+	if !request.IsSuccessStatus(resp.StatusCode) {
 		if decodeErr != nil || lxdResponse.Error == "" {
-			return api.StatusErrorf(resp.StatusCode, "request %s %s for cluster %q failed with HTTP status %d", method, clusterConnectorPath, remoteClusterName, resp.StatusCode)
+			return api.StatusErrorf(resp.StatusCode, "request %s %s for cluster %q failed with HTTP status %d", method, clusterConnectorPath, cluster.Name, resp.StatusCode)
 		}
 
 		return api.StatusErrorf(resp.StatusCode, "%s", lxdResponse.Error)
@@ -655,23 +445,31 @@ func requestClusterConnector(rc types.RouteConfig, r *http.Request, method strin
 	}
 
 	if decodeErr != nil {
-		return api.StatusErrorf(http.StatusBadGateway, "invalid response for cluster %q: %v", remoteClusterName, decodeErr)
+		return api.StatusErrorf(http.StatusBadGateway, "invalid response for cluster %q: %v", cluster.Name, decodeErr)
 	}
 
 	err = json.Unmarshal(lxdResponse.Metadata, target)
 	if err != nil {
-		return api.StatusErrorf(http.StatusBadGateway, "invalid response metadata for cluster %q: %v", remoteClusterName, err)
+		return api.StatusErrorf(http.StatusBadGateway, "invalid response metadata for cluster %q: %v", cluster.Name, err)
 	}
 
 	return nil
 }
 
+// forwardToClusterConnector forwards the request to the cluster connector path of the remote cluster named in the
+// request path and streams back the response.
 func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, clusterConnectorPath string) error {
 	remoteClusterName, err := request.RemoteClusterName(r)
 	if err != nil {
 		return response.SmartError(err).Render(w, r)
 	}
 
+	return forwardToRemoteClusterConnector(rc, w, r, remoteClusterName, clusterConnectorPath)
+}
+
+// forwardToRemoteClusterConnector forwards the request to the cluster connector path of the given remote cluster and
+// streams back the response.
+func forwardToRemoteClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *http.Request, remoteClusterName string, clusterConnectorPath string) error {
 	// Buffer the body so that it can be sent again if the request needs to be retried after a token refresh.
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -710,9 +508,8 @@ func forwardToClusterConnector(rc types.RouteConfig, w http.ResponseWriter, r *h
 	return nil
 }
 
-// sendToClusterConnector sends a request for the given remote cluster to the cluster connector holding its tunnel.
-// Requests without side effects are retried once with refreshed session tokens after a 401 or 403 response.
-// The caller must close the body of the returned response.
+// sendToClusterConnector sends a request for the given remote cluster to the cluster connector holding its tunnel,
+// looking up the tunnel in the database. The caller must close the body of the returned response.
 func sendToClusterConnector(rc types.RouteConfig, r *http.Request, method string, remoteClusterName string, clusterConnectorPath string, body []byte) (*http.Response, error) {
 	var clusterDetails *store.RemoteClusterDetail
 	err := rc.DB.Transaction(r.Context(), func(ctx context.Context, tx *sqlx.Tx) error {
@@ -728,11 +525,18 @@ func sendToClusterConnector(rc types.RouteConfig, r *http.Request, method string
 		return nil, err
 	}
 
-	if clusterDetails.TunnelManagerMemberURL == "" {
+	return sendToClusterMember(rc, r, method, remoteClusterName, clusterDetails.TunnelManagerMemberURL, clusterConnectorPath, body)
+}
+
+// sendToClusterMember sends a request for the given remote cluster to the cluster connector member holding its
+// tunnel, at the given member URL. Requests without side effects are retried once with refreshed session tokens after
+// a 401 or 403 response. The caller must close the body of the returned response.
+func sendToClusterMember(rc types.RouteConfig, r *http.Request, method string, remoteClusterName string, memberURL string, clusterConnectorPath string, body []byte) (*http.Response, error) {
+	if memberURL == "" {
 		return nil, api.StatusErrorf(http.StatusBadRequest, "remote cluster %q does not have an active tunnel", remoteClusterName)
 	}
 
-	reqURL := clusterDetails.TunnelManagerMemberURL + "/1.0/remote-cluster/" + url.PathEscape(remoteClusterName) + clusterConnectorPath
+	reqURL := memberURL + "/1.0/remote-cluster/" + url.PathEscape(remoteClusterName) + clusterConnectorPath
 
 	sessionProvider, ok := r.Context().Value(auth.SessionCredentialsProviderKey).(*auth.SessionCredentialsProvider)
 	if !ok {

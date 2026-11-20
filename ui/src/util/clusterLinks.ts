@@ -4,10 +4,11 @@ import type {
   ClusterLink,
   ClusterLinkMemberState,
   ClusterLinkState,
+  ResolvedClusterLink,
   StatusCaption,
 } from "types/cluster";
-import type { LxdIdentity } from "types/permissions";
 import { queryKeys } from "util/queryKeys";
+import type { LxdIdentity } from "types/permissions";
 
 export const getLinkAddresses = (link: ClusterLink): string[] => {
   return (
@@ -26,102 +27,22 @@ export const getLinkDisplayAddresses = (link: ClusterLink): string[] => {
   return addresses.length || !pendingAddress ? addresses : [pendingAddress];
 };
 
-// A connection over a cluster link: the link itself, the source cluster it is
-// defined on, and the target cluster it points to, if the target is known to
-// the cluster manager.
-export interface ClusterConnection {
-  id: string;
-  source: Cluster;
-  link: ClusterLink;
-  target?: Cluster;
-}
+export const getClusterLinkId = ({
+  source_cluster,
+  link,
+}: ResolvedClusterLink): string => `${source_cluster}/${link.name}`;
 
-export const getClusterLinkId = (
-  sourceName: string,
-  linkName: string,
-): string => `${sourceName}/${linkName}`;
-
-export const getSourceClusterConnections = (
-  source: Cluster,
-  links: ClusterLink[],
-  clusters: Cluster[],
-): ClusterConnection[] =>
-  links.map((link) => ({
-    id: getClusterLinkId(source.name, link.name),
-    source,
-    link,
-    target: getLinkedCluster(link, clusters),
-  }));
-
-export const getClusterLinkSortData = (entry: ClusterConnection) => ({
-  name: entry.link.name.toLowerCase(),
-  type: entry.link.type.toLowerCase(),
-  target: (entry.target?.name ?? "").toLowerCase(),
-  description: (entry.link.description ?? "").toLowerCase(),
-  usedBy: entry.link.used_by?.length ?? 0,
-  addresses: getLinkDisplayAddresses(entry.link).join(",").toLowerCase(),
+export const getClusterLinkSortData = ({
+  link,
+  target_cluster,
+}: ResolvedClusterLink) => ({
+  name: link.name.toLowerCase(),
+  type: link.type.toLowerCase(),
+  target: (target_cluster ?? "").toLowerCase(),
+  description: (link.description ?? "").toLowerCase(),
+  usedBy: link.used_by?.length ?? 0,
+  addresses: getLinkDisplayAddresses(link).join(",").toLowerCase(),
 });
-
-const LXD_DEFAULT_PORT = 8443;
-
-// Converts a registered LXD URL to the host and port stored in a cluster link.
-const getClusterAddress = (lxdUrl: string): string | undefined => {
-  try {
-    const url = lxdUrl.trim();
-    const { hostname, port } = new URL(url);
-    // URL.port drops an explicit scheme-default port such as HTTPS port 443.
-    const explicitPort = /^https?:\/\/[^/?#]*:(\d+)(?:[/?#]|$)/i.exec(url)?.[1];
-    const effectivePort = Number(port || explicitPort || LXD_DEFAULT_PORT);
-    return hostname ? `${hostname.toLowerCase()}:${effectivePort}` : undefined;
-  } catch {
-    return undefined;
-  }
-};
-
-const hasLinkAddress = (lxdUrl: string, addresses: string[]): boolean => {
-  const clusterAddress = getClusterAddress(lxdUrl);
-  return (
-    !!clusterAddress &&
-    addresses.some((address) => address.toLowerCase() === clusterAddress)
-  );
-};
-
-// Resolves the cluster a link points at by UUID, falling back to matching its
-// confirmed addresses against the LXD URLs of known clusters.
-export const getLinkedCluster = (
-  link: ClusterLink,
-  clusters: Cluster[],
-): Cluster | undefined => {
-  const linkedCluster = clusters.find(
-    (cluster) => cluster.cluster_uuid === link.config?.["volatile.uuid"],
-  );
-
-  if (linkedCluster) {
-    return linkedCluster;
-  }
-
-  const addresses = getLinkAddresses(link);
-  return clusters.find((cluster) => hasLinkAddress(cluster.lxd_url, addresses));
-};
-
-// Finds the bidirectional link on the other end of a cluster link, meaning the
-// link on the linked cluster that points back at the given cluster. Other link
-// types have no counterpart on the linked cluster.
-export const getReverseLink = (
-  links: ClusterLink[],
-  cluster: Cluster,
-): ClusterLink | undefined => {
-  return links.find((link) => {
-    if (!isBidirectional(link)) {
-      return false;
-    }
-
-    return (
-      link.config?.["volatile.uuid"] === cluster.cluster_uuid ||
-      hasLinkAddress(cluster.lxd_url, getLinkAddresses(link))
-    );
-  });
-};
 
 export const isBidirectional = (link: ClusterLink): boolean =>
   link.type.toLowerCase() === "bidirectional";
@@ -132,8 +53,9 @@ export const isUnidirectional = (link: ClusterLink): boolean =>
 export const isPublic = (link: ClusterLink): boolean =>
   link.type.toLowerCase() === "public";
 
-// Bidirectional and unidirectional links have an end on the target cluster.
-export const hasTargetEnd = (link: ClusterLink): boolean =>
+// Deleting a bidirectional link also deletes its reverse link on the target
+// cluster; deleting a unidirectional link also deletes its link identity there.
+export const hasTargetCleanup = (link: ClusterLink): boolean =>
   isBidirectional(link) || isUnidirectional(link);
 
 export const invalidateClusterLinkLists = async (
@@ -163,7 +85,7 @@ export const invalidateClusterLinksAndIdentities = async (
   if (bidirectional) {
     identityClusters.add(sourceCluster);
   }
-  if (affectedTargetCluster !== undefined && hasTargetEnd(link)) {
+  if (affectedTargetCluster !== undefined && hasTargetCleanup(link)) {
     identityClusters.add(affectedTargetCluster);
     if (bidirectional) {
       linkClusters.add(affectedTargetCluster);
@@ -180,11 +102,17 @@ export const invalidateClusterLinksAndIdentities = async (
   ]);
 };
 
-// The target end can only be cleaned up when the target has a registered tunnel.
-export const canRemoveTargetEnd = (
+// The target cluster can only be cleaned up through its registered tunnel.
+export const canCleanUpTarget = (
   link: ClusterLink,
   targetCluster?: Cluster,
-): boolean => hasTargetEnd(link) && !!targetCluster?.tunnel_registered;
+): boolean => hasTargetCleanup(link) && !!targetCluster?.tunnel_registered;
+
+export const findCluster = (
+  clusters: Cluster[],
+  name: string | null,
+): Cluster | undefined =>
+  name ? clusters.find((cluster) => cluster.name === name) : undefined;
 
 export const getLinkIdentity = (
   identities: LxdIdentity[],

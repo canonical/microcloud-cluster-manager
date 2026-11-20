@@ -8,35 +8,39 @@ import { deleteClusterLink } from "api/clusters";
 import type { FC } from "react";
 import { useState } from "react";
 import DsIcon from "components/DsIcon";
-import type { ClusterConnection } from "util/clusterLinks";
+import { useClusters } from "context/useClusters";
+import type { ResolvedClusterLink } from "types/cluster";
 import {
-  canRemoveTargetEnd,
-  hasTargetEnd,
+  canCleanUpTarget,
+  findCluster,
+  hasTargetCleanup,
   invalidateClusterLinksAndIdentities,
   isBidirectional,
 } from "util/clusterLinks";
 
 interface Props {
-  entry: ClusterConnection;
+  resolvedLink: ResolvedClusterLink;
 }
 
-const DeleteClusterLinkBtn: FC<Props> = ({ entry }) => {
-  const { link, source, target } = entry;
+const DeleteClusterLinkBtn: FC<Props> = ({ resolvedLink }) => {
+  const { link, source_cluster: source, target_cluster } = resolvedLink;
+  const { data: clusters = [] } = useClusters();
+  const target = findCluster(clusters, target_cluster);
   const queryClient = useQueryClient();
   const toastNotification = useToastNotification();
   const [isLoading, setLoading] = useState(false);
   const [deleteBothEnds, setDeleteBothEnds] = useState(true);
-  const canCleanTarget = canRemoveTargetEnd(link, target);
+  const canCleanTarget = canCleanUpTarget(link, target);
   const targetToClean = deleteBothEnds && canCleanTarget ? target : undefined;
 
   const handleDelete = async (): Promise<void> => {
     setLoading(true);
     try {
-      await deleteClusterLink(source.name, link.name, !!targetToClean);
+      await deleteClusterLink(source, link.name, !!targetToClean);
       toastNotification.success(
         targetToClean && isBidirectional(link) ? (
           <>
-            Deleted cluster link between <strong>{source.name}</strong> and{" "}
+            Deleted cluster link between <strong>{source}</strong> and{" "}
             <strong>{targetToClean.name}</strong>.
           </>
         ) : (
@@ -53,7 +57,7 @@ const DeleteClusterLinkBtn: FC<Props> = ({ entry }) => {
     } finally {
       await invalidateClusterLinksAndIdentities(
         queryClient,
-        source.name,
+        source,
         link,
         targetToClean?.name,
       );
@@ -77,7 +81,7 @@ const DeleteClusterLinkBtn: FC<Props> = ({ entry }) => {
               This will permanently delete cluster link{" "}
               <strong>{link.name}</strong>. This action cannot be undone.
             </p>
-            {hasTargetEnd(link) &&
+            {hasTargetCleanup(link) &&
               (canCleanTarget ? (
                 <CheckboxInput
                   id="delete-cluster-link-both-ends"

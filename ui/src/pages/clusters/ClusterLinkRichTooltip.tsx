@@ -1,14 +1,10 @@
 import { type FC } from "react";
 import { Spinner } from "@canonical/react-components";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { fetchClusters } from "api/clusters";
-import { useClusterLink } from "context/useClusterLinks";
+import { useClusterLinks } from "context/useClusterLinks";
 import type { TooltipRow } from "components/RichTooltipRow";
 import { RichTooltipTable } from "components/RichTooltipTable";
 import ClusterLinkStatus from "./ClusterLinkStatus";
-import { getLinkedCluster } from "util/clusterLinks";
-import { queryKeys } from "util/queryKeys";
 
 interface Props {
   cluster: string;
@@ -16,26 +12,22 @@ interface Props {
 }
 
 const ClusterLinkRichTooltip: FC<Props> = ({ cluster, clusterLinkName }) => {
-  const { data: clusterLink, isLoading: isLinkLoading } = useClusterLink(
-    cluster,
-    clusterLinkName,
-  );
   const {
-    data: clusters = [],
-    isLoading: isClustersLoading,
-    error: clustersError,
-  } = useQuery({
-    queryKey: [queryKeys.clusters],
-    queryFn: fetchClusters,
-  });
+    data: links = [],
+    isLoading: isLinkLoading,
+    error,
+  } = useClusterLinks(cluster);
+  const resolvedLink = links.find(({ link }) => link.name === clusterLinkName);
+  const clusterLink = resolvedLink?.link;
+  const targetCluster = resolvedLink?.target_cluster;
+
+  if (error) {
+    return <span title={error.message}>Loading cluster link failed</span>;
+  }
 
   if (!clusterLink && !isLinkLoading) {
     return <>Cluster link {clusterLinkName} not found</>;
   }
-
-  const targetCluster = clusterLink
-    ? getLinkedCluster(clusterLink, clusters)
-    : undefined;
 
   const rows: TooltipRow[] = [
     {
@@ -71,20 +63,15 @@ const ClusterLinkRichTooltip: FC<Props> = ({ cluster, clusterLinkName }) => {
     },
     {
       title: "Target",
-      value:
-        isLinkLoading || isClustersLoading ? (
-          <Spinner />
-        ) : clustersError ? (
-          <span title={clustersError.message}>
-            Loading target cluster failed
-          </span>
-        ) : targetCluster ? (
-          <Link to={`/ui/cluster/${encodeURIComponent(targetCluster.name)}`}>
-            {targetCluster.name}
-          </Link>
-        ) : (
-          "-"
-        ),
+      value: isLinkLoading ? (
+        <Spinner />
+      ) : targetCluster ? (
+        <Link to={`/ui/cluster/${encodeURIComponent(targetCluster)}`}>
+          {targetCluster}
+        </Link>
+      ) : (
+        "-"
+      ),
     },
   ];
 
