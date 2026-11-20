@@ -119,6 +119,10 @@ test-ui-e2e:
 test-unit:
 	go test -count=1 -v ./test/unit
 
+.PHONY: test-api-docs
+test-api-docs:
+	go test -count=1 -v ./test/routes
+
 # ====================================================================
 # CI build utilities for rockcraft
 
