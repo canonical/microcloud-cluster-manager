@@ -1,5 +1,5 @@
 import type { LxdIdentity } from "types/permissions";
-import type { Cluster, ClusterLink } from "types/cluster";
+import type { Cluster, ClusterLink, ResolvedClusterLink } from "types/cluster";
 
 export const getLinkAddresses = (link: ClusterLink): string[] => {
   const addresses =
@@ -12,35 +12,25 @@ export const getLinkAddresses = (link: ClusterLink): string[] => {
   return addresses.length || !pendingAddress ? addresses : [pendingAddress];
 };
 
-// A connection over a cluster link: the link itself, the source cluster it is
-// defined on, and the target cluster it points to, if the target is known to
-// the cluster manager.
-export interface ClusterConnection {
-  id: string;
-  source: Cluster;
-  link: ClusterLink;
-  target?: Cluster;
-}
-
 export interface ClusterLinkFilter {
   queries: string[];
   types: string[];
 }
 
 export const filterClusterLinks = (
-  entries: ClusterConnection[],
+  links: ResolvedClusterLink[],
   filters: ClusterLinkFilter,
-): ClusterConnection[] => {
+): ResolvedClusterLink[] => {
   const queries = filters.queries.map((query) => query.toLowerCase());
-  return entries.filter(
-    ({ source, link, target }) =>
+  return links.filter(
+    ({ source_cluster, link, target_cluster }) =>
       (!queries.length ||
         queries.some((query) =>
           [
-            source.name,
+            source_cluster,
             link.name,
             link.description ?? "",
-            target?.name ?? "",
+            target_cluster ?? "",
             ...getLinkAddresses(link),
           ].some((value) => value.toLowerCase().includes(query)),
         )) &&
@@ -49,88 +39,22 @@ export const filterClusterLinks = (
   );
 };
 
-export const getClusterLinkId = (
-  sourceName: string,
-  linkName: string,
-): string => `${sourceName}/${linkName}`;
+export const getClusterLinkId = ({
+  source_cluster,
+  link,
+}: ResolvedClusterLink): string => `${source_cluster}/${link.name}`;
 
-export const getSourceClusterConnections = (
-  source: Cluster,
-  links: ClusterLink[],
-  clusters: Cluster[],
-): ClusterConnection[] =>
-  links.map((link) => ({
-    id: getClusterLinkId(source.name, link.name),
-    source,
-    link,
-    target: getLinkedCluster(link, clusters),
-  }));
-
-export const getClusterLinkSortData = (entry: ClusterConnection) => ({
-  name: entry.link.name.toLowerCase(),
-  type: entry.link.type.toLowerCase(),
-  target: (entry.target?.name ?? "").toLowerCase(),
-  description: (entry.link.description ?? "").toLowerCase(),
-  usedBy: entry.link.used_by?.length ?? 0,
-  addresses: getLinkAddresses(entry.link).join(",").toLowerCase(),
+export const getClusterLinkSortData = ({
+  link,
+  target_cluster,
+}: ResolvedClusterLink) => ({
+  name: link.name.toLowerCase(),
+  type: link.type.toLowerCase(),
+  target: (target_cluster ?? "").toLowerCase(),
+  description: (link.description ?? "").toLowerCase(),
+  usedBy: link.used_by?.length ?? 0,
+  addresses: getLinkAddresses(link).join(",").toLowerCase(),
 });
-
-// Returns the host and port of the lxd URL of a cluster, in the format of the
-// addresses of a cluster link.
-const getClusterAddress = (cluster: Cluster): string | undefined => {
-  try {
-    return new URL(cluster.lxd_url).host.toLowerCase();
-  } catch {
-    return undefined;
-  }
-};
-
-const hasLinkAddress = (cluster: Cluster, link: ClusterLink): boolean => {
-  const clusterAddress = getClusterAddress(cluster);
-  return (
-    !!clusterAddress &&
-    getLinkAddresses(link).some(
-      (address) => address.toLowerCase() === clusterAddress,
-    )
-  );
-};
-
-// Resolves the cluster a link points at by UUID, falling back to matching its
-// confirmed or pending addresses against the lxd URLs of known clusters.
-export const getLinkedCluster = (
-  link: ClusterLink,
-  clusters: Cluster[],
-): Cluster | undefined => {
-  const linkedCluster = clusters.find(
-    (cluster) => cluster.cluster_uuid === link.config?.["volatile.uuid"],
-  );
-
-  if (linkedCluster) {
-    return linkedCluster;
-  }
-
-  // fallback to address matching if no UUID match is found.
-  return clusters.find((cluster) => hasLinkAddress(cluster, link));
-};
-
-// Finds the bidirectional link on the other end of a cluster link, meaning the
-// link on the linked cluster that points back at the given cluster. Other link
-// types have no counterpart on the linked cluster.
-export const getReverseLink = (
-  links: ClusterLink[],
-  cluster: Cluster,
-): ClusterLink | undefined => {
-  return links.find((link) => {
-    if (link.type.toLowerCase() !== "bidirectional") {
-      return false;
-    }
-
-    return (
-      link.config?.["volatile.uuid"] === cluster.cluster_uuid ||
-      hasLinkAddress(cluster, link)
-    );
-  });
-};
 
 export const isBidirectional = (link: ClusterLink): boolean =>
   link.type.toLowerCase() === "bidirectional";
@@ -141,15 +65,22 @@ export const isUnidirectional = (link: ClusterLink): boolean =>
 export const isPublic = (link: ClusterLink): boolean =>
   link.type.toLowerCase() === "public";
 
-// Bidirectional and unidirectional links have an end on the target cluster.
-export const hasTargetEnd = (link: ClusterLink): boolean =>
+// Deleting a bidirectional link also deletes its reverse link on the target
+// cluster; deleting a unidirectional link also deletes its link identity there.
+export const hasTargetCleanup = (link: ClusterLink): boolean =>
   isBidirectional(link) || isUnidirectional(link);
 
-// The target end can only be cleaned up when the target has a registered tunnel.
-export const canRemoveTargetEnd = (
+// The target cluster can only be cleaned up through its registered tunnel.
+export const canCleanUpTarget = (
   link: ClusterLink,
   targetCluster?: Cluster,
-): boolean => hasTargetEnd(link) && !!targetCluster?.tunnel_registered;
+): boolean => hasTargetCleanup(link) && !!targetCluster?.tunnel_registered;
+
+export const findCluster = (
+  clusters: Cluster[],
+  name: string | null,
+): Cluster | undefined =>
+  name ? clusters.find((cluster) => cluster.name === name) : undefined;
 
 export const getLinkIdentity = (
   identities: LxdIdentity[],

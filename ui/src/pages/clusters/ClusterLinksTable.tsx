@@ -13,24 +13,20 @@ import ClusterLinkSearchFilter, {
 import getClusterLinkRow, {
   clusterLinkHeaders,
 } from "components/cluster-links/ClusterLinkRow";
-import type { Cluster, ClusterLink } from "types/cluster";
-import {
-  filterClusterLinks,
-  getSourceClusterConnections,
-} from "util/clusterLinks";
+import type { Cluster, ResolvedClusterLink } from "types/cluster";
+import { filterClusterLinks } from "util/clusterLinks";
 
 interface Props {
   cluster: Cluster;
-  clusters: Cluster[];
-  links: ClusterLink[];
+  clusterLinks: ResolvedClusterLink[];
 }
 
-const ClusterLinksTable: FC<Props> = ({ cluster, clusters, links }) => {
+const ClusterLinksTable: FC<Props> = ({ cluster, clusterLinks }) => {
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [processingNames, setProcessingNames] = useState<string[]>([]);
   const [searchParams] = useSearchParams();
   const filteredLinks = filterClusterLinks(
-    getSourceClusterConnections(cluster, links, clusters),
+    clusterLinks,
     getClusterLinkFilters(searchParams),
   );
   const filteredNames = filteredLinks.map(({ link }) => link.name);
@@ -47,7 +43,7 @@ const ClusterLinksTable: FC<Props> = ({ cluster, clusters, links }) => {
 
   const selectedNotification = validSelectedNames.length > 0 && (
     <SelectedTableNotification
-      totalCount={links.length}
+      totalCount={clusterLinks.length}
       itemName="link"
       parentName="cluster"
       selectedNames={validSelectedNames}
@@ -85,7 +81,11 @@ const ClusterLinksTable: FC<Props> = ({ cluster, clusters, links }) => {
         )}
       </div>
       <ScrollableTable
-        dependencies={[links, filteredNames.length, validSelectedNames.length]}
+        dependencies={[
+          clusterLinks,
+          filteredNames.length,
+          validSelectedNames.length,
+        ]}
         tableId="cluster-links-table"
         belowIds={["status-bar", "cluster-links-pagination"]}
       >

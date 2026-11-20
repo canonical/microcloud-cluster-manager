@@ -1,5 +1,9 @@
 import type { LxdApiResponse } from "types/apiResponse";
-import type { Cluster, ClusterLink } from "types/cluster";
+import type {
+  Cluster,
+  ClusterLinkList,
+  ResolvedClusterLink,
+} from "types/cluster";
 import { handleResponse, handleSettledResult } from "util/helpers";
 
 export const fetchClusters = async (): Promise<Cluster[]> => {
@@ -54,30 +58,40 @@ export const updateClusterBulk = async (
   ).then(handleSettledResult);
 };
 
+const clusterLinksUrl = (
+  cluster: string,
+  clusterLinkName?: string,
+  params: Record<string, string> = {},
+): string => {
+  const path = clusterLinkName
+    ? `/1.0/cluster-links/${encodeURIComponent(clusterLinkName)}`
+    : "/1.0/cluster-links";
+  const query = new URLSearchParams({ cluster, ...params });
+  return `${path}?${query.toString()}`;
+};
+
 export const fetchClusterLinks = async (
-  remoteClusterName: string,
-): Promise<ClusterLink[]> => {
-  return fetch(
-    `/1.0/remote-cluster/${encodeURIComponent(remoteClusterName)}/cluster-links`,
-  )
+  cluster: string,
+): Promise<ResolvedClusterLink[]> => {
+  return fetch(clusterLinksUrl(cluster))
     .then(handleResponse)
-    .then((data) => (data as LxdApiResponse<ClusterLink[]>).metadata);
+    .then(
+      (data) =>
+        (data as LxdApiResponse<ClusterLinkList>).metadata.cluster_links,
+    );
 };
 
 export const createClusterLink = async (
   source: string,
   payload: string,
 ): Promise<void> => {
-  await fetch(
-    `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: payload,
+  await fetch(clusterLinksUrl(source), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
     },
-  ).then(handleResponse);
+    body: payload,
+  }).then(handleResponse);
 };
 
 export const updateClusterLink = async (
@@ -85,16 +99,13 @@ export const updateClusterLink = async (
   clusterLinkName: string,
   body: string,
 ): Promise<void> => {
-  await fetch(
-    `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links/${encodeURIComponent(clusterLinkName)}`,
-    {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body,
+  await fetch(clusterLinksUrl(source, clusterLinkName), {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
     },
-  ).then(handleResponse);
+    body,
+  }).then(handleResponse);
 };
 
 export const deleteClusterLink = async (
@@ -102,14 +113,13 @@ export const deleteClusterLink = async (
   clusterLinkName: string,
   removeReverseEdge: boolean,
 ): Promise<void> => {
-  const query = removeReverseEdge ? "?removeReverseEdge=true" : "";
+  const params: Record<string, string> = removeReverseEdge
+    ? { removeReverseEdge: "true" }
+    : {};
 
-  await fetch(
-    `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links/${encodeURIComponent(clusterLinkName)}${query}`,
-    {
-      method: "DELETE",
-    },
-  ).then(handleResponse);
+  await fetch(clusterLinksUrl(source, clusterLinkName, params), {
+    method: "DELETE",
+  }).then(handleResponse);
 };
 
 export const deleteClusterLinks = async (

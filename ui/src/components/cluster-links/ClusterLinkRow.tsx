@@ -4,8 +4,8 @@ import type {
   MainTableRow,
 } from "@canonical/react-components/dist/components/MainTable/MainTable";
 import { Link } from "react-router-dom";
-import type { ClusterConnection } from "util/clusterLinks";
-import { getClusterLinkSortData } from "util/clusterLinks";
+import type { ResolvedClusterLink } from "types/cluster";
+import { getClusterLinkId, getClusterLinkSortData } from "util/clusterLinks";
 import ClusterLinkTypeChip from "components/cluster-links/ClusterLinkTypeChip";
 import ActionsList from "components/ActionsList";
 import EditClusterLinkButton from "components/cluster-links/EditClusterLinkButton";
@@ -68,51 +68,53 @@ export const clusterLinkHeaders: MainTableHeader[] = [
 ];
 
 const getClusterLinkRow = (
-  entry: ClusterConnection,
+  resolvedLink: ResolvedClusterLink,
 ): MainTableRow & {
   columns: NonNullable<MainTableRow["columns"]>;
 } => {
   return {
-    key: entry.id,
-    name: entry.link.name,
+    key: getClusterLinkId(resolvedLink),
+    name: resolvedLink.link.name,
     className: "cluster-link-row",
-    sortData: getClusterLinkSortData(entry),
+    sortData: getClusterLinkSortData(resolvedLink),
     columns: [
       {
         role: "rowheader",
         className: "name",
-        title: entry.link.name,
+        title: resolvedLink.link.name,
         content: (
           <>
             <Link
-              to={`/ui/cluster/${encodeURIComponent(entry.source.name)}/cluster-links`}
+              to={`/ui/cluster/${encodeURIComponent(resolvedLink.source_cluster)}/cluster-links`}
               className="u-truncate cluster-link-name-link"
             >
-              {entry.link.name}
+              {resolvedLink.link.name}
             </Link>
           </>
         ),
       },
       {
         className: "type",
-        title: entry.link.type,
+        title: resolvedLink.link.type,
         "aria-label": "Link type",
-        content: <ClusterLinkTypeChip type={entry.link.type} />,
+        content: <ClusterLinkTypeChip type={resolvedLink.link.type} />,
       },
       {
         className: "target",
-        title: entry.target?.name,
+        title: resolvedLink.target_cluster ?? undefined,
         content: (
           <>
-            {entry.target ? (
-              <Link to={`/ui/cluster/${encodeURIComponent(entry.target.name)}`}>
-                {entry.target.name}
+            {resolvedLink.target_cluster ? (
+              <Link
+                to={`/ui/cluster/${encodeURIComponent(resolvedLink.target_cluster)}`}
+              >
+                {resolvedLink.target_cluster}
               </Link>
             ) : (
               <>
                 unknown
                 <Tooltip
-                  message="The linked cluster might not be enrolled in this cluster manager."
+                  message="The target cluster might not be managed by this cluster manager."
                   position="right"
                 >
                   <Icon
@@ -127,10 +129,10 @@ const getClusterLinkRow = (
       },
       {
         className: "description",
-        title: entry.link.description,
-        content: entry.link.description ? (
+        title: resolvedLink.link.description,
+        content: resolvedLink.link.description ? (
           <div className="cluster-link-description">
-            {entry.link.description}
+            {resolvedLink.link.description}
           </div>
         ) : (
           "–"
@@ -138,11 +140,11 @@ const getClusterLinkRow = (
       },
       {
         className: "used-by u-align--right",
-        content: <ClusterLinkUsedByCell link={entry.link} />,
+        content: <ClusterLinkUsedByCell link={resolvedLink.link} />,
       },
       {
         className: "addresses",
-        content: <ClusterLinkAddressesCell entry={entry} />,
+        content: <ClusterLinkAddressesCell resolvedLink={resolvedLink} />,
       },
       {
         className: "u-align--right actions",
@@ -151,14 +153,14 @@ const getClusterLinkRow = (
           <ActionsList
             items={[
               <EditClusterLinkButton
-                cluster={entry.source}
-                link={entry.link}
+                cluster={resolvedLink.source_cluster}
+                link={resolvedLink.link}
                 hasLabel={false}
                 key="edit"
               />,
               <DeleteClusterLinksButton
-                cluster={entry.source.name}
-                links={[entry]}
+                cluster={resolvedLink.source_cluster}
+                links={[resolvedLink]}
                 hasLabel={false}
                 key="delete"
               />,

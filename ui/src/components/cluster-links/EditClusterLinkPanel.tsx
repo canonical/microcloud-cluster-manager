@@ -15,27 +15,21 @@ import {
   useToastNotification,
   type NotificationType,
 } from "@canonical/react-components";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchClusterLinks,
-  fetchClusters,
-  updateClusterLink,
-} from "api/clusters";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchClusterLinks, updateClusterLink } from "api/clusters";
 import NotificationRow from "components/NotificationRow";
 import ResourceIcon from "components/ResourceIcon";
-import { useCluster, useClusterLinks } from "context/useClusters";
+import { useCluster, useClusterLinks, useClusters } from "context/useClusters";
 import { useIdentities } from "context/useIdentities";
 import usePanelParams from "context/usePanelParams";
 import { useFormik } from "formik";
 import { getLinkIconType, LINK_TYPES } from "util/clusterLinkTypes";
 import type { ClusterLink } from "types/cluster";
 import {
-  getLinkedCluster,
+  findCluster,
   getLinkIdentity,
-  getReverseLink,
   isBidirectional,
 } from "util/clusterLinks";
-import { queryKeys } from "util/queryKeys";
 import { invalidateClusterLinks } from "util/clusterLinkQueries";
 import PanelSection from "components/PanelSection";
 
@@ -61,14 +55,15 @@ const EditClusterLinkPanel: FC = () => {
     error: linksError,
     refetch: refetchLinks,
   } = useClusterLinks(clusterName);
-  const { data: clusters = [] } = useQuery({
-    queryKey: [queryKeys.clusters],
-    queryFn: fetchClusters,
-  });
   const { data: identities = [] } = useIdentities(clusterName);
+  const { data: clusters = [] } = useClusters();
 
-  const link = clusterLinks.find((item) => item.name === linkName);
-  const targetCluster = link ? getLinkedCluster(link, clusters) : undefined;
+  const resolvedLink = clusterLinks.find((item) => item.link.name === linkName);
+  const link = resolvedLink?.link;
+  const targetCluster = findCluster(
+    clusters,
+    resolvedLink?.target_cluster ?? null,
+  );
   const linkType = LINK_TYPES.find((type) => type.value === link?.type);
   const identity = getLinkIdentity(identities, panelParams.clusterLink);
 
@@ -106,7 +101,11 @@ const EditClusterLinkPanel: FC = () => {
             );
           }
           const targetLinks = await fetchClusterLinks(targetCluster.name);
-          reverseLink = getReverseLink(targetLinks, cluster);
+          reverseLink = targetLinks.find(
+            (targetLink) =>
+              targetLink.target_cluster === cluster.name &&
+              isBidirectional(targetLink.link),
+          )?.link;
           if (!reverseLink) {
             throw new Error(
               `No cluster link pointing back at ${cluster.name} found on cluster ${targetCluster.name}.`,
@@ -279,7 +278,7 @@ const EditClusterLinkPanel: FC = () => {
                 <Input
                   type="text"
                   label="Target"
-                  value={targetCluster?.name ?? ""}
+                  value={resolvedLink?.target_cluster ?? ""}
                   readOnly
                 />
               </div>

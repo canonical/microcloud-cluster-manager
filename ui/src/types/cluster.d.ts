@@ -61,6 +61,25 @@ export interface ClusterLink {
   };
 }
 
+// A cluster link with the name of its source cluster, the managed cluster it
+// is defined on, and of its target cluster, the managed cluster it points at.
+// The target cluster is null when the link does not point at a managed cluster.
+export interface ResolvedClusterLink {
+  link: ClusterLink;
+  source_cluster: string;
+  target_cluster: string | null;
+}
+
+export interface ClusterLinkListError {
+  cluster: string;
+  error: string;
+}
+
+export interface ClusterLinkList {
+  cluster_links: ResolvedClusterLink[];
+  errors: ClusterLinkListError[];
+}
+
 export interface ClusterLinkPost {
   target_cluster: string;
   name: string;
