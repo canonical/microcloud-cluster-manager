@@ -1,5 +1,10 @@
 import type { LxdApiResponse } from "types/apiResponse";
-import type { Cluster, ClusterLink, ClusterLinkState } from "types/cluster";
+import type {
+  Cluster,
+  ClusterLinkList,
+  ClusterLinkState,
+  ResolvedClusterLink,
+} from "types/cluster";
 import { handleResponse, handleSettledResult } from "util/helpers";
 
 export const fetchClusters = async (): Promise<Cluster[]> => {
@@ -55,42 +60,36 @@ export const updateClusterBulk = async (
 };
 
 export const fetchClusterLinks = async (
-  remoteClusterName: string,
-): Promise<ClusterLink[]> => {
-  return fetch(
-    `/1.0/remote-cluster/${encodeURIComponent(remoteClusterName)}/cluster-links`,
-  )
-    .then(handleResponse)
-    .then((data) => (data as LxdApiResponse<ClusterLink[]>).metadata);
-};
+  cluster: string,
+): Promise<ResolvedClusterLink[]> => {
+  const params = new URLSearchParams();
+  params.set("cluster", cluster);
 
-export const fetchClusterLink = async (
-  remoteClusterName: string,
-  linkName: string,
-): Promise<ClusterLink> => {
-  return fetch(
-    `/1.0/remote-cluster/${encodeURIComponent(
-      remoteClusterName,
-    )}/cluster-links/${encodeURIComponent(linkName)}`,
+  const { cluster_links, errors } = await fetch(
+    `/1.0/cluster-links?${params.toString()}`,
   )
     .then(handleResponse)
-    .then((data) => (data as LxdApiResponse<ClusterLink>).metadata);
+    .then((data) => (data as LxdApiResponse<ClusterLinkList>).metadata);
+  if (errors.length > 0) {
+    throw new Error(errors[0].error);
+  }
+  return cluster_links;
 };
 
 export const createClusterLink = async (
   source: string,
   payload: string,
 ): Promise<void> => {
-  await fetch(
-    `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: payload,
+  const params = new URLSearchParams();
+  params.set("cluster", source);
+
+  await fetch(`/1.0/cluster-links?${params.toString()}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
     },
-  ).then(handleResponse);
+    body: payload,
+  }).then(handleResponse);
 };
 
 export const updateClusterLink = async (
@@ -98,8 +97,11 @@ export const updateClusterLink = async (
   clusterLinkName: string,
   body: string,
 ): Promise<void> => {
+  const params = new URLSearchParams();
+  params.set("cluster", source);
+
   await fetch(
-    `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links/${encodeURIComponent(clusterLinkName)}`,
+    `/1.0/cluster-links/${encodeURIComponent(clusterLinkName)}?${params.toString()}`,
     {
       method: "PUT",
       headers: {
@@ -113,13 +115,19 @@ export const updateClusterLink = async (
 export const deleteClusterLink = async (
   source: string,
   clusterLinkName: string,
-  removeReverseEdge: boolean,
+  cleanupTarget: boolean,
 ): Promise<void> => {
-  const query = removeReverseEdge ? "?removeReverseEdge=true" : "";
+  const params = new URLSearchParams();
+  params.set("cluster", source);
+  if (cleanupTarget) {
+    params.set("cleanupTarget", "true");
+  }
 
   await fetch(
-    `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links/${encodeURIComponent(clusterLinkName)}${query}`,
-    { method: "DELETE" },
+    `/1.0/cluster-links/${encodeURIComponent(clusterLinkName)}?${params.toString()}`,
+    {
+      method: "DELETE",
+    },
   ).then(handleResponse);
 };
 

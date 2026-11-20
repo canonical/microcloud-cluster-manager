@@ -54,7 +54,7 @@ func testRemoteClusterLinkPrecheck(env *helpers.Environment) (testName string, t
 		}
 
 		clusterLinksPath := func(source string) *api.URL {
-			return api.NewURL().Scheme("https").Host(env.ClusterConnectorHostPort()).Path("1.0", "remote-cluster", source, "cluster-links")
+			return api.NewURL().Scheme("https").Host(env.ClusterConnectorHostPort()).Path("1.0", "cluster-links").WithQuery("cluster", source)
 		}
 
 		type testCase struct {

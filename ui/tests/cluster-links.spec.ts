@@ -2,7 +2,7 @@ import { expect, test } from "./fixtures/test-extension";
 import {
   createClusterLink,
   deleteAllClusterLinks,
-  deleteClusterLink,
+  deleteClusterLinkOnSource,
   editClusterLink,
   visitClusterLinks,
   waitForTunnel,
@@ -23,5 +23,12 @@ test("list the cluster links of a real cluster through the tunnel", async ({
   const linkName = `${tunnelCluster02}-link`;
   await createClusterLink(page, tunnelCluster01, tunnelCluster02);
   await editClusterLink(page, linkName, tunnelCluster01);
-  await deleteClusterLink(page, linkName, tunnelCluster01, tunnelCluster02);
+  await deleteClusterLinkOnSource(page, linkName, tunnelCluster01);
+
+  await visitClusterLinks(page, tunnelCluster02);
+  await deleteClusterLinkOnSource(
+    page,
+    `${tunnelCluster01}-link`,
+    tunnelCluster02,
+  );
 });

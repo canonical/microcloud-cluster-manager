@@ -382,20 +382,20 @@ paths:
           $ref: "#/components/responses/InternalError"
         "502":
           $ref: "#/components/responses/BadGateway"
-  /1.0/remote-cluster/{remoteClusterName}/cluster-links:
-    parameters:
-      - $ref: "#/components/parameters/RemoteClusterName"
+  /1.0/cluster-links:
     get:
-      summary: List the cluster links of a remote cluster
+      summary: List cluster links
       tags:
         - Cluster links
+      description: Lists the cluster links of one managed cluster, or of all managed clusters with an active tunnel. Exactly one of cluster or all-clusters=true is required. Target clusters are resolved against all managed clusters. Both scopes use the same response shape and report failed tunnel queries in errors. The fleet-wide list omits clusters it does not query.
       security:
         - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ClusterLinkCluster"
+        - $ref: "#/components/parameters/AllClusters"
       responses:
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "200":
-          description: Cluster links of the remote cluster
+          description: Cluster links with their source and target clusters
           content:
             application/json:
               schema:
@@ -404,9 +404,9 @@ paths:
                   - type: object
                     properties:
                       metadata:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/ClusterLink"
+                        $ref: "#/components/schemas/ClusterLinkList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -416,12 +416,14 @@ paths:
         "502":
           $ref: "#/components/responses/BadGateway"
     post:
-      summary: Create a cluster link on a remote cluster
+      summary: Create a cluster link
       tags:
         - Cluster links
       description: Creates the link on the source cluster and, for bidirectional and unidirectional links, on the target cluster.
       security:
         - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SourceCluster"
       requestBody:
         required: true
         content:
@@ -443,38 +445,10 @@ paths:
           $ref: "#/components/responses/InternalError"
         "502":
           $ref: "#/components/responses/BadGateway"
-  /1.0/remote-cluster/{remoteClusterName}/cluster-links/{clusterLinkName}:
+  /1.0/cluster-links/{clusterLinkName}:
     parameters:
-      - $ref: "#/components/parameters/RemoteClusterName"
       - $ref: "#/components/parameters/ClusterLinkName"
-    get:
-      summary: Get a cluster link
-      tags:
-        - Cluster links
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
-          description: Cluster link of the remote cluster
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/Response"
-                  - type: object
-                    properties:
-                      metadata:
-                        $ref: "#/components/schemas/ClusterLink"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-        "502":
-          $ref: "#/components/responses/BadGateway"
+      - $ref: "#/components/parameters/SourceCluster"
     put:
       summary: Update a cluster link
       tags:
@@ -504,14 +478,52 @@ paths:
       summary: Delete a cluster link
       tags:
         - Cluster links
-      description: With removeReverseEdge=true the other edge of the link is removed first, and the source link is only deleted once that succeeds. Only bidirectional and unidirectional links pointing at a registered cluster are supported in that case.
+      description: With cleanupTarget=true the reverse link (bidirectional) or TLS identity (unidirectional) is removed first. A confirmed absent reverse link or identity counts as successful cleanup. If the target cluster or reverse link cannot be identified, the source link is kept. The default deletes only the source link.
       security:
         - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/RemoveReverseEdge"
+        - $ref: "#/components/parameters/CleanupTarget"
       responses:
         "200":
           $ref: "#/components/responses/LXDSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The source link is in use, the target cluster cannot be identified, or a reverse link cannot be ruled out because UUID information is missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/cluster-links/{clusterLinkName}:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+      - $ref: "#/components/parameters/ClusterLinkName"
+    get:
+      summary: Get a cluster link
+      tags:
+        - Cluster links
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cluster link of the remote cluster
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Response"
+                  - type: object
+                    properties:
+                      metadata:
+                        $ref: "#/components/schemas/ClusterLink"
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -1003,6 +1015,27 @@ components:
       required: true
       schema:
         type: string
+    ClusterLinkCluster:
+      name: cluster
+      in: query
+      required: false
+      description: Name of the managed cluster whose cluster links are listed. Cannot be combined with all-clusters.
+      schema:
+        type: string
+    AllClusters:
+      name: all-clusters
+      in: query
+      required: false
+      description: List the cluster links of all managed clusters. Only true is accepted. Cannot be combined with cluster.
+      schema:
+        type: boolean
+    SourceCluster:
+      name: cluster
+      in: query
+      required: true
+      description: Name of the managed cluster the cluster link is defined on.
+      schema:
+        type: string
     ReplicatorName:
       name: replicatorName
       in: path
@@ -1021,11 +1054,11 @@ components:
       required: true
       schema:
         type: string
-    RemoveReverseEdge:
-      name: removeReverseEdge
+    CleanupTarget:
+      name: cleanupTarget
       in: query
       required: false
-      description: Also remove the other edge of the link on the linked cluster (the reverse cluster link for bidirectional links, the identity for unidirectional links).
+      description: Clean up the reverse link for a bidirectional link or the TLS identity for a unidirectional link.
       schema:
         type: boolean
     ReplicatorProject:
@@ -1123,6 +1156,37 @@ components:
           type: array
           items:
             type: string
+    ResolvedClusterLink:
+      type: object
+      properties:
+        link:
+          $ref: "#/components/schemas/ClusterLink"
+        source_cluster:
+          type: string
+          description: Managed cluster the link is defined on.
+        target_cluster:
+          type: string
+          nullable: true
+          description: Managed cluster the link points at, or null when it does not point at a managed cluster.
+    ClusterLinkError:
+      type: object
+      properties:
+        cluster:
+          type: string
+        error:
+          type: string
+    ClusterLinkList:
+      type: object
+      required: [cluster_links, errors]
+      properties:
+        cluster_links:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResolvedClusterLink"
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClusterLinkError"
     ClusterLinkState:
       type: object
       properties:

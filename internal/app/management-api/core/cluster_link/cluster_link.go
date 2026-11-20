@@ -1,78 +1,21 @@
-// Package cluster_link contains helpers to resolve both edges of a cluster link between remote clusters.
+// Package cluster_link resolves cluster links and their target resources.
 package cluster_link
 
 import (
-	"net"
-	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/canonical/lxd/shared"
 	"github.com/canonical/lxd/shared/api"
 )
 
-// lxdURLAddress returns the host and port of a registered LXD URL.
-func lxdURLAddress(lxdURL string) string {
-	parsedURL, err := url.Parse(strings.TrimSpace(lxdURL))
-	if err != nil || parsedURL.Hostname() == "" {
-		return ""
-	}
-
-	port := parsedURL.Port()
-	if port == "" {
-		port = strconv.Itoa(shared.HTTPSDefaultPort)
-	}
-
-	return strings.ToLower(net.JoinHostPort(parsedURL.Hostname(), port))
-}
-
-// LinkPointsAt reports whether the link points at the cluster with the given UUID, falling back to matching the
-// link addresses against the LXD URL of that cluster.
-func LinkPointsAt(link api.ClusterLink, clusterUUID string, lxdURL string) bool {
-	if clusterUUID != "" && link.Config["volatile.uuid"] == clusterUUID {
+// ClusterLinkTypeSupportsTargetCleanup reports whether a link type has a target-side resource to clean up.
+func ClusterLinkTypeSupportsTargetCleanup(linkType string) bool {
+	switch strings.ToLower(linkType) {
+	case api.ClusterLinkTypeBidirectional, api.ClusterLinkTypeUnidirectional:
 		return true
-	}
-
-	targetAddress := lxdURLAddress(lxdURL)
-	if targetAddress == "" {
+	default:
 		return false
 	}
-
-	for _, address := range strings.Split(link.Config["volatile.addresses"], ",") {
-		if strings.EqualFold(strings.TrimSpace(address), targetAddress) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// FindReverseLink finds the bidirectional link pointing at the cluster with the given UUID, falling back to matching
-// the link addresses against the LXD URL of that cluster. Links of other types are ignored, so an unrelated
-// unidirectional or public link between the same clusters is never mistaken for the reverse edge.
-func FindReverseLink(links []api.ClusterLink, clusterUUID string, lxdURL string) *api.ClusterLink {
-	for i, link := range links {
-		if !strings.EqualFold(link.Type, api.ClusterLinkTypeBidirectional) {
-			continue
-		}
-
-		if LinkPointsAt(link, clusterUUID, lxdURL) {
-			return &links[i]
-		}
-	}
-
-	return nil
-}
-
-// FindLinkByName finds the link with the given name.
-func FindLinkByName(links []api.ClusterLink, name string) *api.ClusterLink {
-	for i, link := range links {
-		if link.Name == name {
-			return &links[i]
-		}
-	}
-
-	return nil
 }
 
 // FindIdentity finds the cluster link identity for the certificate with the given fingerprint. LXD uses the
@@ -103,4 +46,25 @@ func FindIdentity(identities []api.Identity, fingerprint string) *api.Identity {
 	}
 
 	return nil
+}
+
+// FindReverseLinkByUUID finds the bidirectional link that points at the cluster with the given UUID.
+// If no link matches, unresolved reports whether missing UUIDs prevented ruling out a reverse link.
+func FindReverseLinkByUUID(links []api.ClusterLink, clusterUUID string) (reverseLink *api.ClusterLink, unresolved bool) {
+	for i, link := range links {
+		if !strings.EqualFold(link.Type, api.ClusterLinkTypeBidirectional) {
+			continue
+		}
+
+		targetUUID := link.Config["volatile.uuid"]
+		if targetUUID == "" || clusterUUID == "" {
+			unresolved = true
+			continue
+		}
+		if targetUUID == clusterUUID {
+			return &links[i], false
+		}
+	}
+
+	return nil, unresolved
 }

@@ -15,15 +15,11 @@ import {
   useToastNotification,
   type NotificationType,
 } from "@canonical/react-components";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchClusterLinks,
-  fetchClusters,
-  updateClusterLink,
-} from "api/clusters";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchClusterLinks, updateClusterLink } from "api/clusters";
 import NotificationRow from "components/NotificationRow";
 import ResourceIcon from "components/ResourceIcon";
-import { useCluster } from "context/useClusters";
+import { useCluster, useClusters } from "context/useClusters";
 import { useClusterLinks } from "context/useClusterLinks";
 import { useClusterIdentities } from "context/useClusterIdentities";
 import usePanelParams from "context/usePanelParams";
@@ -31,13 +27,11 @@ import { useFormik } from "formik";
 import { getLinkIconType, LINK_TYPES } from "util/clusterLinkTypes";
 import type { ClusterLink } from "types/cluster";
 import {
-  getLinkedCluster,
+  findCluster,
   getLinkIdentity,
-  getReverseLink,
   invalidateClusterLinkLists,
   isBidirectional,
 } from "util/clusterLinks";
-import { queryKeys } from "util/queryKeys";
 import PanelSection from "components/PanelSection";
 import ClusterLinkName from "pages/clusters/ClusterLinkName";
 import ClusterLinkRichChip from "pages/clusters/ClusterLinkRichChip";
@@ -64,14 +58,15 @@ const EditClusterLinkPanel: FC = () => {
     error: linksError,
     refetch: refetchLinks,
   } = useClusterLinks(clusterName);
-  const { data: clusters = [] } = useQuery({
-    queryKey: [queryKeys.clusters],
-    queryFn: fetchClusters,
-  });
   const { data: identities = [] } = useClusterIdentities(clusterName);
+  const { data: clusters = [] } = useClusters();
 
-  const link = clusterLinks.find((item) => item.name === linkName);
-  const targetCluster = link ? getLinkedCluster(link, clusters) : undefined;
+  const resolvedLink = clusterLinks.find((item) => item.link.name === linkName);
+  const link = resolvedLink?.link;
+  const targetCluster = findCluster(
+    clusters,
+    resolvedLink?.target_cluster ?? null,
+  );
   const linkType = LINK_TYPES.find((type) => type.value === link?.type);
   const identity = getLinkIdentity(identities, panelParams.clusterLink);
 
@@ -103,18 +98,28 @@ const EditClusterLinkPanel: FC = () => {
 
         let reverseLink: ClusterLink | undefined;
         if (updateBoth) {
-          if (!targetCluster?.tunnel_registered) {
+          if (
+            !cluster.cluster_uuid ||
+            !targetCluster?.tunnel_registered ||
+            !targetCluster.cluster_uuid ||
+            link.config?.["volatile.uuid"] !== targetCluster.cluster_uuid
+          ) {
             throw new Error(
-              "The target cluster must be managed and have a registered tunnel to update both ends.",
+              "Updating both links requires a verified target cluster with a registered tunnel.",
             );
           }
           const targetLinks = await fetchClusterLinks(targetCluster.name);
-          reverseLink = getReverseLink(targetLinks, cluster);
-          if (!reverseLink) {
+          const reverseLinks = targetLinks.filter(
+            ({ link }) =>
+              isBidirectional(link) &&
+              link.config?.["volatile.uuid"] === cluster.cluster_uuid,
+          );
+          if (reverseLinks.length !== 1) {
             throw new Error(
-              `No cluster link pointing back at ${cluster.name} found on cluster ${targetCluster.name}.`,
+              `Could not identify a unique reverse link on ${targetCluster.name} for ${cluster.name}.`,
             );
           }
+          reverseLink = reverseLinks[0].link;
         }
 
         attemptedClusters.push(clusterName);
@@ -287,7 +292,7 @@ const EditClusterLinkPanel: FC = () => {
                 <Input
                   type="text"
                   label="Target"
-                  value={targetCluster?.name ?? ""}
+                  value={resolvedLink?.target_cluster ?? ""}
                   readOnly
                 />
               </div>

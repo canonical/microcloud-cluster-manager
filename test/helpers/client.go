@@ -126,13 +126,16 @@ func (c *Client) Query(ctx context.Context, method string, path *api.URL, input 
 		url.URL.Scheme = path.URL.Scheme
 	}
 
-	localQuery := url.Query()
-	clientQuery := c.url.Query()
-	for q := range url.Query() {
-		clientQuery.Set(q, localQuery.Get(q))
-	}
+	// Keep the raw query of the path, so that tests can send repeated or malformed parameters.
+	url.RawQuery = path.RawQuery
+	if c.url.RawQuery != "" {
+		clientQuery := c.url.Query()
+		for key, values := range path.Query() {
+			clientQuery[key] = values
+		}
 
-	url.RawQuery = clientQuery.Encode()
+		url.RawQuery = clientQuery.Encode()
+	}
 
 	// Make the request
 	req, err := makeRequest(ctx, method, url, input)
