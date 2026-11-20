@@ -509,9 +509,16 @@ For detailed authorization patterns, see [internal/app/management-api/core/auth/
 - **Custom Hooks**: Wrap queries in `ui/src/context/use*.tsx` hooks (e.g., `useClusters`, `useRemoteClusters`)
 - **Queries**: Use `useQuery` or `useQueries` for fetch operations with caching
 - **Mutations**: Use `useMutation` for create/update/delete
-- **Cache Invalidation**: Invalidate related query keys on mutation success to trigger refetching
+- **Cache Invalidation**: Invalidate related query keys after a successful mutation or a failure that may have changed server state
 - **Error Handling**: Provide user-friendly error messages; handle API errors in catch blocks
 - **Loading States**: Use `isLoading`, `isPending` flags from query/mutation results
+
+#### Global and cluster-specific caches
+
+- Give the global aggregate and each cluster-scoped list distinct query keys under a shared resource namespace. Each view fetches independently through its own query. Keep the resource namespace under the cluster root when cluster-wide changes, such as removal, also affect the resource.
+- Centralize cache invalidation in a resource-level helper. Invalidate by resource prefix to cover the global aggregate and all scoped lists, following LXD UI's instance cache pattern. React Query marks inactive matches stale and refetches active matches by default.
+- Invalidate the resource prefix after a failed write that may have changed server state. A reverse-link deletion can succeed before the source deletion fails.
+- Cluster links implement this in [`clusterLinkQueries.ts`](ui/src/util/clusterLinkQueries.ts). Use `clusterLinkQueryKeys.all` and `clusterLinkQueryKeys.forCluster(clusterName)` for reads and `invalidateClusterLinks` for writes.
 
 ## Common Tasks
 

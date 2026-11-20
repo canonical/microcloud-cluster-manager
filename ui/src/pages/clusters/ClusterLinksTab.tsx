@@ -6,13 +6,13 @@ import { useClusterLinks } from "context/useClusters";
 import { queryKeys } from "util/queryKeys";
 import type { Cluster } from "types/cluster";
 import ClusterLinksTable from "pages/clusters/ClusterLinksTable";
-import ClusterLinksEmptyState from "components/ClusterLinksEmptyState";
+import ClusterLinksEmptyState from "pages/clusters/ClusterLinksEmptyState";
 
 interface Props {
   cluster: Cluster;
 }
 
-const ClusterLinks: FC<Props> = ({ cluster }) => {
+const ClusterLinksTab: FC<Props> = ({ cluster }) => {
   const {
     data: clusterLinks,
     error,
@@ -56,10 +56,10 @@ const ClusterLinks: FC<Props> = ({ cluster }) => {
         !error &&
         clusterLinks &&
         clusterLinks.length === 0 && (
-          <ClusterLinksEmptyState cluster={cluster} />
+          <ClusterLinksEmptyState cluster={cluster.name} />
         )}
     </>
   );
 };
 
-export default ClusterLinks;
+export default ClusterLinksTab;

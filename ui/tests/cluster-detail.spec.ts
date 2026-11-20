@@ -239,7 +239,7 @@ test.describe("Cluster links tab", () => {
     await page.goto(`/ui/cluster/${cluster}/cluster-links`);
     await expect(page.getByText("No cluster links found")).toBeVisible();
     await expect(
-      page.getByText("There are no cluster links on this server."),
+      page.getByText("There are no cluster links on this cluster."),
     ).toBeVisible();
   });
 
@@ -260,6 +260,61 @@ test.describe("Cluster links tab", () => {
     await page.goto(`/ui/cluster/${cluster}/cluster-links`);
     await expect(page.getByText("Loading cluster links failed")).toBeVisible();
     await expect(page.getByText("No cluster links found")).toHaveCount(0);
+  });
+
+  test("should delete selected cluster links in bulk", async ({ page }) => {
+    const cluster = randomSeedClusterName();
+    await ensureClusterExists(page, cluster);
+    await mockTunnel(page, cluster, true);
+    let links = [
+      { name: "images-public", type: "public" },
+      { name: "backup-public", type: "public" },
+      { name: "keep-public", type: "public" },
+    ];
+    const deletedUrls: string[] = [];
+    await page.route(
+      `**/1.0/remote-cluster/${cluster}/cluster-links`,
+      async (route) =>
+        route.fulfill({
+          json: {
+            type: "sync",
+            status: "Success",
+            status_code: 200,
+            metadata: links,
+          },
+        }),
+    );
+    await page.route(
+      `**/1.0/remote-cluster/${cluster}/cluster-links/**`,
+      async (route) => {
+        const url = new URL(route.request().url());
+        const name = decodeURIComponent(url.pathname.split("/").pop() ?? "");
+        deletedUrls.push(`${name}${url.search}`);
+        links = links.filter((link) => link.name !== name);
+        await route.fulfill({
+          json: { type: "sync", status: "Success", status_code: 200 },
+        });
+      },
+    );
+    await page.goto(`/ui/cluster/${cluster}/cluster-links`);
+    await expect(page.getByPlaceholder("Search and filter")).toBeVisible();
+
+    await page.getByText("Select images-public").click();
+    await page.getByText("Select backup-public").click();
+    await expect(page.getByPlaceholder("Search and filter")).toBeVisible();
+    await page.getByRole("button", { name: "Delete cluster links" }).click();
+    const dialog = page.getByRole("dialog", { name: "Delete cluster links" });
+    await expect(dialog).toContainText("2 cluster links");
+    await expect(dialog.getByRole("checkbox")).toHaveCount(0);
+    await dialog.getByRole("button", { name: "Delete" }).click();
+
+    await expect(page.getByText("Deleted 2 cluster links.")).toBeVisible();
+    expect(deletedUrls.sort()).toEqual(["backup-public", "images-public"]);
+    await expect(page.getByRole("link", { name: "keep-public" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "images-public" })).toHaveCount(
+      0,
+    );
+    await expect(page.getByPlaceholder("Search and filter")).toBeVisible();
   });
 });
 
