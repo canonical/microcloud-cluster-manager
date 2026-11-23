@@ -25,6 +25,7 @@ import { getLinkIconType, LINK_TYPES } from "util/clusterLinkTypes";
 import ResourceIcon from "components/ResourceIcon";
 import { isPublic } from "util/clusterLinks";
 import PanelSection from "components/PanelSection";
+import ClusterLinkName from "pages/clusters/ClusterLinkName";
 import ClusterLinkRichChip from "pages/clusters/ClusterLinkRichChip";
 
 const CreateClusterLinkPanel: FC = () => {
@@ -147,7 +148,7 @@ const CreateClusterLinkPanel: FC = () => {
           <SidePanel.HeaderTitle>Create cluster link</SidePanel.HeaderTitle>
         </SidePanel.Header>
         <NotificationRow className="u-no-padding" />
-        <SidePanel.Content className="u-no-padding">
+        <SidePanel.Content className="u-no-padding create-cluster-link-panel">
           <ScrollableContainer
             dependencies={[notify.notification]}
             belowIds={["panel-footer"]}
@@ -256,13 +257,7 @@ const CreateClusterLinkPanel: FC = () => {
                       />
                     </>
                   )}
-                  <Input
-                    type="text"
-                    label="Link name"
-                    value={formik.values.name}
-                    placeholder="target-link"
-                    readOnly
-                  />
+                  <ClusterLinkName name={formik.values.name} />
                   <Input
                     id="description"
                     type="text"
