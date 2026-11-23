@@ -1,0 +1,11 @@
+// Preserve Vanilla's status palette while migrating icons and charts to DS.
+// Issue is tracked in LXD-5623
+export const statusColors = {
+  positive: "#0E8420",
+  caution: "#CC7900",
+  negative: "#C7162B",
+  information: "#24598F",
+  neutral: "#A7A6A6",
+} as const;
+
+export type StatusTone = keyof typeof statusColors;
