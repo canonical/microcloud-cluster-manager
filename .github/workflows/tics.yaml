@@ -65,7 +65,7 @@ jobs:
           go install github.com/boumenot/gocover-cobertura@b1bccd90304174121462cb67f5f9e8fc496ee828 # v1.4.0
 
       - name: Produce TICS report
-        uses: tiobe/tics-github-action@48afe561ae55edd1e1ec484505dba636e90ba0a6 # v4.1.0
+        uses: tiobe/tics-github-action@ef5606b61f5cf77831ea000680ed1dfad34ceff3 # v4.2.0
         with:
           mode: qserver
           project: microcloud-cluster-manager
