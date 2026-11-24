@@ -7,6 +7,7 @@ import { queryKeys } from "util/queryKeys";
 import type { Cluster } from "types/cluster";
 import ClusterLinksTable from "pages/clusters/ClusterLinksTable";
 import ClusterLinksEmptyState from "pages/clusters/ClusterLinksEmptyState";
+import ClusterTopology from "pages/clusters/ClusterTopology";
 
 interface Props {
   cluster: Cluster;
@@ -45,12 +46,15 @@ const ClusterLinksTab: FC<Props> = ({ cluster }) => {
         </Notification>
       )}
       {cluster.tunnel_registered && clusterLinks && clusterLinks.length > 0 && (
-        <ClusterLinksTable
-          key={cluster.name}
-          cluster={cluster}
-          clusters={clusters}
-          links={clusterLinks}
-        />
+        <>
+          <ClusterTopology cluster={cluster} />
+          <ClusterLinksTable
+            key={cluster.name}
+            cluster={cluster}
+            clusters={clusters}
+            links={clusterLinks}
+          />
+        </>
       )}
       {cluster.tunnel_registered &&
         !error &&
