@@ -13,7 +13,7 @@ const ClusterStatus: FC<Props> = ({ cluster }: Props) => {
 
   return (
     <div>
-      <StatusIcon className="is-light p-side-navigation__icon" tone={tone} />
+      <StatusIcon tone={tone} />
       {/* Status displays as Online when the cluster was last seen less than 5 minutes ago. */}
       {lastHeartbeatMins < 5 ? "Online" : "Offline"}
     </div>
