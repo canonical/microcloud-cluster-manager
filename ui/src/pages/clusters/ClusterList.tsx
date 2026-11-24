@@ -34,11 +34,11 @@ import type { Location } from "react-router-dom";
 import { fetchTokens } from "api/tokens";
 import usePanelParams, { panels } from "context/usePanelParams";
 import EnrollClusterPanel from "pages/clusters/EnrollClusterPanel";
-import BulkRemoveClusterButton from "pages/clusters/actions/BulkRemoveClusterButton";
-import BulkRevokeTokenButton from "pages/clusters/actions/BulkRevokeTokenButton";
-import EnrollClusterButton from "pages/clusters/actions/EnrollClusterButton";
+import BulkRemoveClusterBtn from "pages/clusters/actions/BulkRemoveClusterBtn";
+import BulkRevokeTokenBtn from "pages/clusters/actions/BulkRevokeTokenBtn";
+import EnrollClusterBtn from "pages/clusters/actions/EnrollClusterBtn";
 import ConfigureClusterPanel from "pages/clusters/ConfigureClusterPanel";
-import BulkConfigureClusterButton from "pages/clusters/actions/BulkConfigureClusterButton";
+import BulkConfigureClusterBtn from "pages/clusters/actions/BulkConfigureClusterBtn";
 import BulkConfigureClusterPanel from "pages/clusters/BulkConfigureClusterPanel";
 
 interface ClusterToken {
@@ -188,7 +188,7 @@ const ClusterList: FC = () => {
                 {hasSearchInput && <ClusterSearchFilter />}
                 {hasSelectedClusters && (
                   <>
-                    <BulkConfigureClusterButton
+                    <BulkConfigureClusterBtn
                       key="configure"
                       clusterNames={selectedNames}
                       onStart={() => {
@@ -198,7 +198,7 @@ const ClusterList: FC = () => {
                         setProcessingNames([]);
                       }}
                     />
-                    <BulkRemoveClusterButton
+                    <BulkRemoveClusterBtn
                       key="remove"
                       clusterNames={selectedNames}
                       onStart={() => {
@@ -211,7 +211,7 @@ const ClusterList: FC = () => {
                   </>
                 )}
                 {hasSelectedTokens && (
-                  <BulkRevokeTokenButton
+                  <BulkRevokeTokenBtn
                     clusterNames={selectedNames}
                     onStart={() => {
                       setProcessingNames(selectedNames);
@@ -226,7 +226,7 @@ const ClusterList: FC = () => {
 
             <PageHeader.BaseActions>
               {hasCreateInHeader && (
-                <EnrollClusterButton className="u-float-right" />
+                <EnrollClusterBtn className="u-float-right" />
               )}
             </PageHeader.BaseActions>
           </PageHeader>

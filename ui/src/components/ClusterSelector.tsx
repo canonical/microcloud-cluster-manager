@@ -1,9 +1,7 @@
 import { type FC, type OptionHTMLAttributes } from "react";
 import { Select, Spinner, useNotify } from "@canonical/react-components";
 import type { Props as SelectProps } from "@canonical/react-components/dist/components/Select/Select";
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "util/queryKeys";
-import { fetchClusters } from "api/clusters";
+import { useClusters } from "context/useClusters";
 
 interface Props {
   value: string;
@@ -19,14 +17,7 @@ const ClusterSelector: FC<Props> = ({
   selectProps,
 }) => {
   const notify = useNotify();
-  const {
-    data: clusters = [],
-    error,
-    isLoading,
-  } = useQuery({
-    queryKey: [queryKeys.clusters],
-    queryFn: fetchClusters,
-  });
+  const { data: clusters = [], error, isLoading } = useClusters();
 
   if (isLoading) {
     return <Spinner className="u-loader" text="Loading clusters..." />;

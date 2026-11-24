@@ -25,7 +25,7 @@ import NotificationRow from "components/NotificationRow";
 import ResourceIcon from "components/ResourceIcon";
 import { useCluster } from "context/useClusters";
 import { useClusterLinks } from "context/useClusterLinks";
-import { useIdentities } from "context/useIdentities";
+import { useClusterIdentities } from "context/useClusterIdentities";
 import usePanelParams from "context/usePanelParams";
 import { useFormik } from "formik";
 import { getLinkIconType, LINK_TYPES } from "util/clusterLinkTypes";
@@ -34,8 +34,8 @@ import {
   getLinkedCluster,
   getLinkIdentity,
   getReverseLink,
+  invalidateClusterLinkLists,
   isBidirectional,
-  isUnidirectional,
 } from "util/clusterLinks";
 import { queryKeys } from "util/queryKeys";
 import PanelSection from "components/PanelSection";
@@ -68,10 +68,9 @@ const EditClusterLinkPanel: FC = () => {
     queryKey: [queryKeys.clusters],
     queryFn: fetchClusters,
   });
-  const { data: identities = [] } = useIdentities(clusterName);
+  const { data: identities = [] } = useClusterIdentities(clusterName);
 
   const link = clusterLinks.find((item) => item.name === linkName);
-  // The cluster the link points at, if it is known to the cluster manager.
   const targetCluster = link ? getLinkedCluster(link, clusters) : undefined;
   const linkType = LINK_TYPES.find((type) => type.value === link?.type);
   const identity = getLinkIdentity(identities, panelParams.clusterLink);
@@ -89,11 +88,10 @@ const EditClusterLinkPanel: FC = () => {
     enableReinitialize: true,
     onSubmit: async (values) => {
       setError(null);
+      const attemptedClusters: string[] = [];
       let sourceUpdated = false;
       const updateBoth =
-        link &&
-        (isBidirectional(link) || isUnidirectional(link)) &&
-        values.applyDescriptionToBoth;
+        link && isBidirectional(link) && values.applyDescriptionToBoth;
 
       try {
         if (!link || !cluster) {
@@ -119,6 +117,7 @@ const EditClusterLinkPanel: FC = () => {
           }
         }
 
+        attemptedClusters.push(clusterName);
         await updateClusterLink(
           clusterName,
           linkName,
@@ -141,6 +140,7 @@ const EditClusterLinkPanel: FC = () => {
         );
 
         if (reverseLink && targetCluster) {
+          attemptedClusters.push(targetCluster.name);
           await updateClusterLink(
             targetCluster.name,
             reverseLink.name,
@@ -170,17 +170,7 @@ const EditClusterLinkPanel: FC = () => {
           ),
         );
       } finally {
-        void queryClient.invalidateQueries({
-          queryKey: [queryKeys.clusters, clusterName, queryKeys.links],
-        });
-        if (updateBoth && targetCluster) {
-          void queryClient.invalidateQueries({
-            queryKey: [queryKeys.clusters, targetCluster.name, queryKeys.links],
-          });
-        }
-        void queryClient.invalidateQueries({
-          queryKey: [queryKeys.identities],
-        });
+        void invalidateClusterLinkLists(queryClient, attemptedClusters);
       }
     },
   });
@@ -276,7 +266,7 @@ const EditClusterLinkPanel: FC = () => {
                   {linkType?.label ?? link.type}
                 </p>
                 {linkType && (
-                  <p className="p-form-help-text">{linkType.help}</p>
+                  <p className="p-form-help-text">{linkType.description}</p>
                 )}
               </div>
             </PanelSection>

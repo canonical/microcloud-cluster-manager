@@ -8,7 +8,7 @@ interface Props {
   onClose?: () => void;
 }
 
-const ClusterUiButton: FC<Props> = ({ lxdUrl, className, onClose }) => {
+const ClusterUiBtn: FC<Props> = ({ lxdUrl, className, onClose }) => {
   if (!lxdUrl) {
     return null;
   }
@@ -27,4 +27,4 @@ const ClusterUiButton: FC<Props> = ({ lxdUrl, className, onClose }) => {
   );
 };
 
-export default ClusterUiButton;
+export default ClusterUiBtn;

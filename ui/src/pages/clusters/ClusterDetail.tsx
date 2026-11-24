@@ -8,15 +8,15 @@ import { queryKeys } from "util/queryKeys";
 import BreadCrumbHeader from "components/BreadcrumbHeader";
 import usePanelParams, { panels } from "context/usePanelParams";
 import ConfigureClusterPanel from "pages/clusters/ConfigureClusterPanel";
-import ClusterUiButton from "pages/clusters/actions/ClusterUiButton";
-import ClusterMetricsButton from "pages/clusters/actions/ClusterMetricsButton";
-import RemoveClusterButton from "pages/clusters/actions/RemoveClusterButton";
-import ConfigureClusterButton from "pages/clusters/actions/ConfigureClusterButton";
+import ClusterUiBtn from "pages/clusters/actions/ClusterUiBtn";
+import ClusterMetricsBtn from "pages/clusters/actions/ClusterMetricsBtn";
+import RemoveClusterBtn from "pages/clusters/actions/RemoveClusterBtn";
+import ConfigureClusterBtn from "pages/clusters/actions/ConfigureClusterBtn";
 import ClusterOverview from "pages/clusters/ClusterOverview";
-import ClusterLinks from "pages/clusters/ClusterLinks";
+import ClusterLinksTab from "pages/clusters/ClusterLinksTab";
 import TabLinks from "components/TabLinks";
-import CreateClusterLinkPanel from "pages/clusters/CreateClusterLinkPanel";
-import EditClusterLinkPanel from "pages/clusters/EditClusterLinkPanel";
+import CreateClusterLinkPanel from "components/cluster-links/CreateClusterLinkPanel";
+import EditClusterLinkPanel from "components/cluster-links/EditClusterLinkPanel";
 
 const ClusterDetail: FC = () => {
   const panelParams = usePanelParams();
@@ -57,19 +57,19 @@ const ClusterDetail: FC = () => {
           cluster && (
             <div className="p-segmented-control">
               <div className="p-segmented-control__list">
-                <ConfigureClusterButton
+                <ConfigureClusterBtn
                   cluster={cluster}
                   className="p-segmented-control__button"
                 />
-                <ClusterUiButton
+                <ClusterUiBtn
                   lxdUrl={cluster.lxd_url}
                   className="p-segmented-control__button"
                 />
-                <ClusterMetricsButton
+                <ClusterMetricsBtn
                   clusterName={cluster.name}
                   className="p-segmented-control__button"
                 />
-                <RemoveClusterButton
+                <RemoveClusterBtn
                   clusterName={cluster.name}
                   className="p-segmented-control__button"
                 />
@@ -100,7 +100,7 @@ const ClusterDetail: FC = () => {
               tabUrl={`/ui/cluster/${cluster.name}`}
             />
             {activeTab === "cluster-links" ? (
-              <ClusterLinks cluster={cluster} />
+              <ClusterLinksTab cluster={cluster} />
             ) : (
               <ClusterOverview cluster={cluster} />
             )}

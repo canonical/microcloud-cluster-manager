@@ -9,6 +9,7 @@ interface Props {
   clusterName: string;
   className?: string;
   disabled?: boolean;
+  hasTitle?: boolean;
   urlSuffix?: string;
 }
 
@@ -16,6 +17,7 @@ const ClusterRichChip: FC<Props> = ({
   clusterName,
   className,
   disabled,
+  hasTitle = true,
   urlSuffix = "",
 }) => {
   const showTooltip = !useIsScreenBelow(SMALL_TOOLTIP_BREAKPOINT, "height");
@@ -25,7 +27,7 @@ const ClusterRichChip: FC<Props> = ({
       type="cluster"
       value={clusterName}
       to={`/ui/cluster/${encodeURIComponent(clusterName)}${urlSuffix}`}
-      hasTitle={!showTooltip}
+      hasTitle={hasTitle && !showTooltip}
       className={className}
       disabled={disabled}
     />

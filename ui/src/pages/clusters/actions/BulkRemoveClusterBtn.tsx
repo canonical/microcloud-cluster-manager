@@ -5,10 +5,10 @@ import {
   useToastNotification,
 } from "@canonical/react-components";
 import { useQueryClient } from "@tanstack/react-query";
+import { deleteClusterBulk } from "api/clusters";
 import type { FC } from "react";
 import { queryKeys } from "util/queryKeys";
 import { pluralize } from "util/helpers";
-import { deleteTokenBulk } from "api/tokens";
 
 interface Props {
   clusterNames: string[];
@@ -16,7 +16,7 @@ interface Props {
   onFinish: () => void;
 }
 
-const BulkDeleteClusterButton: FC<Props> = ({
+const BulkRemoveClusterBtn: FC<Props> = ({
   clusterNames,
   onStart,
   onFinish,
@@ -27,22 +27,22 @@ const BulkDeleteClusterButton: FC<Props> = ({
 
   const handleDelete = () => {
     onStart();
-    deleteTokenBulk(clusterNames)
+    deleteClusterBulk(clusterNames)
       .then(() => {
         toastNotification.success(
           <>
-            Revoked{" "}
+            Removed{" "}
             <strong>
-              {clusterNames.length} {pluralize("token", clusterNames.length)}
+              {clusterNames.length} {pluralize("cluster", clusterNames.length)}
             </strong>
             .
           </>,
         );
       })
-      .catch((e) => notify.failure(`Token revoke failed.`, e))
+      .catch((e) => notify.failure(`Cluster removal failed.`, e))
       .finally(() => {
         queryClient.invalidateQueries({
-          queryKey: [queryKeys.tokens],
+          queryKey: [queryKeys.clusters],
         });
         onFinish();
       });
@@ -53,19 +53,24 @@ const BulkDeleteClusterButton: FC<Props> = ({
       appearance=""
       className="p-segmented-control__button u-no-margin--bottom has-icon"
       confirmationModalProps={{
-        title: "Confirm revoke",
+        title: "Confirm remove",
         children: (
           <>
             <p>
-              Are you sure you want to revoke{" "}
+              Are you sure you want to remove{" "}
               <strong>
-                {clusterNames.length} {pluralize("token", clusterNames.length)}
+                {clusterNames.length}{" "}
+                {pluralize("cluster", clusterNames.length)}
               </strong>
               ?
             </p>
+            <p>
+              The {pluralize("cluster", clusterNames.length)} will be be
+              unenrolled from cluster manager, but will not be deleted.
+            </p>
           </>
         ),
-        confirmButtonLabel: "Revoke",
+        confirmButtonLabel: "Remove",
         onConfirm: () => {
           handleDelete();
         },
@@ -73,9 +78,9 @@ const BulkDeleteClusterButton: FC<Props> = ({
       shiftClickEnabled
     >
       <Icon name="delete" />
-      <span>Revoke {pluralize("token", clusterNames.length)}</span>
+      <span>Remove {pluralize("cluster", clusterNames.length)}</span>
     </ConfirmationButton>
   );
 };
 
-export default BulkDeleteClusterButton;
+export default BulkRemoveClusterBtn;

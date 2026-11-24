@@ -21,6 +21,7 @@
 @import "breadcrumbs";
 @import "cluster_detail";
 @import "cluster_graphs";
+@import "cluster_link_list";
 @import "cluster_link_rich_tooltip";
 @import "cluster_list";
 @import "cluster_rich_tooltip";
@@ -33,6 +34,7 @@
 @import "panel_section";
 @import "pattern_navigation";
 @import "not_authorized";
+@import "actions_list";
 @import "resources";
 @import "rich_tooltip";
 @import "selectable_main_table";
@@ -164,44 +166,6 @@ body {
 
 .u-loader {
   margin: $spv--x-large $sph--x-large $spv--x-large $sph--x-large;
-}
-
-.actions-list {
-  display: inline-block;
-  min-width: 5.5rem;
-
-  .p-inline-list__item {
-    margin-right: 0;
-  }
-
-  & > * {
-    border-right: 1px solid $colors--light-theme--border-default;
-    margin: 0;
-    padding-left: 0;
-    padding-right: 0;
-
-    button {
-      align-items: center;
-      display: inline-flex;
-      height: 2.5rem;
-      justify-content: center;
-      margin: 0;
-      padding: 0;
-      vertical-align: middle;
-      width: 44px;
-
-      // Legacy and ds icons carry different vertical-align/margins; centre both
-      [class*="p-icon"],
-      svg {
-        margin: 0;
-        vertical-align: middle !important;
-      }
-    }
-  }
-
-  & > *:last-child {
-    border-right: none;
-  }
 }
 
 .p-chip.cluster-link-type-chip {

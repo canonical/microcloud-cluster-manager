@@ -1,0 +1,61 @@
+.cluster-link-row {
+  .name {
+    white-space: nowrap;
+
+    > .u-truncate {
+      display: inline-block;
+      max-width: 100%;
+      vertical-align: middle;
+    }
+  }
+
+  .addresses {
+    white-space: nowrap;
+
+    .u-truncate,
+    .p-contextual-menu {
+      display: block;
+      max-width: 100%;
+    }
+
+    .p-contextual-menu__toggle {
+      color: $colors--theme--text-muted;
+    }
+  }
+
+  .used-by .p-contextual-menu {
+    display: inline-block;
+  }
+}
+
+.cluster-link-description {
+  @include u-line-clamp-truncate(2);
+
+  max-height: 3rem;
+}
+
+.cluster-link-unknown-target-icon {
+  margin-left: $sph--x-small;
+}
+
+.cluster-link-used-by-help {
+  @include vf-icon-size(0.8125rem);
+
+  // Nudge the icon up to line up with the header text.
+  position: relative;
+  top: -0.125rem;
+  vertical-align: middle;
+}
+
+.cluster-link-used-by-menu {
+  padding: $spv--small $sph--large;
+  white-space: nowrap;
+}
+
+.cluster-link-addresses-menu {
+  max-width: calc(100vw - 2rem);
+  overflow-x: auto;
+  padding: $spv--small $sph--large;
+  white-space: nowrap;
+  width: max-content;
+}

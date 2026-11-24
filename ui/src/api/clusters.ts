@@ -119,9 +119,7 @@ export const deleteClusterLink = async (
 
   await fetch(
     `/1.0/remote-cluster/${encodeURIComponent(source)}/cluster-links/${encodeURIComponent(clusterLinkName)}${query}`,
-    {
-      method: "DELETE",
-    },
+    { method: "DELETE" },
   ).then(handleResponse);
 };
 

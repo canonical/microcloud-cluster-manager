@@ -28,7 +28,7 @@ const ClusterLinkTypeChip: FC<Props> = ({ type }) => {
 
   return (
     <Tooltip
-      message={linkType.tooltip}
+      message={linkType.description}
       position="right"
       tooltipClassName="cluster-link-type-tooltip"
     >

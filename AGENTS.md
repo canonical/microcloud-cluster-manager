@@ -445,6 +445,7 @@ response.ErrorResponse(http.StatusForbidden, "Permission denied")  // From autho
 - **Hooks**: Use React hooks for state (`useState`), effects (`useEffect`), and context (`useContext`)
 - **Custom Hooks**: Prefix with `use` (e.g., `useClusters`, `useAuth`) and place in `ui/src/context/`
 - **File Naming**: PascalCase for React components (`ClusterDetail.tsx`), camelCase for utilities (`formatDate.ts`)
+- **Button Components**: Use the `Btn` suffix for application button component names and filenames, such as `DeleteClusterLinkBtn.tsx`.
 - **Path Aliases**: Use TypeScript paths (configured in `ui/tsconfig.json`) for clean imports: `import { useAuth } from 'context/auth'`
 - **No Direct DOM Access**: Use React state and refs instead of direct DOM manipulation
 
@@ -509,7 +510,7 @@ For detailed authorization patterns, see [internal/app/management-api/core/auth/
 - **Custom Hooks**: Wrap queries in `ui/src/context/use*.tsx` hooks (e.g., `useClusters`, `useRemoteClusters`)
 - **Queries**: Use `useQuery` or `useQueries` for fetch operations with caching
 - **Mutations**: Use `useMutation` for create/update/delete
-- **Cache Invalidation**: Invalidate related query keys on mutation success to trigger refetching
+- **Cache Invalidation**: Invalidate related query keys after a successful mutation or a failure that may have changed server state
 - **Error Handling**: Provide user-friendly error messages; handle API errors in catch blocks
 - **Loading States**: Use `isLoading`, `isPending` flags from query/mutation results
 

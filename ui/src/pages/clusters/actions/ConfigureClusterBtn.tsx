@@ -10,7 +10,7 @@ interface Props {
   onClose?: () => void;
 }
 
-const ConfigureClusterButton: FC<Props> = ({ cluster, className, onClose }) => {
+const ConfigureClusterBtn: FC<Props> = ({ cluster, className, onClose }) => {
   const panelParams = usePanelParams();
 
   return (
@@ -28,4 +28,4 @@ const ConfigureClusterButton: FC<Props> = ({ cluster, className, onClose }) => {
   );
 };
 
-export default ConfigureClusterButton;
+export default ConfigureClusterBtn;
