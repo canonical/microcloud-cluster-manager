@@ -1,20 +1,22 @@
-import type { Cluster, ClusterLink } from "types/cluster";
+import { QueryClient } from "@tanstack/react-query";
+import { allClusterLinksQueryKey, queryKeys } from "util/queryKeys";
+import type { Cluster, ClusterLink, ResolvedClusterLink } from "types/cluster";
 import {
+  canCleanUpTarget,
+  findCluster,
   getClusterLinkId,
+  getClusterLinkSortData,
+  getGlobalClusterLinkSortData,
   getLinkAddresses,
   getLinkDisplayAddresses,
-  getLinkedCluster,
-  getReverseLink,
-  getSourceClusterConnections,
+  groupGlobalClusterLinks,
+  sortGlobalClusterLinkRows,
+  invalidateClusterLinkLists,
+  invalidateClusterLinksAndIdentities,
 } from "./clusterLinks";
 
-const makeCluster = (name: string, uuid = ""): Cluster =>
-  ({
-    name,
-    cluster_uuid: uuid || `uuid-${name}`,
-    lxd_url: `https://${name}.example.com:8443`,
-    tunnel_registered: true,
-  }) as Cluster;
+const makeCluster = (name: string, tunnel_registered = true): Cluster =>
+  ({ name, tunnel_registered }) as Cluster;
 
 const makeLink = (
   name: string,
@@ -24,6 +26,49 @@ const makeLink = (
   description: "",
   type: "bidirectional",
   ...overrides,
+});
+
+const makeResolvedLink = (
+  link: ClusterLink,
+  source_cluster = "source",
+  target_cluster: string | null = null,
+): ResolvedClusterLink => ({ link, source_cluster, target_cluster });
+
+describe("cluster link query invalidation", () => {
+  it("refreshes only the attempted clusters' link lists after an edit", async () => {
+    const queryClient = new QueryClient();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+
+    await invalidateClusterLinkLists(queryClient, []);
+    expect(invalidate).not.toHaveBeenCalled();
+
+    await invalidateClusterLinkLists(queryClient, ["source", "target"]);
+    expect(invalidate.mock.calls).toEqual([
+      [{ queryKey: allClusterLinksQueryKey }],
+      [{ queryKey: [queryKeys.clusters, "source", queryKeys.links] }],
+      [{ queryKey: [queryKeys.clusters, "target", queryKeys.links] }],
+    ]);
+  });
+
+  it("refreshes link lists and identities for both ends of a bidirectional change", async () => {
+    const queryClient = new QueryClient();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+
+    await invalidateClusterLinksAndIdentities(
+      queryClient,
+      "source",
+      makeLink("link"),
+      "reverse",
+    );
+
+    expect(invalidate.mock.calls).toEqual([
+      [{ queryKey: allClusterLinksQueryKey }],
+      [{ queryKey: [queryKeys.clusters, "source", queryKeys.links] }],
+      [{ queryKey: [queryKeys.clusters, "reverse", queryKeys.links] }],
+      [{ queryKey: [queryKeys.clusters, "source", queryKeys.identities] }],
+      [{ queryKey: [queryKeys.clusters, "reverse", queryKeys.identities] }],
+    ]);
+  });
 });
 
 describe("getLinkAddresses", () => {
@@ -73,172 +118,95 @@ describe("getLinkDisplayAddresses", () => {
   });
 });
 
-describe("getSourceClusterConnections", () => {
-  it("resolves targets by uuid", () => {
-    const one = makeCluster("one", "uuid-one");
-    const two = makeCluster("two", "uuid-two");
-    const connections = getSourceClusterConnections(
-      one,
-      [makeLink("to-two", { config: { "volatile.uuid": "uuid-two" } })],
-      [one, two],
+describe("getClusterLinkId", () => {
+  it("identifies a link by its source cluster and name", () => {
+    expect(getClusterLinkId(makeResolvedLink(makeLink("to-two"), "one"))).toBe(
+      "one/to-two",
     );
-
-    expect(connections[0].target).toBe(two);
-  });
-
-  it("resolves known targets by address when there is no UUID match", () => {
-    const target = makeCluster("two");
-    const connections = getSourceClusterConnections(
-      makeCluster("one"),
-      [
-        makeLink("to-two", {
-          config: { "volatile.addresses": "two.example.com:8443" },
-        }),
-      ],
-      [target],
-    );
-
-    expect(connections[0].target).toBe(target);
-  });
-
-  it("leaves a target unresolved when only a pending address matches", () => {
-    const target = makeCluster("two");
-    const connections = getSourceClusterConnections(
-      makeCluster("one"),
-      [
-        makeLink("public-images", {
-          config: { "volatile.pending_address": "two.example.com:8443" },
-        }),
-      ],
-      [target],
-    );
-
-    expect(connections[0].target).toBeUndefined();
-  });
-
-  it("leaves the target unresolved for clusters unknown to the manager", () => {
-    const source = makeCluster("one", "uuid-one");
-    const connections = getSourceClusterConnections(
-      source,
-      [
-        makeLink("to-external", {
-          config: {
-            "volatile.uuid": "uuid-external",
-            "volatile.addresses": "203.0.113.10:8443",
-          },
-        }),
-      ],
-      [source],
-    );
-
-    expect(connections).toHaveLength(1);
-    expect(connections[0].target).toBeUndefined();
-  });
-
-  it("keeps the source cluster and link of the connections", () => {
-    const source = makeCluster("one");
-    const link = makeLink("link");
-    const [connection] = getSourceClusterConnections(source, [link], [source]);
-
-    expect(connection).toMatchObject({
-      id: getClusterLinkId("one", "link"),
-      source,
-      link,
-    });
   });
 });
 
-describe("getLinkedCluster", () => {
-  const clusters = [
-    { ...makeCluster("one"), lxd_url: "https://11.2.3.4:8443" },
-    { ...makeCluster("two"), lxd_url: "https://1.2.3.4:8443" },
-  ];
-
-  it("matches an address against the host and port of the lxd URL", () => {
-    const link = makeLink("a", {
-      config: { "volatile.addresses": "1.2.3.4:8443" },
-    });
-    expect(getLinkedCluster(link, clusters)?.name).toBe("two");
-  });
-
-  it.each([
-    ["https://cluster.example", 8443],
-    ["https://cluster.example:443", 443],
-    ["https://cluster.example:9443", 9443],
-  ])("uses the effective LXD port for %s", (lxdUrl, port) => {
-    const target = { ...makeCluster("target"), lxd_url: lxdUrl };
-    const link = makeLink("a", {
-      config: { "volatile.addresses": `cluster.example:${port}` },
-    });
-
-    expect(getLinkedCluster(link, [target])).toBe(target);
-  });
-
-  it("does not match an address that is only the end of another address", () => {
-    const link = makeLink("a", {
-      config: { "volatile.addresses": "2.3.4:8443" },
-    });
-    expect(getLinkedCluster(link, clusters)).toBeUndefined();
-  });
-
-  it("matches IPv6 addresses case-insensitively", () => {
-    const link = makeLink("a", {
-      config: { "volatile.addresses": "[FD42::1]:8443" },
-    });
-    const ipv6Clusters = [
-      { ...makeCluster("one"), lxd_url: "https://[fd42::1]:8443" },
-    ];
-    expect(getLinkedCluster(link, ipv6Clusters)?.name).toBe("one");
-  });
-
-  it("ignores clusters with an invalid lxd URL", () => {
-    const link = makeLink("a", {
-      config: { "volatile.addresses": "1.2.3.4:8443" },
-    });
+describe("canCleanUpTarget", () => {
+  it("requires a link with target cleanup and a target with a tunnel", () => {
+    const link = makeLink("a");
+    expect(canCleanUpTarget(link, makeCluster("two"))).toBe(true);
+    expect(canCleanUpTarget(link, makeCluster("two", false))).toBe(false);
+    expect(canCleanUpTarget(link, undefined)).toBe(false);
     expect(
-      getLinkedCluster(link, [{ ...makeCluster("one"), lxd_url: "" }]),
-    ).toBeUndefined();
+      canCleanUpTarget(makeLink("p", { type: "public" }), makeCluster("two")),
+    ).toBe(false);
   });
 });
 
-describe("getReverseLink", () => {
-  const source = {
-    ...makeCluster("source"),
-    lxd_url: "https://1.2.3.4:8443",
-  };
-
-  it("finds the bidirectional link pointing back by uuid", () => {
-    const reverse = makeLink("back", {
-      config: { "volatile.uuid": source.cluster_uuid },
-    });
-    expect(getReverseLink([makeLink("other"), reverse], source)).toBe(reverse);
+describe("findCluster", () => {
+  it("finds a cluster by name and ignores unmanaged targets", () => {
+    const clusters = [makeCluster("one"), makeCluster("two")];
+    expect(findCluster(clusters, "two")).toBe(clusters[1]);
+    expect(findCluster(clusters, "three")).toBeUndefined();
+    expect(findCluster(clusters, null)).toBeUndefined();
   });
+});
 
-  it("finds the bidirectional link pointing back by address", () => {
-    const reverse = makeLink("back", {
-      config: { "volatile.addresses": "1.2.3.4:8443" },
-    });
-    expect(getReverseLink([reverse], source)).toBe(reverse);
-  });
-
-  it("ignores links of other types that point at the cluster", () => {
+describe("groupGlobalClusterLinks", () => {
+  it("groups by source cluster in input order and omits empty groups", () => {
     const links = [
-      makeLink("public", {
-        type: "public",
-        config: { "volatile.uuid": source.cluster_uuid },
-      }),
-      makeLink("unidirectional", {
-        type: "unidirectional",
-        config: { "volatile.addresses": "1.2.3.4:8443" },
-      }),
+      makeResolvedLink(makeLink("b-link"), "one"),
+      makeResolvedLink(makeLink("c-link"), "two"),
+      makeResolvedLink(makeLink("a-link"), "one"),
     ];
-    expect(getReverseLink(links, source)).toBeUndefined();
-  });
 
-  it("does not match an address that is only the end of another address", () => {
-    const reverse = makeLink("back", {
-      config: { "volatile.addresses": "2.3.4:8443" },
+    const groups = groupGlobalClusterLinks(links);
+
+    expect(groups.map((group) => group.sourceCluster)).toStrictEqual([
+      "one",
+      "two",
+    ]);
+    expect(groups[0].links.map(({ link }) => link.name)).toStrictEqual([
+      "b-link",
+      "a-link",
+    ]);
+  });
+});
+
+describe("getGlobalClusterLinkSortData", () => {
+  it("extracts the displayed column values for sorting", () => {
+    const resolvedLink = makeResolvedLink(
+      makeLink("Zulu", {
+        type: "unidirectional",
+        description: "Some description",
+        used_by: ["/a", "/b"],
+        config: { "volatile.addresses": "Z.example.com:8443" },
+      }),
+      "source",
+      "Target",
+    );
+
+    expect(getGlobalClusterLinkSortData(resolvedLink, 2)).toStrictEqual({
+      groupIndex: 2,
+      groupKey: "source",
+      isGroupHeader: false,
+      id: "source/Zulu",
+      values: getClusterLinkSortData(resolvedLink),
     });
-    expect(getReverseLink([reverse], source)).toBeUndefined();
+  });
+});
+
+describe("sortGlobalClusterLinkRows", () => {
+  it("keeps rows inside their group when sorting by a link column", () => {
+    const links = [
+      makeResolvedLink(makeLink("z"), "one"),
+      makeResolvedLink(makeLink("a"), "two"),
+    ];
+    const [first, second] = links.map((resolvedLink, index) => ({
+      columns: [],
+      sortData: getGlobalClusterLinkSortData(resolvedLink, index),
+    }));
+
+    expect(sortGlobalClusterLinkRows(first, second, "ascending", "name")).toBe(
+      -1,
+    );
+    expect(
+      sortGlobalClusterLinkRows(first, second, "descending", "cluster"),
+    ).toBe(1);
   });
 });

@@ -20,10 +20,6 @@ type forwardedEndpoint struct {
 var forwardedEndpoints = []forwardedEndpoint{
 	{http.MethodGet, "/auth-groups", nil},
 	{http.MethodGet, "/auth/identities", nil},
-	{http.MethodGet, "/cluster-links", nil},
-	{http.MethodPost, "/cluster-links", map[string]any{"name": "link", "type": "bidirectional", "target_cluster": "other"}},
-	{http.MethodPut, "/cluster-links/link", map[string]any{"description": "updated"}},
-	{http.MethodDelete, "/cluster-links/link?removeReverseEdge=true", nil},
 	{http.MethodGet, "/replicators?project=default", nil},
 	{http.MethodPost, "/replicators?project=default", map[string]any{"name": "replicator"}},
 	{http.MethodGet, "/replicators/replicator?project=default", nil},

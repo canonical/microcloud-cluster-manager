@@ -8,3 +8,9 @@ export const queryKeys = {
   identities: "identities",
   state: "state",
 };
+
+export const allClusterLinksQueryKey = [
+  queryKeys.clusters,
+  { resource: queryKeys.links },
+  "all",
+] as const;

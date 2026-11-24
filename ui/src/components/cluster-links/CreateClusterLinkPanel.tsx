@@ -147,7 +147,7 @@ const CreateClusterLinkPanel: FC = () => {
     !formik.values.name ||
     isAlternateTargetAddressInvalid;
 
-  if (!cluster) {
+  if (clusterName && !cluster) {
     return null;
   }
 
@@ -192,12 +192,27 @@ const CreateClusterLinkPanel: FC = () => {
                 </PanelSection>
                 <PanelSection header="Details">
                   <div className="cluster-link-endpoints">
-                    <Input
-                      type="text"
-                      label="Source"
-                      value={cluster?.name ?? clusterName}
-                      readOnly
-                    />
+                    {clusterName ? (
+                      <Input
+                        type="text"
+                        label="Source"
+                        value={cluster?.name ?? clusterName}
+                        readOnly
+                      />
+                    ) : (
+                      <ClusterSelector
+                        value={formik.values.sourceCluster}
+                        setValue={(value) => {
+                          void formik.setFieldValue("sourceCluster", value);
+                        }}
+                        ignoreOptions={[formik.values.targetCluster]}
+                        selectProps={{
+                          id: "source-cluster",
+                          label: "Source",
+                          "aria-label": "Source cluster",
+                        }}
+                      />
+                    )}
                     <span
                       className="cluster-link-endpoints__arrow"
                       aria-hidden="true"
