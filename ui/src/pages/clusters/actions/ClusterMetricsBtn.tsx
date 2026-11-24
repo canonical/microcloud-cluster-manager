@@ -12,11 +12,7 @@ interface Props {
   onClose?: () => void;
 }
 
-const ClusterMetricsButton: FC<Props> = ({
-  clusterName,
-  className,
-  onClose,
-}) => {
+const ClusterMetricsBtn: FC<Props> = ({ clusterName, className, onClose }) => {
   const { data: configurations } = useQuery({
     queryKey: [queryKeys.configuration],
     queryFn: fetchConfigurations,
@@ -42,4 +38,4 @@ const ClusterMetricsButton: FC<Props> = ({
   );
 };
 
-export default ClusterMetricsButton;
+export default ClusterMetricsBtn;

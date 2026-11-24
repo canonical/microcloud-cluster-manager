@@ -17,7 +17,7 @@ import { ClusterWarningCount } from "pages/clusters/metrics/ClusterWarningCount"
 import SelectableMainTable from "components/SelectableMainTable";
 import SelectedTableNotification from "components/SelectedTableNotification";
 import ClusterActions from "pages/clusters/ClusterActions";
-import EnrollClusterButton from "pages/clusters/actions/EnrollClusterButton";
+import EnrollClusterBtn from "pages/clusters/actions/EnrollClusterBtn";
 import usePanelParams from "context/usePanelParams";
 import useSortTableData from "context/useSortTableData";
 
@@ -154,7 +154,7 @@ const ClusterListActive: FC<Props> = ({
             title="No active clusters found"
           >
             <p>There are no active clusters. Enroll your first cluster!</p>
-            <EnrollClusterButton />
+            <EnrollClusterBtn />
           </EmptyState>
         </div>
       ) : (

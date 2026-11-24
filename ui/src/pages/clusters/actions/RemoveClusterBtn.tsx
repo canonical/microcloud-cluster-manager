@@ -18,11 +18,7 @@ interface Props {
   onClose?: () => void;
 }
 
-const RemoveClusterButton: FC<Props> = ({
-  clusterName,
-  className,
-  onClose,
-}) => {
+const RemoveClusterBtn: FC<Props> = ({ clusterName, className, onClose }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
   const toastNotification = useToastNotification();
@@ -78,4 +74,4 @@ const RemoveClusterButton: FC<Props> = ({
   );
 };
 
-export default RemoveClusterButton;
+export default RemoveClusterBtn;

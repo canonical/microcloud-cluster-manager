@@ -14,8 +14,8 @@ import { isoTimeToString } from "util/helpers";
 import { queryKeys } from "util/queryKeys";
 import SelectedTableNotification from "components/SelectedTableNotification";
 import SelectableMainTable from "components/SelectableMainTable";
-import RevokeTokenButton from "pages/clusters/actions/RevokeTokenButton";
-import EnrollClusterButton from "pages/clusters/actions/EnrollClusterButton";
+import RevokeTokenBtn from "pages/clusters/actions/RevokeTokenBtn";
+import EnrollClusterBtn from "pages/clusters/actions/EnrollClusterBtn";
 import useSortTableData from "context/useSortTableData";
 
 interface Props {
@@ -100,7 +100,7 @@ const ClusterListTokens: FC<Props> = ({
           role: "cell",
         },
         {
-          content: <RevokeTokenButton token={token} />,
+          content: <RevokeTokenBtn token={token} />,
           className: "u-align--right actions",
           role: "cell",
         },
@@ -135,7 +135,7 @@ const ClusterListTokens: FC<Props> = ({
             title="No tokens found"
           >
             <p>There are no join tokens. Enroll a cluster to create one.</p>
-            <EnrollClusterButton />
+            <EnrollClusterBtn />
           </EmptyState>
         </div>
       ) : (

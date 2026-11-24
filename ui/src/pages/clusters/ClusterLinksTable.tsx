@@ -1,7 +1,7 @@
 import { MainTable, TablePagination } from "@canonical/react-components";
 import type { FC } from "react";
 import useSortTableData from "context/useSortTableData";
-import CreateClusterLinkButton from "components/cluster-links/CreateClusterLinkButton";
+import CreateClusterLinkBtn from "components/cluster-links/CreateClusterLinkBtn";
 import getClusterLinkRow, {
   clusterLinkHeaders,
 } from "components/cluster-links/ClusterLinkRow";
@@ -24,7 +24,7 @@ const ClusterLinksTable: FC<Props> = ({ cluster, clusters, links }) => {
   return (
     <>
       <div className="cluster-links-create">
-        <CreateClusterLinkButton cluster={cluster.name} />
+        <CreateClusterLinkBtn cluster={cluster.name} />
       </div>
       <h2 className="p-heading--4 u-no-padding--top">Cluster link details</h2>
       <TablePagination

@@ -20,7 +20,7 @@ interface Props {
   entry: ClusterConnection;
 }
 
-const DeleteClusterLinkButton: FC<Props> = ({ entry }) => {
+const DeleteClusterLinkBtn: FC<Props> = ({ entry }) => {
   const { link, source, target } = entry;
   const queryClient = useQueryClient();
   const toastNotification = useToastNotification();
@@ -83,8 +83,8 @@ const DeleteClusterLinkButton: FC<Props> = ({ entry }) => {
                   id="delete-cluster-link-both-ends"
                   label={
                     isBidirectional(link)
-                      ? "Also delete the reverse link"
-                      : "Also delete the target identity"
+                      ? "Delete links on both source and target cluster"
+                      : "Also delete identity on the target cluster"
                   }
                   checked={deleteBothEnds}
                   onChange={() => {
@@ -93,8 +93,8 @@ const DeleteClusterLinkButton: FC<Props> = ({ entry }) => {
                 />
               ) : (
                 <p>
-                  The target cluster is not managed by cluster manager or has no
-                  registered tunnel. Only the source link is deleted.
+                  Only this side of the link is removed. The linked cluster must
+                  be cleaned up separately.
                 </p>
               ))}
           </>
@@ -112,4 +112,4 @@ const DeleteClusterLinkButton: FC<Props> = ({ entry }) => {
   );
 };
 
-export default DeleteClusterLinkButton;
+export default DeleteClusterLinkBtn;

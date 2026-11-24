@@ -9,8 +9,8 @@ import { getClusterLinkSortData } from "util/clusterLinks";
 import ClusterLinkTypeChip from "components/cluster-links/ClusterLinkTypeChip";
 import ClusterRichChip from "pages/clusters/ClusterRichChip";
 import ActionsList from "components/ActionsList";
-import EditClusterLinkButton from "components/cluster-links/EditClusterLinkButton";
-import DeleteClusterLinkButton from "components/cluster-links/DeleteClusterLinkButton";
+import EditClusterLinkBtn from "components/cluster-links/EditClusterLinkBtn";
+import DeleteClusterLinkBtn from "components/cluster-links/DeleteClusterLinkBtn";
 import ClusterLinkAddressesCell from "./ClusterLinkAddressesCell";
 import ClusterLinkUsedByCell from "./ClusterLinkUsedByCell";
 
@@ -150,13 +150,13 @@ const getClusterLinkRow = (
         content: (
           <ActionsList
             items={[
-              <EditClusterLinkButton
+              <EditClusterLinkBtn
                 cluster={entry.source}
                 link={entry.link}
                 hasLabel={false}
                 key="edit"
               />,
-              <DeleteClusterLinkButton entry={entry} key="delete" />,
+              <DeleteClusterLinkBtn entry={entry} key="delete" />,
             ]}
           />
         ),

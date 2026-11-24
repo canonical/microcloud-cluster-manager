@@ -6,7 +6,7 @@ interface Props {
   cluster: string;
 }
 
-const CreateClusterLinkButton: FC<Props> = ({ cluster }) => {
+const CreateClusterLinkBtn: FC<Props> = ({ cluster }) => {
   const panelParams = usePanelParams();
 
   return (
@@ -24,4 +24,4 @@ const CreateClusterLinkButton: FC<Props> = ({ cluster }) => {
   );
 };
 
-export default CreateClusterLinkButton;
+export default CreateClusterLinkBtn;

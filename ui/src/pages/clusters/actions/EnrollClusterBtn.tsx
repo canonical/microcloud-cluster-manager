@@ -7,7 +7,7 @@ interface Props {
   className?: string;
 }
 
-const EnrollClusterButton: FC<Props> = ({ className }) => {
+const EnrollClusterBtn: FC<Props> = ({ className }) => {
   const panelParams = usePanelParams();
 
   return (
@@ -22,4 +22,4 @@ const EnrollClusterButton: FC<Props> = ({ className }) => {
   );
 };
 
-export default EnrollClusterButton;
+export default EnrollClusterBtn;

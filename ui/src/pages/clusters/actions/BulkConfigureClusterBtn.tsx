@@ -9,7 +9,7 @@ interface Props {
   onFinish: () => void;
 }
 
-const BulkConfigureClusterButton: FC<Props> = ({ clusterNames }) => {
+const BulkConfigureClusterBtn: FC<Props> = ({ clusterNames }) => {
   const panelParams = usePanelParams();
 
   return (
@@ -27,4 +27,4 @@ const BulkConfigureClusterButton: FC<Props> = ({ clusterNames }) => {
   );
 };
 
-export default BulkConfigureClusterButton;
+export default BulkConfigureClusterBtn;

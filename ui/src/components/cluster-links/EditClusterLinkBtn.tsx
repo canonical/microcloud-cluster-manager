@@ -9,11 +9,7 @@ interface Props {
   hasLabel?: boolean;
 }
 
-const EditClusterLinkButton: FC<Props> = ({
-  cluster,
-  link,
-  hasLabel = true,
-}) => {
+const EditClusterLinkBtn: FC<Props> = ({ cluster, link, hasLabel = true }) => {
   const panelParams = usePanelParams();
 
   return (
@@ -33,4 +29,4 @@ const EditClusterLinkButton: FC<Props> = ({
   );
 };
 
-export default EditClusterLinkButton;
+export default EditClusterLinkBtn;

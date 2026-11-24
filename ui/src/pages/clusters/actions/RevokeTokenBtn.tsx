@@ -15,7 +15,7 @@ interface Props {
   token: Token;
 }
 
-const RevokeTokenButton: FC<Props> = ({ token }) => {
+const RevokeTokenBtn: FC<Props> = ({ token }) => {
   const queryClient = useQueryClient();
   const notify = useNotify();
   const toastNotification = useToastNotification();
@@ -65,4 +65,4 @@ const RevokeTokenButton: FC<Props> = ({ token }) => {
   );
 };
 
-export default RevokeTokenButton;
+export default RevokeTokenBtn;

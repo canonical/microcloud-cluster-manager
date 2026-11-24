@@ -1,7 +1,7 @@
 import { EmptyState, Icon } from "@canonical/react-components";
 import type { FC } from "react";
 import CustomIcon from "components/CustomIcon";
-import CreateClusterLinkButton from "components/cluster-links/CreateClusterLinkButton";
+import CreateClusterLinkBtn from "components/cluster-links/CreateClusterLinkBtn";
 
 interface Props {
   cluster: string;
@@ -33,7 +33,7 @@ const ClusterLinksEmptyState: FC<Props> = ({ cluster }) => {
             />
           </a>
         </p>
-        <CreateClusterLinkButton cluster={cluster} />
+        <CreateClusterLinkBtn cluster={cluster} />
       </EmptyState>
     </div>
   );

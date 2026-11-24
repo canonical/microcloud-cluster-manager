@@ -445,6 +445,7 @@ response.ErrorResponse(http.StatusForbidden, "Permission denied")  // From autho
 - **Hooks**: Use React hooks for state (`useState`), effects (`useEffect`), and context (`useContext`)
 - **Custom Hooks**: Prefix with `use` (e.g., `useClusters`, `useAuth`) and place in `ui/src/context/`
 - **File Naming**: PascalCase for React components (`ClusterDetail.tsx`), camelCase for utilities (`formatDate.ts`)
+- **Button Components**: Use the `Btn` suffix for application button component names and filenames, such as `DeleteClusterLinkBtn.tsx`.
 - **Path Aliases**: Use TypeScript paths (configured in `ui/tsconfig.json`) for clean imports: `import { useAuth } from 'context/auth'`
 - **No Direct DOM Access**: Use React state and refs instead of direct DOM manipulation
 
