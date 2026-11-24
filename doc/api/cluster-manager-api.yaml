@@ -447,6 +447,34 @@ paths:
     parameters:
       - $ref: "#/components/parameters/RemoteClusterName"
       - $ref: "#/components/parameters/ClusterLinkName"
+    get:
+      summary: Get a cluster link
+      tags:
+        - Cluster links
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cluster link of the remote cluster
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Response"
+                  - type: object
+                    properties:
+                      metadata:
+                        $ref: "#/components/schemas/ClusterLink"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
     put:
       summary: Update a cluster link
       tags:
@@ -484,6 +512,39 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/LXDSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/cluster-links/{clusterLinkName}/state:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+      - $ref: "#/components/parameters/ClusterLinkName"
+    get:
+      summary: Get the state of a cluster link
+      description: Returns the state of cluster members on the linked cluster.
+      tags:
+        - Cluster links
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cluster link state
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Response"
+                  - type: object
+                    properties:
+                      metadata:
+                        $ref: "#/components/schemas/ClusterLinkState"
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -1062,6 +1123,29 @@ components:
           type: array
           items:
             type: string
+    ClusterLinkState:
+      type: object
+      properties:
+        cluster_link_members:
+          type: array
+          description: State of cluster members on the linked cluster.
+          items:
+            $ref: "#/components/schemas/ClusterLinkMemberState"
+    ClusterLinkMemberState:
+      type: object
+      properties:
+        server_name:
+          type: string
+          description: Name of the cluster member.
+          example: lxd01
+        address:
+          type: string
+          description: Address at which the cluster member can be reached.
+          example: "10.0.0.1:8443"
+        status:
+          type: string
+          description: Status of the cluster member.
+          example: Active
     ClusterLinkPut:
       type: object
       properties:
