@@ -1,16 +1,17 @@
 import type { FC } from "react";
-import { Icon } from "@canonical/react-components";
+import StatusIcon from "components/StatusIcon";
 import type { Cluster } from "types/cluster";
+import type { StatusTone } from "util/statusColors";
 
 interface Props {
   cluster: Cluster;
 }
 
-const STATUS_ICONS: Record<string, string> = {
-  ACTIVE: "status-succeeded-small",
-  ERROR: "status-failed-small",
-  OFFLINE: "status-failed-small",
-  PENDING: "status-queued-small",
+const STATUS_ICONS: Record<string, StatusTone> = {
+  ACTIVE: "positive",
+  ERROR: "negative",
+  OFFLINE: "negative",
+  PENDING: "neutral",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -22,12 +23,12 @@ const STATUS_LABELS: Record<string, string> = {
 
 const ClusterStatus: FC<Props> = ({ cluster }) => {
   const status = cluster.status?.toUpperCase() || "PENDING";
-  const icon = STATUS_ICONS[status] || "status-queued-small";
+  const icon = STATUS_ICONS[status] || "neutral";
   const label = STATUS_LABELS[status] || status;
 
   return (
     <>
-      <Icon name={icon} className="status-icon" />
+      <StatusIcon tone={icon} className="status-icon" />
       {label}
     </>
   );
