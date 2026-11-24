@@ -39,6 +39,7 @@ import {
 } from "util/clusterLinks";
 import { queryKeys } from "util/queryKeys";
 import PanelSection from "components/PanelSection";
+import ClusterLinkName from "pages/clusters/ClusterLinkName";
 import ClusterLinkRichChip from "pages/clusters/ClusterLinkRichChip";
 
 interface EditClusterLinkFormValues {
@@ -300,7 +301,7 @@ const EditClusterLinkPanel: FC = () => {
                   readOnly
                 />
               </div>
-              <Input type="text" label="Link name" value={link.name} readOnly />
+              <ClusterLinkName name={link.name} />
               <Input
                 id="description"
                 type="text"

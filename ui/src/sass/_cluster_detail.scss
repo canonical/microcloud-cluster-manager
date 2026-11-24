@@ -157,6 +157,22 @@
   }
 }
 
+.create-cluster-link-panel,
+.edit-cluster-link-panel {
+  .cluster-link-name {
+    dt,
+    dd {
+      display: inline;
+      font-size: inherit;
+      font-weight: inherit;
+    }
+
+    dd {
+      margin-left: 0;
+    }
+  }
+}
+
 .cluster-links-table {
   tbody td,
   tbody th {
