@@ -5,7 +5,7 @@ export const statusColors = {
   caution: "#CC7900",
   negative: "#C7162B",
   information: "#24598F",
-  neutral: "#A7A6A6",
+  neutral: "#808080",
 } as const;
 
 export type StatusTone = keyof typeof statusColors;

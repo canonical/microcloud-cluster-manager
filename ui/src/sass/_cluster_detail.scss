@@ -131,10 +131,6 @@
   }
 }
 
-.cluster-link-type-chip__icon {
-  margin-right: $sph--x-small;
-}
-
 .cluster-link-type-tooltip .p-tooltip__message {
   max-width: 16.5rem;
   white-space: normal;
@@ -211,6 +207,12 @@
         margin-left: 0;
         margin-right: 0;
       }
+    }
+  }
+
+  td {
+    .p-chip {
+      margin-top: $spv--x-small;
     }
   }
 }
