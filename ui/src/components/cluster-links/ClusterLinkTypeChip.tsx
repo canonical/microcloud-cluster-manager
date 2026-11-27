@@ -13,7 +13,7 @@ const ClusterLinkTypeChip: FC<Props> = ({ type }) => {
   const label = linkType?.label ?? type;
 
   const chip = (
-    <span className="p-chip is-readonly u-no-margin--bottom cluster-link-type-chip">
+    <span className="p-chip u-no-margin--bottom cluster-link-type-chip is-dense is-inline">
       <ResourceIcon
         type={getLinkIconType(type)}
         className="cluster-link-type-chip__icon"

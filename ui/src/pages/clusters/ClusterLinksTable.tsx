@@ -38,7 +38,7 @@ const ClusterLinksTable: FC<Props> = ({ cluster, clusters, links }) => {
       >
         <MainTable
           id="cluster-links-table"
-          className="cluster-links-table"
+          className="cluster-links-table u-no-margin--bottom"
           responsive
           expanding={false}
           sortable

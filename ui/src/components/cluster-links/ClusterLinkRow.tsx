@@ -148,17 +148,19 @@ const getClusterLinkRow = (
         className: "u-align--right actions",
         hasOverflow: true,
         content: (
-          <ActionsList
-            items={[
-              <EditClusterLinkBtn
-                cluster={entry.source}
-                link={entry.link}
-                hasLabel={false}
-                key="edit"
-              />,
-              <DeleteClusterLinkBtn entry={entry} key="delete" />,
-            ]}
-          />
+          <div className="u-table-cell-padding-overlap">
+            <ActionsList
+              items={[
+                <EditClusterLinkBtn
+                  cluster={entry.source}
+                  link={entry.link}
+                  hasLabel={false}
+                  key="edit"
+                />,
+                <DeleteClusterLinkBtn entry={entry} key="delete" />,
+              ]}
+            />
+          </div>
         ),
       },
     ],

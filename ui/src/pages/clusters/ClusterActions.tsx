@@ -43,6 +43,7 @@ const ClusterActions: FC<Props> = ({ cluster }) => {
       hasToggleIcon
       title="actions"
       toggleAppearance="base"
+      className="cluster-actions"
     >
       {(close: () => void) => (
         <span>

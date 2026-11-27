@@ -173,13 +173,19 @@ body {
   cursor: pointer;
 }
 
-.p-chip.cluster-link-type-chip {
+// Remove after migrating to Pragma
+// Issue is tracked in LXD-5623
+.p-chip {
   align-items: center;
   background: #f2f2f2;
   border: 1px solid #636363;
   border-color: var(--color-icon-muted-root, #636363);
   border-radius: var(--dimension-radius-full, 9999px);
   display: inline-flex;
+}
+
+.cluster-link-type-chip__icon {
+  margin-right: $sph--x-small;
 }
 
 .cluster-link-rich-tooltip-table,

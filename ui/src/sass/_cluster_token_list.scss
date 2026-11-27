@@ -29,5 +29,19 @@
   .actions {
     text-align: right;
     width: 4rem;
+
+    .p-button--base.has-icon {
+      align-items: baseline;
+      display: inline-flex;
+      height: 2.5rem;
+      padding: 0;
+      position: relative;
+      top: calc((#{$cap-height} - 1lh) / 2);
+      width: 2.5rem;
+
+      > .p-icon--delete {
+        align-self: center;
+      }
+    }
   }
 }

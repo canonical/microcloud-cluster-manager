@@ -10,7 +10,7 @@
   th,
   td {
     display: table-cell;
-    vertical-align: top;
+    vertical-align: baseline;
   }
 
   thead,
@@ -54,6 +54,23 @@
   .actions {
     text-align: right;
     width: 4rem;
+
+    .cluster-actions {
+      .p-contextual-menu__toggle {
+        align-items: baseline;
+        display: inline-flex;
+        height: 2.5rem;
+        margin-bottom: 0;
+        padding: 0;
+        position: relative;
+        top: calc((#{$cap-height} - 1lh) / 2);
+        width: 2.5rem;
+
+        > .p-contextual-menu__indicator {
+          align-self: center;
+        }
+      }
+    }
   }
 
   @media screen and (max-width: $breakpoint-large) {
