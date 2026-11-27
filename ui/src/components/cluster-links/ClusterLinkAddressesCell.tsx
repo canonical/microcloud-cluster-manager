@@ -1,14 +1,14 @@
 import type { FC } from "react";
 import { ContextualMenu } from "@canonical/react-components";
-import type { ClusterConnection } from "util/clusterLinks";
+import type { ResolvedClusterLink } from "types/cluster";
 import { getLinkDisplayAddresses } from "util/clusterLinks";
 
 interface Props {
-  entry: ClusterConnection;
+  resolvedLink: ResolvedClusterLink;
 }
 
-const ClusterLinkAddressesCell: FC<Props> = ({ entry }) => {
-  const addresses = getLinkDisplayAddresses(entry.link);
+const ClusterLinkAddressesCell: FC<Props> = ({ resolvedLink }) => {
+  const addresses = getLinkDisplayAddresses(resolvedLink.link);
   return (
     <>
       {addresses.length === 0 ? (
@@ -30,11 +30,11 @@ const ClusterLinkAddressesCell: FC<Props> = ({ entry }) => {
               toggleAppearance="link"
               toggleClassName="u-no-margin--bottom"
               toggleProps={{
-                "aria-label": `View more addresses for ${entry.link.name}`,
+                "aria-label": `View more addresses for ${resolvedLink.link.name}`,
               }}
               dropdownClassName="cluster-link-addresses-menu"
               dropdownProps={{
-                "aria-label": `Addresses for ${entry.link.name} on ${entry.source.name}`,
+                "aria-label": `Addresses for ${resolvedLink.link.name} on ${resolvedLink.source_cluster}`,
               }}
             >
               <ul className="p-list u-no-margin--bottom">

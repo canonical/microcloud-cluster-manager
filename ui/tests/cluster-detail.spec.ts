@@ -225,14 +225,14 @@ test.describe("Cluster links tab", () => {
     await ensureClusterExists(page, cluster);
     await mockTunnel(page, cluster, true);
     await page.route(
-      `**/1.0/remote-cluster/${cluster}/cluster-links`,
+      (url) => url.pathname === "/1.0/cluster-links",
       async (route) =>
         route.fulfill({
           json: {
             type: "sync",
             status: "Success",
             status_code: 200,
-            metadata: [],
+            metadata: { cluster_links: [], errors: [] },
           },
         }),
     );
@@ -250,7 +250,7 @@ test.describe("Cluster links tab", () => {
     await ensureClusterExists(page, cluster);
     await mockTunnel(page, cluster, true);
     await page.route(
-      `**/1.0/remote-cluster/${cluster}/cluster-links`,
+      (url) => url.pathname === "/1.0/cluster-links",
       async (route) =>
         route.fulfill({
           status: 500,

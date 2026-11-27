@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/canonical/lxd/shared/api"
+	"github.com/canonical/microcloud-cluster-manager/internal/pkg/api/models/v1"
 	"github.com/canonical/microcloud-cluster-manager/test/helpers"
 )
 
@@ -56,11 +58,15 @@ func testRemoteClusterTunnel(env *helpers.Environment) (testName string, testFun
 				helpers.LogTestOutcome(t, condition, err)
 			}
 
-			var clusterLinks []api.ClusterLink
-			path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "remote-cluster", tunnelClusterName, "cluster-links")
+			var clusterLinks models.ClusterLinkList
+			path := api.NewURL().Scheme("https").Host(env.ManagementAPIHostPort()).Path("1.0", "cluster-links")
+			path.RawQuery = url.Values{"cluster": {tunnelClusterName}}.Encode()
 			statusCode, err := helpers.QueryManagementAPI(env, http.MethodGet, path, nil, &clusterLinks, headers)
 			if err == nil && statusCode != http.StatusOK {
 				err = fmt.Errorf("expected status %d, got %d", http.StatusOK, statusCode)
+			}
+			if err == nil && (clusterLinks.ClusterLinks == nil || clusterLinks.Errors == nil || len(clusterLinks.Errors) > 0) {
+				err = fmt.Errorf("expected a complete cluster link list, got %+v", clusterLinks)
 			}
 
 			helpers.LogTestOutcome(t, condition, err)

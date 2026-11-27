@@ -5,20 +5,16 @@ import CreateClusterLinkBtn from "components/cluster-links/CreateClusterLinkBtn"
 import getClusterLinkRow, {
   clusterLinkHeaders,
 } from "components/cluster-links/ClusterLinkRow";
-import type { Cluster, ClusterLink } from "types/cluster";
-import { getSourceClusterConnections } from "util/clusterLinks";
+import type { Cluster, ResolvedClusterLink } from "types/cluster";
 
 interface Props {
   cluster: Cluster;
-  clusters: Cluster[];
-  links: ClusterLink[];
+  clusterLinks: ResolvedClusterLink[];
 }
 
-const ClusterLinksTable: FC<Props> = ({ cluster, clusters, links }) => {
-  const connections = getSourceClusterConnections(cluster, links, clusters);
-
+const ClusterLinksTable: FC<Props> = ({ cluster, clusterLinks }) => {
   const { rows: sortedRows, updateSort } = useSortTableData({
-    rows: connections.map(getClusterLinkRow),
+    rows: clusterLinks.map(getClusterLinkRow),
   });
 
   return (

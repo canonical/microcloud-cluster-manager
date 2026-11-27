@@ -80,6 +80,35 @@ var RemoteClusterProtected = types.RouteGroup{
 	},
 }
 
+// ClusterLinksInternal serves cluster-link requests from the management API.
+var ClusterLinksInternal = types.RouteGroup{
+	Prefix: "cluster-links",
+	Middlewares: []types.RouteMiddleware{
+		rate_limit.RateLimitMiddleware,
+		auth.InternalAuthMiddleware,
+	},
+	Endpoints: []types.Endpoint{
+		{
+			Method:  http.MethodGet,
+			Handler: remoteClusterLinksGet,
+		},
+		{
+			Method:  http.MethodPost,
+			Handler: remoteClusterLinksPost,
+		},
+		{
+			Path:    "{clusterLinkName}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterLinkPut,
+		},
+		{
+			Path:    "{clusterLinkName}",
+			Method:  http.MethodDelete,
+			Handler: remoteClusterLinkDelete,
+		},
+	},
+}
+
 // RemoteClusterInternal are the API endpoints that cluster manager calls itself.
 var RemoteClusterInternal = types.RouteGroup{
 	Prefix: "remote-cluster",
@@ -99,29 +128,9 @@ var RemoteClusterInternal = types.RouteGroup{
 			Handler: remoteClusterAuthGroupsGet,
 		},
 		{
-			Path:    "{remoteClusterName}/cluster-links",
-			Method:  http.MethodGet,
-			Handler: remoteClusterLinksGet,
-		},
-		{
-			Path:    "{remoteClusterName}/cluster-links",
-			Method:  http.MethodPost,
-			Handler: remoteClusterLinksPost,
-		},
-		{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
 			Method:  http.MethodGet,
 			Handler: remoteClusterLinkGet,
-		},
-		{
-			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
-			Method:  http.MethodPut,
-			Handler: remoteClusterLinkPut,
-		},
-		{
-			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}",
-			Method:  http.MethodDelete,
-			Handler: remoteClusterLinkDelete,
 		},
 		{
 			Path:    "{remoteClusterName}/cluster-links/{clusterLinkName}/state",
@@ -753,7 +762,7 @@ func getClusterTunnel(rc types.RouteConfig, remoteClusterID int) *types.Tunnel {
 
 func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := request.RemoteClusterName(r)
+		remoteClusterName, err := request.ParseSourceCluster(r.URL.RawQuery)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -1280,7 +1289,7 @@ func remoteClusterAuthGroupsGet(rc types.RouteConfig) types.EndpointHandler {
 
 func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := request.RemoteClusterName(r)
+		remoteClusterName, err := request.ParseSourceCluster(r.URL.RawQuery)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
 		}
@@ -1313,21 +1322,17 @@ func remoteClusterLinkGet(rc types.RouteConfig) types.EndpointHandler {
 	}
 }
 
-// remoteClusterLinkPut updates only the link on the cluster given in the path.
+// remoteClusterLinkPut updates the link on the cluster selected by the query.
 func remoteClusterLinkPut(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := url.PathUnescape(mux.Vars(r)["remoteClusterName"])
+		remoteClusterName, err := request.ParseSourceCluster(r.URL.RawQuery)
 		if err != nil {
-			return response.BadRequest(err).Render(w, r)
+			return response.SmartError(err).Render(w, r)
 		}
 
-		clusterLinkName, err := url.PathUnescape(mux.Vars(r)["clusterLinkName"])
+		clusterLinkName, err := request.RequiredPathParam(r, request.ClusterLinkNameParam, "cluster link name")
 		if err != nil {
-			return response.BadRequest(err).Render(w, r)
-		}
-
-		if clusterLinkName == "" {
-			return response.BadRequest(errors.New("Missing cluster link name")).Render(w, r)
+			return response.SmartError(err).Render(w, r)
 		}
 
 		body, err := readBody(r)
@@ -1368,13 +1373,20 @@ func remoteClusterLinkPut(rc types.RouteConfig) types.EndpointHandler {
 	}
 }
 
-// remoteClusterLinkDelete removes a single edge of a cluster link, meaning the link is only removed on the
-// remote cluster given in the path. The linked cluster keeps its own cluster link entry.
+// remoteClusterLinkDelete removes the link on the cluster selected by the query.
 func remoteClusterLinkDelete(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		remoteClusterName, err := request.RemoteClusterName(r)
+		remoteClusterName, err := request.ParseSourceCluster(r.URL.RawQuery)
 		if err != nil {
 			return response.SmartError(err).Render(w, r)
+		}
+
+		cleanupTarget, err := request.ParseCleanupTarget(r.URL.Query())
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+		if cleanupTarget {
+			return response.BadRequest(errors.New("Target cleanup is only supported by the management API")).Render(w, r)
 		}
 
 		clusterLinkName, err := request.RequiredPathParam(r, request.ClusterLinkNameParam, "cluster link name")

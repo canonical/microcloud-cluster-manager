@@ -1,4 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
+import type { LxdApiResponse } from "types/apiResponse";
+import type { ClusterLinkList } from "types/cluster";
 import { expect } from "../fixtures/test-extension";
 
 export const visitClusterLinks = async (
@@ -61,30 +63,38 @@ export const editClusterLink = async (
   await expect(row.getByText("My link description")).toBeVisible();
 };
 
-export const deleteClusterLink = async (
+export const deleteClusterLinkOnSource = async (
   page: Page,
   linkName: string,
   sourceCluster: string,
-  targetCluster: string,
 ): Promise<void> => {
-  await getClusterLinkRow(page, linkName, sourceCluster)
+  const row = getClusterLinkRow(page, linkName, sourceCluster);
+  await row
     .getByRole("button", { name: `Delete cluster link ${linkName}` })
     .click();
+  const dialog = page.getByRole("dialog", { name: "Delete cluster link" });
   await expect(
-    page.getByText(`This will permanently delete cluster link ${linkName}.`),
+    dialog.getByText(`This will permanently delete cluster link ${linkName}.`),
   ).toBeVisible();
+
+  // LXD can return a newly created link without volatile.uuid. Without it,
+  // the API cannot verify the target cluster for cleanup, so the dialog only
+  // offers source-side deletion.
+  const cleanupLabel = "Delete links on both source and target cluster";
+  const cleanupTarget = dialog.getByRole("checkbox", { name: cleanupLabel });
+  const sourceOnly = dialog.getByText("Only this side of the link is removed.");
+  await expect(cleanupTarget.or(sourceOnly)).toBeVisible();
+  if (await cleanupTarget.isVisible()) {
+    await expect(cleanupTarget).toBeChecked();
+    await dialog.getByText(cleanupLabel, { exact: true }).click();
+    await expect(cleanupTarget).not.toBeChecked();
+  }
+
+  await dialog.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(
-    page.getByText("Delete links on both source and target cluster"),
+    page.getByText(`Deleted cluster link ${linkName}.`),
   ).toBeVisible();
-  await page
-    .getByRole("dialog", { name: "Delete cluster link" })
-    .getByRole("button", { name: "Delete" })
-    .click();
-  await expect(
-    page.getByText(
-      `Deleted cluster link between ${sourceCluster} and ${targetCluster}.`,
-    ),
-  ).toBeVisible();
+  await expect(row).toHaveCount(0);
 };
 
 // A pair of clusters can only have one link, so leftovers from a failed run
@@ -93,22 +103,24 @@ export const deleteAllClusterLinks = async (
   page: Page,
   clusters: string[],
 ): Promise<void> => {
+  const baseUrl = "/1.0/cluster-links";
   for (const cluster of clusters) {
-    const baseUrl = `/1.0/remote-cluster/${encodeURIComponent(cluster)}/cluster-links`;
-    const response = await page.request.get(baseUrl);
-    expect(response.ok()).toBe(true);
-    const body = (await response.json()) as {
-      metadata?: { name: string }[];
-    };
-    for (const link of body.metadata ?? []) {
+    const response = await page.request.get(baseUrl, { params: { cluster } });
+    await expect(response).toBeOK();
+    const { metadata } =
+      (await response.json()) as LxdApiResponse<ClusterLinkList>;
+    expect(metadata.errors).toEqual([]);
+
+    for (const { link } of metadata.cluster_links) {
       const linkUrl = `${baseUrl}/${encodeURIComponent(link.name)}`;
-      const withReverse = await page.request.delete(
-        `${linkUrl}?removeReverseEdge=true`,
-      );
-      if (!withReverse.ok()) {
-        // The reverse edge may already be gone, remove this side only.
-        const sourceOnly = await page.request.delete(linkUrl);
-        expect(sourceOnly.ok()).toBe(true);
+      const withTargetCleanup = await page.request.delete(linkUrl, {
+        params: { cluster, cleanupTarget: true },
+      });
+      if (!withTargetCleanup.ok()) {
+        const sourceOnly = await page.request.delete(linkUrl, {
+          params: { cluster },
+        });
+        await expect(sourceOnly).toBeOK();
       }
     }
   }
