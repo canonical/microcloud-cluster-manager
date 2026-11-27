@@ -429,6 +429,11 @@ func remoteClusterLinksPost(rc types.RouteConfig) types.EndpointHandler {
 func remoteClusterLinksGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		clusterConnectorPath := "/cluster-links"
+		if recursion := r.URL.Query().Get("recursion"); recursion != "" {
+			params := url.Values{}
+			params.Set("recursion", recursion)
+			clusterConnectorPath += "?" + params.Encode()
+		}
 		return forwardToClusterConnector(rc, w, r, clusterConnectorPath)
 	}
 }

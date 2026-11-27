@@ -73,9 +73,15 @@ export const updateClusterBulk = async (
 
 export const fetchClusterLinks = async (
   remoteClusterName: string,
+  recursion?: string,
 ): Promise<ClusterLink[]> => {
+  const params = new URLSearchParams();
+  if (recursion) {
+    params.set("recursion", recursion);
+  }
+
   return fetch(
-    `/1.0/remote-cluster/${encodeURIComponent(remoteClusterName)}/cluster-links`,
+    `/1.0/remote-cluster/${encodeURIComponent(remoteClusterName)}/cluster-links?${params.toString()}`,
   )
     .then(handleResponse)
     .then((data) => (data as LxdApiResponse<ClusterLink[]>).metadata);

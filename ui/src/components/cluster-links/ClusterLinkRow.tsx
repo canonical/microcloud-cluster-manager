@@ -7,7 +7,6 @@ import { Link } from "react-router-dom";
 import type { ClusterConnection } from "util/clusterLinks";
 import { getClusterLinkSortData } from "util/clusterLinks";
 import ClusterLinkTypeChip from "components/cluster-links/ClusterLinkTypeChip";
-import ClusterRichChip from "pages/clusters/ClusterRichChip";
 import ActionsList from "components/ActionsList";
 import EditClusterLinkBtn from "components/cluster-links/EditClusterLinkBtn";
 import DeleteClusterLinkBtn from "components/cluster-links/DeleteClusterLinkBtn";
@@ -83,14 +82,12 @@ const getClusterLinkRow = (
         className: "name",
         title: entry.link.name,
         content: (
-          <>
-            <Link
-              to={`/ui/cluster/${encodeURIComponent(entry.source.name)}/cluster-links`}
-              className="u-truncate"
-            >
-              {entry.link.name}
-            </Link>
-          </>
+          <Link
+            to={`/ui/cluster/${encodeURIComponent(entry.source.name)}/cluster-links`}
+            className="u-truncate"
+          >
+            {entry.link.name}
+          </Link>
         ),
       },
       {
@@ -104,10 +101,12 @@ const getClusterLinkRow = (
         content: (
           <>
             {entry.target ? (
-              <ClusterRichChip
-                clusterName={entry.target.name}
-                hasTitle={false}
-              />
+              <Link
+                to={`/ui/cluster/${encodeURIComponent(entry.target.name)}/cluster-links`}
+                className="u-truncate"
+              >
+                {entry.target.name}
+              </Link>
             ) : (
               <>
                 unknown
