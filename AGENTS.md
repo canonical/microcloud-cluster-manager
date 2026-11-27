@@ -653,6 +653,12 @@ make add-hooks                         # Enable pre-commit hooks
 
 ## Testing Best Practices
 
+### Go testing conventions
+
+- Report outcomes through `helpers.LogTestOutcome` instead of direct fatal calls. `t.Helper()` is called in `helpers.LogTestOutcome`.
+- Register cleanup with `t.Cleanup` in the owning test or subtest caller. Register resource cleanup before permission cleanup so permissions are restored first. If a helper returns cleanup after a partial failure, register it before reporting the error.
+- Aggregate related assertion errors within a named case, including case and resource context. Stop subsequent cases when a failure could leave shared state unsafe.
+
 ### E2E Tests
 
 - **Backend**: Test against full development cluster in `test/e2e/`; use helper functions in `test/helpers/`
