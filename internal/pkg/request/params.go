@@ -16,6 +16,7 @@ const (
 	ReplicatorNameParam    = "replicatorName"
 	ClusterLinkNameParam   = "clusterLinkName"
 	OperationIDParam       = "operationID"
+	IdentityIDParam        = "identityId"
 )
 
 // PathParam reads and unescapes the path parameter with the given name.

@@ -360,6 +360,29 @@ paths:
               examples:
                 error:
                   $ref: "#/components/examples/ResponseErrorInternal"
+  /1.0/remote-cluster/{remoteClusterName}/info:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+    get:
+      summary: Get the LXD server information of a remote cluster
+      description: Forwards GET /1.0 to the remote cluster and returns its response unchanged. The metadata includes server information such as environment.certificate_fingerprint.
+      tags:
+        - Remote clusters
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
   /1.0/remote-cluster/{remoteClusterName}/auth-groups:
     parameters:
       - $ref: "#/components/parameters/RemoteClusterName"
@@ -984,6 +1007,40 @@ paths:
           $ref: "#/components/responses/InternalError"
         "502":
           $ref: "#/components/responses/BadGateway"
+  /1.0/remote-cluster/{remoteClusterName}/auth/identities/tls/{identityId}:
+    parameters:
+      - $ref: "#/components/parameters/RemoteClusterName"
+      - $ref: "#/components/parameters/IdentityID"
+    put:
+      summary: Update a TLS cluster-link identity on a remote cluster
+      description: Updates the groups and TLS certificate of an existing cluster-link identity. Only cluster-link identities can be updated. The update is forwarded to the remote LXD API.
+      tags:
+        - Auth identities
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdentityPut"
+      responses:
+        "200":
+          $ref: "#/components/responses/LXDSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          description: The identity is not a cluster-link identity, or the request was rejected because of insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
 components:
   securitySchemes:
     bearerAuth:
@@ -995,6 +1052,13 @@ components:
       name: remoteClusterName
       in: path
       required: true
+      schema:
+        type: string
+    IdentityID:
+      name: identityId
+      in: path
+      required: true
+      description: Identifier of the TLS identity on the remote cluster.
       schema:
         type: string
     ClusterLinkName:
@@ -1105,6 +1169,18 @@ components:
             error:
               $ref: "#/components/examples/ResponseErrorBadGateway"
   schemas:
+    IdentityPut:
+      type: object
+      description: LXD identity update payload. The request body must be a non-null JSON object.
+      properties:
+        groups:
+          type: array
+          description: Auth groups assigned to the identity.
+          items:
+            type: string
+        tls_certificate:
+          type: string
+          description: PEM-encoded X.509 certificate of the TLS identity.
     ClusterLink:
       type: object
       properties:
@@ -1183,7 +1259,7 @@ components:
           type: array
           items:
             type: string
-          description: Auth groups of the link on the source cluster. Not allowed for public links.
+          description: Auth groups applied to the identity on the source cluster. Only allowed for bidirectional links.
         target_cluster:
           type: string
           description: Name of the registered remote cluster to link with. Must differ from the source cluster.
@@ -1191,7 +1267,7 @@ components:
           type: array
           items:
             type: string
-          description: Auth groups of the link on the target cluster. Only allowed for bidirectional links.
+          description: Auth groups applied to the identity on the target cluster. Allowed for bidirectional and unidirectional links.
       required:
         - type
         - target_cluster

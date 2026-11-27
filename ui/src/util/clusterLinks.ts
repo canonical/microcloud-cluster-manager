@@ -235,3 +235,15 @@ export const getClusterLinksStatus = (
   }
   return "Unreachable";
 };
+
+export const findClusterLinkIdentity = (
+  identities: LxdIdentity[],
+  fingerprint: string,
+): LxdIdentity | undefined => {
+  return identities.find(
+    (identity) =>
+      identity.authentication_method === "tls" &&
+      identity.type === "Cluster link certificate" &&
+      identity.id.toLowerCase() === fingerprint.toLowerCase(),
+  );
+};

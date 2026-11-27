@@ -1,11 +1,8 @@
-import { useState, type FC } from "react";
+import { useEffect, useRef, useState, type FC, type ReactNode } from "react";
 import {
   ActionButton,
   Button,
-  CheckboxInput,
   failure,
-  Form,
-  Input,
   Notification,
   Row,
   ScrollableContainer,
@@ -16,64 +13,125 @@ import {
   type NotificationType,
 } from "@canonical/react-components";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchIdentities, updateIdentity } from "api/auth-identities";
 import {
+  fetchClusterCertificateFingerprint,
   fetchClusterLinks,
   fetchClusters,
   updateClusterLink,
 } from "api/clusters";
-import NotificationRow from "components/NotificationRow";
-import ResourceIcon from "components/ResourceIcon";
-import { useCluster } from "context/useClusters";
+import { useAuthGroups } from "context/useAuthGroups";
 import { useClusterLinks } from "context/useClusterLinks";
-import { useClusterIdentities } from "context/useClusterIdentities";
+import { useCluster } from "context/useClusters";
 import usePanelParams from "context/usePanelParams";
+import { queryKeys } from "util/queryKeys";
+import ClusterLinkForm from "components/forms/ClusterLinkForm";
+import NotificationRow from "components/NotificationRow";
+import ClusterLinkAuthGroupsSection from "pages/clusters/ClusterLinkAuthGroupsSection";
+import ClusterLinkRichChip from "pages/clusters/ClusterLinkRichChip";
 import { useFormik } from "formik";
-import { getLinkIconType, LINK_TYPES } from "util/clusterLinkTypes";
 import type { ClusterLink } from "types/cluster";
 import {
+  findClusterLinkIdentity,
   getLinkedCluster,
   getLinkIdentity,
   getReverseLink,
   invalidateClusterLinkLists,
   isBidirectional,
+  isUnidirectional,
 } from "util/clusterLinks";
-import { queryKeys } from "util/queryKeys";
-import PanelSection from "components/PanelSection";
-import ClusterLinkName from "pages/clusters/ClusterLinkName";
-import ClusterLinkRichChip from "pages/clusters/ClusterLinkRichChip";
+import { areSameArrays } from "util/helpers";
 
 interface EditClusterLinkFormValues {
   description: string;
   applyDescriptionToBoth: boolean;
+  sourceAuthGroups?: string[];
+  targetAuthGroups?: string[];
 }
 
 const EditClusterLinkPanel: FC = () => {
   const panelParams = usePanelParams();
   const notify = useNotify();
-  const toastNotify = useToastNotification();
-  const [error, setError] = useState<NotificationType | null>(null);
-  const queryClient = useQueryClient();
-
   const clusterName = panelParams.cluster ?? "";
   const linkName = panelParams.clusterLink ?? "";
-
   const { data: cluster } = useCluster(clusterName);
   const {
     data: clusterLinks = [],
     isLoading: isLinksLoading,
     error: linksError,
-    refetch: refetchLinks,
   } = useClusterLinks(clusterName);
   const { data: clusters = [] } = useQuery({
     queryKey: [queryKeys.clusters],
     queryFn: fetchClusters,
   });
-  const { data: identities = [] } = useClusterIdentities(clusterName);
-
   const link = clusterLinks.find((item) => item.name === linkName);
+  const toastNotify = useToastNotification();
+  const [error, setError] = useState<NotificationType | null>(null);
+  const [editedAuthGroups, setEditedAuthGroups] = useState({
+    source: false,
+    target: false,
+  });
+  const queryClient = useQueryClient();
+  const initializedLink = useRef<string | null>(null);
   const targetCluster = link ? getLinkedCluster(link, clusters) : undefined;
-  const linkType = LINK_TYPES.find((type) => type.value === link?.type);
-  const identity = getLinkIdentity(identities, panelParams.clusterLink);
+  const bidirectional = !!cluster && !!link && isBidirectional(link);
+  const hasAuthGroups =
+    !!cluster && !!link && (bidirectional || isUnidirectional(link));
+  const targetClusterName = targetCluster?.name ?? "";
+  const canLoadTarget = hasAuthGroups && !!targetCluster?.tunnel_registered;
+
+  const sourceIdentityKey = [
+    queryKeys.identities,
+    clusterName,
+    "cluster-link",
+    linkName,
+  ];
+  const sourceIdentityQuery = useQuery({
+    queryKey: sourceIdentityKey,
+    queryFn: async () => {
+      const identity = getLinkIdentity(
+        await fetchIdentities(clusterName),
+        linkName,
+      );
+      if (
+        !identity ||
+        identity.authentication_method !== "tls" ||
+        identity.type !== "Cluster link certificate"
+      ) {
+        throw new Error(
+          `No active TLS identity found for cluster link "${linkName}" on ${clusterName}.`,
+        );
+      }
+      return identity;
+    },
+    enabled: bidirectional,
+  });
+  const targetIdentityKey = [
+    queryKeys.identities,
+    targetClusterName,
+    "cluster-link-peer",
+    clusterName,
+  ];
+  const targetIdentityQuery = useQuery({
+    queryKey: targetIdentityKey,
+    queryFn: async () => {
+      const [identities, fingerprint] = await Promise.all([
+        fetchIdentities(targetClusterName),
+        fetchClusterCertificateFingerprint(clusterName),
+      ]);
+      const identity = findClusterLinkIdentity(identities, fingerprint);
+      if (!identity) {
+        throw new Error(
+          `No active TLS identity for ${clusterName} found on ${targetClusterName}.`,
+        );
+      }
+      return identity;
+    },
+    enabled: canLoadTarget,
+  });
+
+  const sourceAuthGroupsQuery = useAuthGroups(clusterName, bidirectional);
+  const targetAuthGroupsQuery = useAuthGroups(targetClusterName, canLoadTarget);
 
   const closePanel = () => {
     panelParams.clear();
@@ -84,21 +142,64 @@ const EditClusterLinkPanel: FC = () => {
     initialValues: {
       description: link?.description ?? "",
       applyDescriptionToBoth: false,
+      sourceAuthGroups: sourceIdentityQuery.data
+        ? (sourceIdentityQuery.data.groups ?? [])
+        : undefined,
+      targetAuthGroups: targetIdentityQuery.data
+        ? (targetIdentityQuery.data.groups ?? [])
+        : undefined,
     },
-    enableReinitialize: true,
     onSubmit: async (values) => {
       setError(null);
       const attemptedClusters: string[] = [];
-      let sourceUpdated = false;
-      const updateBoth =
-        link && isBidirectional(link) && values.applyDescriptionToBoth;
+      const savedUpdates: string[] = [];
+      let operation = "cluster link update";
+      const updateBoth = hasAuthGroups && values.applyDescriptionToBoth;
+      const sourceGroupsChanged =
+        bidirectional &&
+        editedAuthGroups.source &&
+        values.sourceAuthGroups !== undefined &&
+        !areSameArrays(
+          values.sourceAuthGroups,
+          sourceIdentityQuery.data?.groups ?? [],
+        );
+      const targetGroupsChanged =
+        hasAuthGroups &&
+        editedAuthGroups.target &&
+        values.targetAuthGroups !== undefined &&
+        !areSameArrays(
+          values.targetAuthGroups,
+          targetIdentityQuery.data?.groups ?? [],
+        );
+      const recordSuccess = (label: string, message: ReactNode): void => {
+        savedUpdates.push(label);
+        toastNotify.success(message);
+        if (savedUpdates.length === 2 && !toastNotify.isListView) {
+          toastNotify.toggleListView();
+        }
+      };
 
       try {
-        if (!link || !cluster) {
-          throw new Error("Cluster link not found");
+        if (!cluster || !link) {
+          throw new Error("Load the cluster link before saving changes.");
         }
-        if (isBidirectional(link) && !identity) {
-          throw new Error("Identity not found");
+        if (
+          sourceGroupsChanged &&
+          (!sourceIdentityQuery.isSuccess || !sourceAuthGroupsQuery.isSuccess)
+        ) {
+          throw new Error(
+            "Load the source identity and auth groups before changing source auth groups.",
+          );
+        }
+        if (
+          targetGroupsChanged &&
+          (!canLoadTarget ||
+            !targetIdentityQuery.isSuccess ||
+            !targetAuthGroupsQuery.isSuccess)
+        ) {
+          throw new Error(
+            "Load the target identity and auth groups before changing target auth groups.",
+          );
         }
 
         let reverseLink: ClusterLink | undefined;
@@ -117,6 +218,7 @@ const EditClusterLinkPanel: FC = () => {
           }
         }
 
+        operation = "source description update";
         attemptedClusters.push(clusterName);
         await updateClusterLink(
           clusterName,
@@ -126,8 +228,8 @@ const EditClusterLinkPanel: FC = () => {
             config: link.config,
           }),
         );
-        sourceUpdated = true;
-        toastNotify.success(
+        recordSuccess(
+          "Source description",
           <>
             Cluster link{" "}
             <ClusterLinkRichChip
@@ -140,6 +242,7 @@ const EditClusterLinkPanel: FC = () => {
         );
 
         if (reverseLink && targetCluster) {
+          operation = "target description update";
           attemptedClusters.push(targetCluster.name);
           await updateClusterLink(
             targetCluster.name,
@@ -149,84 +252,153 @@ const EditClusterLinkPanel: FC = () => {
               config: reverseLink.config,
             }),
           );
-          toastNotify.success(
+          recordSuccess(
+            "Target description",
             <>
               Cluster link <b>{reverseLink.name}</b> on{" "}
               <b>{targetCluster.name}</b> saved.
             </>,
           );
-          if (!toastNotify.isListView) {
-            toastNotify.toggleListView();
-          }
+        }
+
+        if (
+          sourceGroupsChanged &&
+          sourceIdentityQuery.data &&
+          values.sourceAuthGroups !== undefined
+        ) {
+          operation = "source auth groups update";
+          const identity = {
+            ...sourceIdentityQuery.data,
+            groups: values.sourceAuthGroups,
+          };
+          await updateIdentity(clusterName, identity);
+          queryClient.setQueryData(sourceIdentityKey, identity);
+          recordSuccess(
+            "Source auth groups",
+            <>
+              Source auth groups for cluster link <b>{linkName}</b> on{" "}
+              <b>{clusterName}</b> saved.
+            </>,
+          );
+        }
+        if (
+          targetGroupsChanged &&
+          targetIdentityQuery.data &&
+          values.targetAuthGroups !== undefined
+        ) {
+          operation = "target auth groups update";
+          const identity = {
+            ...targetIdentityQuery.data,
+            groups: values.targetAuthGroups,
+          };
+          await updateIdentity(targetClusterName, identity);
+          queryClient.setQueryData(targetIdentityKey, identity);
+          recordSuccess(
+            "Target auth groups",
+            <>
+              Target auth groups for cluster link <b>{linkName}</b> on{" "}
+              <b>{targetClusterName}</b> saved.
+            </>,
+          );
         }
         closePanel();
       } catch (e) {
         setError(
           failure(
-            sourceUpdated
-              ? "Source description saved, but target description update failed"
+            savedUpdates.length
+              ? `${savedUpdates.join(", ")} saved, but ${operation} failed`
               : "Cluster link update failed",
             e,
           ),
         );
       } finally {
         void invalidateClusterLinkLists(queryClient, attemptedClusters);
+        void queryClient.invalidateQueries({
+          queryKey: [queryKeys.identities, clusterName],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: [queryKeys.authGroups, clusterName],
+        });
+        if (hasAuthGroups && targetClusterName) {
+          void queryClient.invalidateQueries({
+            queryKey: [queryKeys.identities, targetClusterName],
+          });
+          void queryClient.invalidateQueries({
+            queryKey: [queryKeys.authGroups, targetClusterName],
+          });
+        }
       }
     },
   });
 
+  useEffect(() => {
+    if (!cluster || !link) {
+      if (initializedLink.current !== null) {
+        setError(null);
+      }
+      initializedLink.current = null;
+      return;
+    }
+    const key = `${cluster.name}/${link.name}`;
+    if (initializedLink.current === key) {
+      return;
+    }
+    initializedLink.current = key;
+    formik.resetForm({
+      values: {
+        description: link.description ?? "",
+        applyDescriptionToBoth: false,
+        sourceAuthGroups: sourceIdentityQuery.data
+          ? (sourceIdentityQuery.data.groups ?? [])
+          : undefined,
+        targetAuthGroups: targetIdentityQuery.data
+          ? (targetIdentityQuery.data.groups ?? [])
+          : undefined,
+      },
+    });
+    setEditedAuthGroups({ source: false, target: false });
+    setError(null);
+  }, [
+    cluster,
+    link,
+    formik.resetForm,
+    sourceIdentityQuery.data,
+    targetIdentityQuery.data,
+  ]);
+
+  useEffect(() => {
+    if (
+      formik.values.sourceAuthGroups === undefined &&
+      sourceIdentityQuery.isSuccess
+    ) {
+      void formik.setFieldValue(
+        "sourceAuthGroups",
+        sourceIdentityQuery.data.groups ?? [],
+        false,
+      );
+    }
+    if (
+      formik.values.targetAuthGroups === undefined &&
+      targetIdentityQuery.isSuccess
+    ) {
+      void formik.setFieldValue(
+        "targetAuthGroups",
+        targetIdentityQuery.data.groups ?? [],
+        false,
+      );
+    }
+  }, [
+    formik.values.sourceAuthGroups,
+    formik.values.targetAuthGroups,
+    formik.setFieldValue,
+    sourceIdentityQuery.isSuccess,
+    sourceIdentityQuery.data,
+    targetIdentityQuery.isSuccess,
+    targetIdentityQuery.data,
+  ]);
+
   if (!cluster) {
     return null;
-  }
-
-  if (!link) {
-    return (
-      <SidePanel>
-        <SidePanel.Header>
-          <SidePanel.HeaderTitle>Edit cluster link</SidePanel.HeaderTitle>
-        </SidePanel.Header>
-        <Row className="u-no-padding">
-          {error && (
-            <Notification
-              title={error.title}
-              severity="negative"
-              onDismiss={() => {
-                setError(null);
-              }}
-            >
-              {error.message}
-            </Notification>
-          )}
-        </Row>
-        <SidePanel.Content>
-          {isLinksLoading ? (
-            <Spinner text="Loading cluster link..." />
-          ) : linksError ? (
-            <Notification
-              severity="negative"
-              title="Failed to load cluster links"
-              actions={[
-                {
-                  label: "Retry",
-                  onClick: () => void refetchLinks(),
-                },
-              ]}
-            >
-              {linksError.message}
-            </Notification>
-          ) : (
-            <Notification severity="caution" title="Cluster link not found">
-              {`"${linkName}" no longer exists on ${cluster.name}.`}
-            </Notification>
-          )}
-        </SidePanel.Content>
-        <SidePanel.Footer className="u-align--right">
-          <Button className="u-no-margin--bottom" onClick={closePanel}>
-            Close
-          </Button>
-        </SidePanel.Footer>
-      </SidePanel>
-    );
   }
 
   return (
@@ -234,9 +406,9 @@ const EditClusterLinkPanel: FC = () => {
       <SidePanel.Header>
         <SidePanel.HeaderTitle>Edit cluster link</SidePanel.HeaderTitle>
       </SidePanel.Header>
-      <NotificationRow className="u-no-padding" />
-      {error && (
-        <Row className="u-no-padding">
+      {link && <NotificationRow className="u-no-padding" />}
+      <Row className="u-no-padding">
+        {error && (
           <Notification
             title={error.title}
             severity="negative"
@@ -246,93 +418,129 @@ const EditClusterLinkPanel: FC = () => {
           >
             {error.message}
           </Notification>
-        </Row>
-      )}
-      <SidePanel.Content className="u-no-padding edit-cluster-link-panel">
-        <ScrollableContainer
-          dependencies={[notify.notification, error]}
-          belowIds={["panel-footer"]}
-        >
-          <Form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void formik.submitForm();
-            }}
-            className="form"
+        )}
+      </Row>
+      <SidePanel.Content
+        className={link ? "u-no-padding edit-cluster-link-panel" : undefined}
+      >
+        {link ? (
+          <ScrollableContainer
+            dependencies={[
+              notify.notification,
+              error,
+              sourceIdentityQuery.data,
+              targetIdentityQuery.data,
+              sourceAuthGroupsQuery.data,
+              targetAuthGroupsQuery.data,
+              formik.values.sourceAuthGroups,
+              formik.values.targetAuthGroups,
+            ]}
+            belowIds={["panel-footer"]}
           >
-            <PanelSection header="Link type" isFirst>
-              <div className="cluster-link-type-summary">
-                <p className="link-type-label">
-                  {linkType?.label ?? link.type}
-                </p>
-                {linkType && (
-                  <p className="p-form-help-text">{linkType.description}</p>
-                )}
-              </div>
-            </PanelSection>
-            <PanelSection header="Details">
-              <div className="cluster-link-endpoints">
-                <Input
-                  type="text"
-                  label="Source"
-                  value={cluster.name}
-                  readOnly
-                />
-                <span
-                  className="cluster-link-endpoints__arrow"
-                  aria-hidden="true"
-                >
-                  <ResourceIcon type={getLinkIconType(link.type)} />
-                </span>
-                <Input
-                  type="text"
-                  label="Target"
-                  value={targetCluster?.name ?? ""}
-                  readOnly
-                />
-              </div>
-              <ClusterLinkName name={link.name} />
-              <Input
-                id="description"
-                type="text"
-                label="Description"
-                className="u-no-margin--bottom"
-                {...formik.getFieldProps("description")}
-              />
-              {isBidirectional(link) && (
-                <CheckboxInput
-                  className="cluster-link-address-checkbox"
-                  label="Apply change in both source and target clusters"
-                  checked={formik.values.applyDescriptionToBoth}
-                  onChange={() => {
-                    void formik.setFieldValue(
-                      "applyDescriptionToBoth",
-                      !formik.values.applyDescriptionToBoth,
-                    );
+            <ClusterLinkForm
+              mode="edit"
+              sourceClusterName={cluster.name}
+              targetClusterName={targetClusterName}
+              type={link.type}
+              name={link.name}
+              descriptionField={formik.getFieldProps("description")}
+              disabled={formik.isSubmitting}
+              applyDescriptionToBoth={formik.values.applyDescriptionToBoth}
+              onApplyDescriptionToBothChange={() => {
+                void formik.setFieldValue(
+                  "applyDescriptionToBoth",
+                  !formik.values.applyDescriptionToBoth,
+                );
+              }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                void formik.submitForm();
+              }}
+            >
+              {hasAuthGroups && (
+                <ClusterLinkAuthGroupsSection
+                  target={{
+                    clusterName: targetClusterName,
+                    query: targetAuthGroupsQuery,
+                    identityQuery: targetIdentityQuery,
+                    unavailableReason: canLoadTarget
+                      ? undefined
+                      : "The target cluster must be managed and have a registered tunnel to edit target auth groups.",
+                    selectedGroups:
+                      formik.values.targetAuthGroups ??
+                      targetIdentityQuery.data?.groups ??
+                      [],
+                    onChange: (groups) => {
+                      setEditedAuthGroups((current) => ({
+                        ...current,
+                        target: true,
+                      }));
+                      void formik.setFieldValue("targetAuthGroups", groups);
+                    },
                   }}
+                  disabled={formik.isSubmitting}
+                  {...(bidirectional
+                    ? {
+                        isBidirectional: true,
+                        source: {
+                          clusterName,
+                          query: sourceAuthGroupsQuery,
+                          identityQuery: sourceIdentityQuery,
+                          selectedGroups:
+                            formik.values.sourceAuthGroups ??
+                            sourceIdentityQuery.data?.groups ??
+                            [],
+                          onChange: (groups: string[]) => {
+                            setEditedAuthGroups((current) => ({
+                              ...current,
+                              source: true,
+                            }));
+                            void formik.setFieldValue(
+                              "sourceAuthGroups",
+                              groups,
+                            );
+                          },
+                        },
+                      }
+                    : { isBidirectional: false })}
                 />
               )}
-            </PanelSection>
-          </Form>
-        </ScrollableContainer>
+            </ClusterLinkForm>
+          </ScrollableContainer>
+        ) : isLinksLoading ? (
+          <Spinner text="Loading cluster link..." />
+        ) : linksError ? (
+          <Notification
+            severity="negative"
+            title="Failed to load cluster links"
+          >
+            {linksError.message}
+          </Notification>
+        ) : (
+          <Notification severity="caution" title="Cluster link not found">
+            {`"${linkName}" no longer exists on ${cluster.name}.`}
+          </Notification>
+        )}
       </SidePanel.Content>
       <SidePanel.Footer className="u-align--right">
         <Button
-          appearance="base"
+          appearance={link ? "base" : undefined}
           className="u-no-margin--bottom"
           onClick={closePanel}
         >
-          Cancel
+          {link ? "Cancel" : "Close"}
         </Button>
-        <ActionButton
-          appearance="positive"
-          className="u-no-margin--bottom"
-          loading={formik.isSubmitting}
-          disabled={!formik.isValid || formik.isSubmitting}
-          onClick={() => void formik.submitForm()}
-        >
-          Save
-        </ActionButton>
+        {link && (
+          <ActionButton
+            appearance="positive"
+            className="u-no-margin--bottom"
+            loading={formik.isSubmitting}
+            disabled={!formik.isValid || formik.isSubmitting}
+            onClick={() => void formik.submitForm()}
+          >
+            Save
+          </ActionButton>
+        )}
       </SidePanel.Footer>
     </SidePanel>
   );

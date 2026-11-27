@@ -13,3 +13,19 @@ export const fetchIdentities = async (
       (data as LxdApiResponse<LxdIdentity[]>).metadata.map(ensureStableSorting),
     );
 };
+
+export const updateIdentity = async (
+  remoteClusterName: string,
+  identity: LxdIdentity,
+): Promise<void> => {
+  await fetch(
+    `/1.0/remote-cluster/${encodeURIComponent(remoteClusterName)}/auth/identities/tls/${encodeURIComponent(identity.id)}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(identity),
+    },
+  ).then(handleResponse);
+};

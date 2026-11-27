@@ -46,6 +46,11 @@ var RemoteCluster = types.RouteGroup{
 			Handler: remoteClusterGet,
 		},
 		{
+			Path:    "{remoteClusterName}/info",
+			Method:  http.MethodGet,
+			Handler: remoteClusterInfoGet,
+		},
+		{
 			Path:    "{remoteClusterName}",
 			Method:  http.MethodDelete,
 			Handler: remoteClusterDelete,
@@ -164,6 +169,11 @@ var RemoteCluster = types.RouteGroup{
 			Path:    "{remoteClusterName}/auth/identities",
 			Method:  http.MethodGet,
 			Handler: remoteClusterIdentitiesGet,
+		},
+		{
+			Path:    "{remoteClusterName}/auth/identities/tls/{identityId}",
+			Method:  http.MethodPut,
+			Handler: remoteClusterIdentityPut,
 		},
 	},
 }
@@ -379,6 +389,12 @@ func toRemoteClustersAPI(dbEntries []store.RemoteClusterWithDetail) ([]models.Re
 	return remoteClusters, nil
 }
 
+func remoteClusterInfoGet(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		return forwardToClusterConnector(rc, w, r, "/info")
+	}
+}
+
 func remoteClusterAuthGroupsGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		return forwardToClusterConnector(rc, w, r, "/auth-groups")
@@ -388,6 +404,18 @@ func remoteClusterAuthGroupsGet(rc types.RouteConfig) types.EndpointHandler {
 func remoteClusterIdentitiesGet(rc types.RouteConfig) types.EndpointHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		return forwardToClusterConnector(rc, w, r, "/auth/identities")
+	}
+}
+
+func remoteClusterIdentityPut(rc types.RouteConfig) types.EndpointHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		identityID, err := request.RequiredPathParam(r, request.IdentityIDParam, "identity ID")
+		if err != nil {
+			return response.SmartError(err).Render(w, r)
+		}
+
+		path := "/auth/identities/tls/" + url.PathEscape(identityID)
+		return forwardToClusterConnector(rc, w, r, path)
 	}
 }
 
