@@ -42,5 +42,6 @@ export const setClusterConfig = async (
 };
 
 // Real MicroClouds, see "MicroClouds for the e2e tests" in CONTRIBUTING.md.
-export const tunnelCluster = "mcm-e2e-01";
+export const tunnelCluster01 = "mcm-e2e-01";
+export const tunnelCluster02 = "mcm-e2e-02";
 export const joinCluster = "mcm-e2e-join-01";
